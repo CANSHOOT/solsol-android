@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 앱 내부 저장소 (영수증 이미지 임시 저장용) -->
+    <files-path 
+        name="receipts" 
+        path="receipts/" />
+    
+    <!-- 캐시 디렉토리 (임시 이미지용) -->
+    <cache-path 
+        name="temp_images" 
+        path="temp/" />
+    
+    <!-- 외부 저장소 (사용자가 저장한 이미지) -->
+    <external-files-path 
+        name="external_receipts" 
+        path="receipts/" />
+</paths>
