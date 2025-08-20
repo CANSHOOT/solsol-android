@@ -1,0 +1,13 @@
+package com.heyyoung.solsol.feature.dutchpay.domain.repository
+
+import com.heyyoung.solsol.feature.dutchpay.domain.model.DutchPayGroup
+import com.heyyoung.solsol.feature.dutchpay.domain.model.DutchPayParticipant
+
+interface DutchPayRepository {
+    suspend fun createDutchPay(dutchPay: DutchPayGroup): Result<DutchPayGroup>
+    suspend fun getDutchPayById(groupId: Long): Result<DutchPayGroup>
+    suspend fun joinDutchPay(groupId: Long, userId: Long): Result<DutchPayParticipant>
+    suspend fun payDutchPay(groupId: Long, participantId: Long): Result<Boolean>
+    suspend fun getDutchPayHistory(userId: Long): Result<List<DutchPayGroup>>
+    suspend fun getUserParticipations(userId: Long): Result<List<DutchPayParticipant>>
+}
