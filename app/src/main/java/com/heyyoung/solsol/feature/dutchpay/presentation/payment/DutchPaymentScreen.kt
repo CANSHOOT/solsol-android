@@ -25,6 +25,13 @@ import java.text.NumberFormat
 import java.time.format.DateTimeFormatter
 import java.util.*
 
+/**
+ * 더치페이 정산/송금 화면
+ * - 더치페이 정보 및 참여자 현황 표시
+ * - 개인별 송금 상태 확인 (대기중/완료/실패)
+ * - 원클릭 송금 버튼 (백엔드에서 금융 API 호출)
+ * - 실시간 상태 업데이트 및 새로고침
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DutchPaymentScreen(

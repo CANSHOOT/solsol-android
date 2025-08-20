@@ -21,6 +21,13 @@ import com.heyyoung.solsol.ui.theme.SolsolPrimary
 import java.text.NumberFormat
 import java.util.*
 
+/**
+ * 더치페이 생성 화면
+ * - 그룹명, 총금액 입력 폼
+ * - 참여자 검색 및 선택 (학번/이름으로 검색)
+ * - 1인당 분담금 실시간 계산 표시
+ * - 솔솔 브랜드 컬러(#8B5FBF) 적용
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateDutchPayScreen(

@@ -1,5 +1,10 @@
 package com.heyyoung.solsol.feature.dutchpay.data.remote
 
+/**
+ * 더치페이 관련 REST API 인터페이스
+ * - 백엔드 서버와 통신하여 더치페이 CRUD 및 사용자 검색
+ * - 금융 거래는 백엔드에서 처리, 앱은 결과만 받음
+ */
 import com.heyyoung.solsol.feature.dutchpay.data.remote.dto.*
 import retrofit2.http.*
 

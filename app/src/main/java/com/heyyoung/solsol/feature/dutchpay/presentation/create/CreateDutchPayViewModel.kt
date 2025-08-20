@@ -11,6 +11,12 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * 더치페이 생성 화면 ViewModel
+ * - 참여자 실시간 검색 (300ms debounce)
+ * - 1인당 금액 자동 계산 및 UI 상태 관리
+ * - 입력값 검증 및 더치페이 생성 처리
+ */
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class CreateDutchPayViewModel @Inject constructor(

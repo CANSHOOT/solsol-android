@@ -1,5 +1,10 @@
 package com.heyyoung.solsol.feature.dutchpay.domain.usecase
 
+/**
+ * 더치페이 생성 유스케이스
+ * - 비즈니스 로직: 입력값 검증, 1인당 금액 계산 (원 단위 올림)
+ * - 백엔드 API 호출하여 더치페이 그룹 생성
+ */
 import com.heyyoung.solsol.feature.dutchpay.domain.model.DutchPayGroup
 import com.heyyoung.solsol.feature.dutchpay.domain.model.DutchPayStatus
 import com.heyyoung.solsol.feature.dutchpay.domain.repository.DutchPayRepository

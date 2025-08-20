@@ -1,5 +1,10 @@
 package com.heyyoung.solsol.feature.dutchpay.domain.usecase
 
+/**
+ * 더치페이 송금 유스케이스
+ * - 참여자가 결제자에게 1인당 분담금을 송금
+ * - 백엔드에서 금융 API(계좌 이체) 호출하여 실제 송금 처리
+ */
 import com.heyyoung.solsol.feature.dutchpay.domain.model.ParticipantPaymentStatus
 import com.heyyoung.solsol.feature.dutchpay.domain.repository.DutchPayRepository
 import javax.inject.Inject

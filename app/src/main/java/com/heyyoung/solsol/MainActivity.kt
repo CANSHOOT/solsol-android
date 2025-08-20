@@ -27,6 +27,12 @@ import com.heyyoung.solsol.ui.theme.SolsolPrimary
 import com.heyyoung.solsol.ui.theme.SolsolTheme
 import dagger.hilt.android.AndroidEntryPoint
 
+/**
+ * 솔솔 캠퍼스페이 메인 액티비티
+ * - 하단 네비게이션: 학사/혜택/전체메뉴
+ * - 학사 탭: 바로가기 메뉴 (정산요청만 활성화)
+ * - 솔솔 브랜드 컬러 테마 적용
+ */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

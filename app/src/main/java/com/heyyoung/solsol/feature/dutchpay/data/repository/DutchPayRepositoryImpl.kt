@@ -1,5 +1,11 @@
 package com.heyyoung.solsol.feature.dutchpay.data.repository
 
+/**
+ * 더치페이 Repository 구현체
+ * - 온라인: 서버에서 최신 데이터 가져와 Room에 캐시
+ * - 오프라인: Room 캐시 데이터 사용
+ * - 네트워크 오류 시 자동으로 로컬 데이터로 fallback
+ */
 import com.heyyoung.solsol.feature.dutchpay.data.local.DutchPayDao
 import com.heyyoung.solsol.feature.dutchpay.data.local.entities.toDomain
 import com.heyyoung.solsol.feature.dutchpay.data.local.entities.toEntity

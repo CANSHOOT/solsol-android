@@ -2,6 +2,12 @@ package com.heyyoung.solsol.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+/**
+ * 솔솔 캠퍼스페이 브랜드 컬러 시스템
+ * - Primary: #8B5FBF (솔솔 보라)
+ * - Secondary: #F093FB (솔솔 핑크)
+ * - Material Design 3 호환 컬러 팔레트
+ */
 // Solsol Main Colors
 val SolsolPrimary = Color(0xFF8B5FBF)
 val SolsolSecondary = Color(0xFFF093FB)
