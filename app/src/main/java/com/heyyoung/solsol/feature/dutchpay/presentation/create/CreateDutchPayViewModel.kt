@@ -2,6 +2,7 @@ package com.heyyoung.solsol.feature.dutchpay.presentation.create
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.heyyoung.solsol.feature.auth.domain.usecase.GetCurrentUserUseCase
 import com.heyyoung.solsol.feature.dutchpay.domain.model.User
 import com.heyyoung.solsol.feature.dutchpay.domain.usecase.CreateDutchPayUseCase
 import com.heyyoung.solsol.feature.dutchpay.domain.usecase.SearchUsersUseCase
@@ -21,7 +22,8 @@ import javax.inject.Inject
 @HiltViewModel
 class CreateDutchPayViewModel @Inject constructor(
     private val searchUsersUseCase: SearchUsersUseCase,
-    private val createDutchPayUseCase: CreateDutchPayUseCase
+    private val createDutchPayUseCase: CreateDutchPayUseCase,
+    private val getCurrentUserUseCase: GetCurrentUserUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateDutchPayUiState())
@@ -102,8 +104,10 @@ class CreateDutchPayViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = true, error = null) }
         
         viewModelScope.launch {
+            val currentUserId = getCurrentUserUseCase.getCurrentUserId()?.toLongOrNull() ?: 1L
+            
             createDutchPayUseCase(
-                organizerId = 1L, // TODO: 현재 사용자 ID 가져오기
+                organizerId = currentUserId,
                 paymentId = 1L, // TODO: 실제 결제 ID 사용
                 groupName = currentState.groupName,
                 totalAmount = currentState.totalAmount,

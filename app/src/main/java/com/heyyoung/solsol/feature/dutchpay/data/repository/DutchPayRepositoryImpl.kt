@@ -13,6 +13,7 @@ import com.heyyoung.solsol.feature.dutchpay.data.remote.DutchPayApiService
 import com.heyyoung.solsol.feature.dutchpay.data.remote.dto.*
 import com.heyyoung.solsol.feature.dutchpay.domain.model.DutchPayGroup
 import com.heyyoung.solsol.feature.dutchpay.domain.model.DutchPayParticipant
+import com.heyyoung.solsol.feature.dutchpay.domain.model.PaymentResult
 import com.heyyoung.solsol.feature.dutchpay.domain.repository.DutchPayRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -27,11 +28,10 @@ class DutchPayRepositoryImpl @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val request = CreateDutchPayRequest(
-                    organizerId = dutchPay.organizerId,
                     paymentId = dutchPay.paymentId,
                     groupName = dutchPay.groupName,
                     totalAmount = dutchPay.totalAmount,
-                    participantUserIds = emptyList() // 생성 시에는 빈 리스트
+                    participantCount = dutchPay.participantCount
                 )
                 
                 val response = apiService.createDutchPay(request)
@@ -74,7 +74,7 @@ class DutchPayRepositoryImpl @Inject constructor(
     override suspend fun joinDutchPay(groupId: Long, userId: Long): Result<DutchPayParticipant> {
         return withContext(Dispatchers.IO) {
             try {
-                val request = JoinDutchPayRequest(groupId, userId)
+                val request = JoinDutchPayRequest() // joinMethod은 기본값 "SEARCH" 사용
                 val response = apiService.joinDutchPay(groupId, request)
                 val domain = response.toDomain()
                 
@@ -85,13 +85,20 @@ class DutchPayRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun payDutchPay(groupId: Long, participantId: Long): Result<Boolean> {
+    override suspend fun payDutchPay(groupId: Long, accountNumber: String, transactionSummary: String): Result<PaymentResult> {
         return withContext(Dispatchers.IO) {
             try {
-                val request = SendPaymentRequest(groupId, participantId)
+                val request = SendPaymentRequest(accountNumber, transactionSummary)
                 val response = apiService.sendPayment(groupId, request)
                 
-                Result.success(response)
+                val paymentResult = PaymentResult(
+                    transactionId = response.transactionId,
+                    amount = response.amount,
+                    status = response.status,
+                    message = response.message
+                )
+                
+                Result.success(paymentResult)
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -101,8 +108,9 @@ class DutchPayRepositoryImpl @Inject constructor(
     override suspend fun getDutchPayHistory(userId: Long): Result<List<DutchPayGroup>> {
         return withContext(Dispatchers.IO) {
             try {
-                // 서버에서 최신 데이터 조회
-                val response = apiService.getDutchPayHistory(userId)
+                // 서버에서 최신 데이터 조회 (userId를 String으로 변환)
+                val userIdString = userId.toString() // Long을 String으로 변환
+                val response = apiService.getDutchPayHistory(userIdString)
                 val domains = response.map { it.toDomain() }
                 
                 // 로컬 캐시 업데이트
@@ -129,7 +137,9 @@ class DutchPayRepositoryImpl @Inject constructor(
     override suspend fun getUserParticipations(userId: Long): Result<List<DutchPayParticipant>> {
         return withContext(Dispatchers.IO) {
             try {
-                val response = apiService.getUserParticipations(userId)
+                // userId를 String으로 변환
+                val userIdString = userId.toString()
+                val response = apiService.getUserParticipations(userIdString)
                 val domains = response.map { it.toDomain() }
                 
                 Result.success(domains)

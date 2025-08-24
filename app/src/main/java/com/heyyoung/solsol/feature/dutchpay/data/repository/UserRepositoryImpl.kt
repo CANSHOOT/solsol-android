@@ -49,8 +49,9 @@ class UserRepositoryImpl @Inject constructor(
                     return@withContext Result.success(localEntity.toDomain())
                 }
                 
-                // 로컬에 없으면 서버에서 조회
-                val response = apiService.getUserById(userId)
+                // 로컬에 없으면 서버에서 조회 (userId를 String으로 변환)
+                val userIdString = userId.toString()
+                val response = apiService.getUserById(userIdString)
                 val domain = response.toDomain()
                 
                 // 로컬 캐시에 저장

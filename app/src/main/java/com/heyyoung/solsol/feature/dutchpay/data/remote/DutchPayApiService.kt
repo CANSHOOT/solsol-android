@@ -12,12 +12,13 @@ interface DutchPayApiService {
     
     @GET("api/v1/users/search")
     suspend fun searchUsers(
-        @Query("query") query: String
+        @Query("query") query: String,
+        @Query("limit") limit: Int = 10
     ): List<UserDto>
     
     @GET("api/v1/users/{userId}")
     suspend fun getUserById(
-        @Path("userId") userId: Long
+        @Path("userId") userId: String
     ): UserDto
     
     @POST("api/v1/dutchpay")
@@ -40,15 +41,17 @@ interface DutchPayApiService {
     suspend fun sendPayment(
         @Path("groupId") groupId: Long,
         @Body request: SendPaymentRequest
-    ): Boolean
+    ): PaymentResultDto
     
     @GET("api/v1/dutchpay/history/{userId}")
     suspend fun getDutchPayHistory(
-        @Path("userId") userId: Long
+        @Path("userId") userId: String,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 10
     ): List<DutchPayGroupDto>
     
     @GET("api/v1/dutchpay/participations/{userId}")
     suspend fun getUserParticipations(
-        @Path("userId") userId: Long
+        @Path("userId") userId: String
     ): List<DutchPayParticipantDto>
 }

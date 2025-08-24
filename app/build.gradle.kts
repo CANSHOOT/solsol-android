@@ -123,6 +123,9 @@ dependencies {
     // Date Picker (더치페이 날짜 선택용)
     implementation("io.github.vanpra.compose-material-dialogs:datetime:0.9.0")
 
+    // Security (암호화된 SharedPreferences)
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

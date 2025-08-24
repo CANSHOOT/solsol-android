@@ -8,27 +8,25 @@ import java.time.LocalDateTime
 data class DutchPayParticipantDto(
     val participantId: Long,
     val groupId: Long,
-    val userId: Long,
-    val user: UserDto?,
+    val userId: String,
+    val userName: String,
     val joinMethod: String,
     val paymentStatus: String,
     val transferTransactionId: String?,
     val joinedAt: String,
-    val paidAt: String?,
-    val createdAt: String,
-    val updatedAt: String
+    val paidAt: String?
 )
 
 fun DutchPayParticipantDto.toDomain() = DutchPayParticipant(
     participantId = participantId,
     groupId = groupId,
-    userId = userId,
-    user = user?.toDomain(),
+    userId = userId.hashCode().toLong(), // String을 Long으로 변환
+    user = null, // 새 API에서는 별도 user 객체가 없음
     joinMethod = JoinMethod.valueOf(joinMethod),
     paymentStatus = ParticipantPaymentStatus.valueOf(paymentStatus),
     transferTransactionId = transferTransactionId,
     joinedAt = LocalDateTime.parse(joinedAt),
     paidAt = paidAt?.let { LocalDateTime.parse(it) },
-    createdAt = LocalDateTime.parse(createdAt),
-    updatedAt = LocalDateTime.parse(updatedAt)
+    createdAt = LocalDateTime.now(), // API에 없는 필드
+    updatedAt = LocalDateTime.now() // API에 없는 필드
 )

@@ -1,39 +1,41 @@
 package com.heyyoung.solsol.feature.dutchpay.domain.usecase
 
-/**
- * 더치페이 송금 유스케이스
- * - 참여자가 결제자에게 1인당 분담금을 송금
- * - 백엔드에서 금융 API(계좌 이체) 호출하여 실제 송금 처리
- */
-import com.heyyoung.solsol.feature.dutchpay.domain.model.ParticipantPaymentStatus
+import com.heyyoung.solsol.feature.dutchpay.domain.model.PaymentResult
 import com.heyyoung.solsol.feature.dutchpay.domain.repository.DutchPayRepository
 import javax.inject.Inject
 
+/**
+ * 더치페이 송금 처리 UseCase
+ * - 계좌번호 및 거래내역 검증
+ * - 은행 API를 통한 송금 처리
+ * - 결제 결과 반환 (성공/실패)
+ */
 class SendDutchPaymentUseCase @Inject constructor(
     private val dutchPayRepository: DutchPayRepository
 ) {
     suspend operator fun invoke(
         groupId: Long,
-        participantId: Long
-    ): Result<Boolean> {
-        // 더치페이 정보 조회
-        val dutchPayResult = dutchPayRepository.getDutchPayById(groupId)
-        if (dutchPayResult.isFailure) {
-            return Result.failure(dutchPayResult.exceptionOrNull() ?: Exception("더치페이를 찾을 수 없습니다"))
+        accountNumber: String,
+        transactionSummary: String
+    ): Result<PaymentResult> {
+        // 입력값 검증
+        if (accountNumber.isBlank()) {
+            return Result.failure(IllegalArgumentException("계좌번호를 입력해주세요"))
         }
         
-        val dutchPay = dutchPayResult.getOrNull()!!
-        
-        // 참여자 정보 확인
-        val participant = dutchPay.participants.find { it.participantId == participantId }
-            ?: return Result.failure(IllegalArgumentException("참여자 정보를 찾을 수 없습니다"))
-        
-        // 이미 송금 완료인지 확인
-        if (participant.paymentStatus == ParticipantPaymentStatus.COMPLETED) {
-            return Result.failure(IllegalStateException("이미 송금이 완료되었습니다"))
+        if (transactionSummary.isBlank()) {
+            return Result.failure(IllegalArgumentException("거래내역을 입력해주세요"))
         }
         
-        // 백엔드에서 금융 API 호출하여 송금 처리
-        return dutchPayRepository.payDutchPay(groupId, participantId)
+        if (!isValidAccountNumber(accountNumber)) {
+            return Result.failure(IllegalArgumentException("올바른 계좌번호를 입력해주세요"))
+        }
+        
+        return dutchPayRepository.payDutchPay(groupId, accountNumber, transactionSummary)
+    }
+    
+    private fun isValidAccountNumber(accountNumber: String): Boolean {
+        // 계좌번호 형식 검증 (숫자만, 10-20자리)
+        return accountNumber.all { it.isDigit() } && accountNumber.length in 10..20
     }
 }

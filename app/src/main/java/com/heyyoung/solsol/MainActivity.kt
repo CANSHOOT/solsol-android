@@ -1,14 +1,18 @@
 package com.heyyoung.solsol
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,11 +25,15 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.heyyoung.solsol.feature.auth.domain.repository.AuthRepository
+import com.heyyoung.solsol.feature.auth.presentation.login.LoginScreen
+import com.heyyoung.solsol.feature.auth.presentation.signup.SignUpScreen
 import com.heyyoung.solsol.feature.dutchpay.presentation.create.CreateDutchPayScreen
 import com.heyyoung.solsol.feature.dutchpay.presentation.payment.DutchPaymentScreen
 import com.heyyoung.solsol.ui.theme.SolsolPrimary
 import com.heyyoung.solsol.ui.theme.SolsolTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 /**
  * 솔솔 캠퍼스페이 메인 액티비티
@@ -35,23 +43,115 @@ import dagger.hilt.android.AndroidEntryPoint
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    
+    @Inject
+    lateinit var authRepository: AuthRepository
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             SolsolTheme {
-                SolsolApp()
+                SolsolApp(authRepository = authRepository)
             }
         }
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun SolsolApp() {
+fun SolsolApp(authRepository: AuthRepository) {
     val navController = rememberNavController()
+    val isLoggedIn = authRepository.isLoggedIn()
+    
+    NavHost(
+        navController = navController,
+        startDestination = if (isLoggedIn) "main" else "login"
+    ) {
+        // 인증 관련 화면들
+        composable("login") {
+            LoginScreen(
+                onNavigateToSignUp = {
+                    navController.navigate("signup")
+                },
+                onLoginSuccess = {
+                    navController.navigate("main") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                }
+            )
+        }
+        
+        composable("signup") {
+            SignUpScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onSignUpSuccess = {
+                    navController.navigate("main") {
+                        popUpTo("signup") { inclusive = true }
+                    }
+                }
+            )
+        }
+        
+        // 메인 앱 화면
+        composable("main") {
+            MainAppScreen(navController = navController)
+        }
+        
+        composable("create_dutch_pay") {
+            CreateDutchPayScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onDutchPayCreated = { groupId ->
+                    navController.navigate("dutch_payment/$groupId") {
+                        popUpTo("main")
+                    }
+                }
+            )
+        }
+        
+        composable("dutch_payment/{groupId}") {
+            DutchPaymentScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MainAppScreen(navController: androidx.navigation.NavController) {
     var selectedTab by remember { mutableIntStateOf(0) }
     
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("SolSol") },
+                actions = {
+                    IconButton(onClick = {
+                        // 간단한 로그아웃 - 로그인 화면으로 이동
+                        navController.navigate("login") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }) {
+                        Icon(
+                            Icons.Default.ExitToApp, 
+                            contentDescription = "로그아웃",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = SolsolPrimary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            )
+        },
         bottomBar = {
             NavigationBar(
                 containerColor = Color.White,
@@ -93,42 +193,15 @@ fun SolsolApp() {
             }
         }
     ) { paddingValues ->
-        NavHost(
-            navController = navController,
-            startDestination = "main",
-            modifier = Modifier.padding(paddingValues)
-        ) {
-            composable("main") {
-                when (selectedTab) {
-                    0 -> AcademicScreen(
-                        onNavigateToCreateDutchPay = {
-                            navController.navigate("create_dutch_pay")
-                        }
-                    )
-                    1 -> BenefitScreen()
-                    2 -> MenuScreen()
-                }
-            }
-            
-            composable("create_dutch_pay") {
-                CreateDutchPayScreen(
-                    onNavigateBack = {
-                        navController.popBackStack()
-                    },
-                    onDutchPayCreated = { groupId ->
-                        navController.navigate("dutch_payment/$groupId") {
-                            popUpTo("main")
-                        }
+        Box(modifier = Modifier.padding(paddingValues)) {
+            when (selectedTab) {
+                0 -> AcademicScreen(
+                    onNavigateToCreateDutchPay = {
+                        navController.navigate("create_dutch_pay")
                     }
                 )
-            }
-            
-            composable("dutch_payment/{groupId}") {
-                DutchPaymentScreen(
-                    onNavigateBack = {
-                        navController.popBackStack()
-                    }
-                )
+                1 -> BenefitScreen()
+                2 -> MenuScreen()
             }
         }
     }
