@@ -6,6 +6,8 @@ package com.heyyoung.solsol.feature.dutchpay.data.repository
  * - 오프라인: Room 캐시 데이터 사용
  * - 네트워크 오류 시 자동으로 로컬 데이터로 fallback
  */
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.heyyoung.solsol.feature.dutchpay.data.local.DutchPayDao
 import com.heyyoung.solsol.feature.dutchpay.data.local.entities.toDomain
 import com.heyyoung.solsol.feature.dutchpay.data.local.entities.toEntity
@@ -13,6 +15,7 @@ import com.heyyoung.solsol.feature.dutchpay.data.remote.DutchPayApiService
 import com.heyyoung.solsol.feature.dutchpay.data.remote.dto.*
 import com.heyyoung.solsol.feature.dutchpay.domain.model.DutchPayGroup
 import com.heyyoung.solsol.feature.dutchpay.domain.model.DutchPayParticipant
+import com.heyyoung.solsol.feature.dutchpay.domain.model.InvitationResult
 import com.heyyoung.solsol.feature.dutchpay.domain.model.PaymentResult
 import com.heyyoung.solsol.feature.dutchpay.domain.repository.DutchPayRepository
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +27,7 @@ class DutchPayRepositoryImpl @Inject constructor(
     private val dao: DutchPayDao
 ) : DutchPayRepository {
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun createDutchPay(dutchPay: DutchPayGroup): Result<DutchPayGroup> {
         return withContext(Dispatchers.IO) {
             try {
@@ -31,7 +35,8 @@ class DutchPayRepositoryImpl @Inject constructor(
                     paymentId = dutchPay.paymentId,
                     groupName = dutchPay.groupName,
                     totalAmount = dutchPay.totalAmount,
-                    participantCount = dutchPay.participantCount
+                    participantCount = dutchPay.participantCount,
+                    participantUserIds = dutchPay.participants.map { it.userId }
                 )
                 
                 val response = apiService.createDutchPay(request)
@@ -47,6 +52,7 @@ class DutchPayRepositoryImpl @Inject constructor(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun getDutchPayById(groupId: Long): Result<DutchPayGroup> {
         return withContext(Dispatchers.IO) {
             try {
@@ -71,6 +77,7 @@ class DutchPayRepositoryImpl @Inject constructor(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun joinDutchPay(groupId: Long, userId: Long): Result<DutchPayParticipant> {
         return withContext(Dispatchers.IO) {
             try {
@@ -105,6 +112,7 @@ class DutchPayRepositoryImpl @Inject constructor(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun getDutchPayHistory(userId: Long): Result<List<DutchPayGroup>> {
         return withContext(Dispatchers.IO) {
             try {
@@ -134,6 +142,7 @@ class DutchPayRepositoryImpl @Inject constructor(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun getUserParticipations(userId: Long): Result<List<DutchPayParticipant>> {
         return withContext(Dispatchers.IO) {
             try {
@@ -143,6 +152,28 @@ class DutchPayRepositoryImpl @Inject constructor(
                 val domains = response.map { it.toDomain() }
                 
                 Result.success(domains)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+    
+    override suspend fun sendDutchPayInvitations(
+        groupId: Long,
+        participantUserIds: List<String>,
+        message: String?
+    ): Result<InvitationResult> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val request = SendInvitationsRequest(
+                    participantUserIds = participantUserIds,
+                    message = message ?: "정산 요청이 도착했습니다! 솔솔 앱에서 확인해보세요."
+                )
+                
+                val response = apiService.sendDutchPayInvitations(groupId, request)
+                val domain = response.toDomain()
+                
+                Result.success(domain)
             } catch (e: Exception) {
                 Result.failure(e)
             }

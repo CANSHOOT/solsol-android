@@ -5,12 +5,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -32,6 +35,7 @@ fun PaymentCompleteScreen(
     onNavigateToHome: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     var showAnimation by remember { mutableStateOf(false) }
     
     LaunchedEffect(Unit) {
@@ -127,16 +131,58 @@ fun PaymentCompleteScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             OutlinedButton(
-                onClick = { /* TODO: 정산 내역 보기 */ },
+                onClick = {
+                    // TODO: 실제로는 현재 생성된 더치페이의 groupId를 전달해야 함
+                    // 현재는 임시로 안내 메시지만 표시
+                },
                 modifier = Modifier.weight(1f)
             ) {
+                Icon(
+                    Icons.Default.List,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
                 Text("내역 보기")
             }
             
             OutlinedButton(
-                onClick = { /* TODO: 공유하기 */ },
+                onClick = {
+                    // 정산 요청 정보를 공유하기 위한 텍스트 생성
+                    val shareText = """
+                        💰 솔솔 정산 요청
+                        
+                        총 금액: ${NumberFormat.getNumberInstance(Locale.KOREA).format(totalAmount.toInt())}원
+                        참여자: ${participantCount}명
+                        1인당 금액: ${NumberFormat.getNumberInstance(Locale.KOREA).format((totalAmount / participantCount).toInt())}원
+                        
+                        솔솔 캠퍼스페이로 간편하게 정산해보세요!
+                    """.trimIndent()
+                    
+                    // Android 기본 공유 인텐트 실행
+                    val intent = android.content.Intent().apply {
+                        action = android.content.Intent.ACTION_SEND
+                        type = "text/plain"
+                        putExtra(android.content.Intent.EXTRA_TEXT, shareText)
+                        putExtra(android.content.Intent.EXTRA_SUBJECT, "솔솔 정산 요청")
+                    }
+                    
+                    try {
+                        context.startActivity(
+                            android.content.Intent.createChooser(intent, "정산 요청 공유하기")
+                        )
+                    } catch (e: Exception) {
+                        // 공유 앱이 없는 경우 처리
+                    }
+                },
                 modifier = Modifier.weight(1f)
             ) {
+                Icon(
+                    Icons.Default.Share,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
                 Text("공유하기")
             }
         }

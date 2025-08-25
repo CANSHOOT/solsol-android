@@ -55,15 +55,17 @@ fun DutchPayParticipantEntity.toDomain() = DutchPayParticipant(
     updatedAt = LocalDateTime.parse(updatedAt)
 )
 
-fun DutchPayParticipant.toEntity() = DutchPayParticipantEntity(
-    participantId = participantId ?: 0L,
-    groupId = groupId,
-    userId = userId,
-    joinMethod = joinMethod.name,
-    paymentStatus = paymentStatus.name,
-    transferTransactionId = transferTransactionId,
-    joinedAt = joinedAt.toString(),
-    paidAt = paidAt?.toString(),
-    createdAt = createdAt.toString(),
-    updatedAt = updatedAt.toString()
-)
+fun DutchPayParticipant.toEntity() = groupId?.let {
+    DutchPayParticipantEntity(
+        participantId = participantId ?: 0L,
+        groupId = it,
+        userId = userId,
+        joinMethod = joinMethod.name,
+        paymentStatus = paymentStatus.name,
+        transferTransactionId = transferTransactionId,
+        joinedAt = joinedAt.toString(),
+        paidAt = paidAt?.toString(),
+        createdAt = createdAt.toString(),
+        updatedAt = updatedAt.toString()
+    )
+}

@@ -26,6 +26,12 @@ interface DutchPayApiService {
         @Body request: CreateDutchPayRequest
     ): DutchPayGroupDto
     
+    @POST("api/v1/dutchpay/{groupId}/invite")
+    suspend fun sendDutchPayInvitations(
+        @Path("groupId") groupId: Long,
+        @Body request: SendInvitationsRequest
+    ): InvitationResultDto
+    
     @GET("api/v1/dutchpay/{groupId}")
     suspend fun getDutchPayById(
         @Path("groupId") groupId: Long

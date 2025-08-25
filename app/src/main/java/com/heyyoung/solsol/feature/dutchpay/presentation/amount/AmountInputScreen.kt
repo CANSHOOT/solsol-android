@@ -32,7 +32,8 @@ fun AmountInputScreen(
     participants: List<User>,
     onNavigateBack: () -> Unit,
     onRequestPayment: (Double, List<User>) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     var totalAmount by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
@@ -56,6 +57,9 @@ fun AmountInputScreen(
                     navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
+        },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
         }
     ) { paddingValues ->
         LazyColumn(
@@ -91,12 +95,15 @@ fun AmountInputScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 RequestPaymentButton(
-                    isEnabled = totalAmountValue > 0 && participants.isNotEmpty(),
+                    isEnabled = totalAmountValue >= 100 && 
+                               totalAmountValue <= 10_000_000 && 
+                               participants.isNotEmpty(),
                     isLoading = isLoading,
                     onClick = {
                         isLoading = true
                         onRequestPayment(totalAmountValue, participants)
-                    }
+                    },
+                    onLoadingComplete = { isLoading = false }
                 )
             }
         }
@@ -126,8 +133,8 @@ private fun TotalAmountSection(
             OutlinedTextField(
                 value = totalAmount,
                 onValueChange = { value ->
-                    // 숫자만 입력 가능하도록 필터링
-                    if (value.isEmpty() || value.all { it.isDigit() }) {
+                    // 숫자만 입력 가능하도록 필터링 (최대 10자리)
+                    if (value.isEmpty() || (value.all { it.isDigit() } && value.length <= 10)) {
                         onTotalAmountChanged(value)
                     }
                 },
@@ -140,7 +147,27 @@ private fun TotalAmountSection(
                 textStyle = MaterialTheme.typography.headlineSmall.copy(
                     textAlign = TextAlign.End,
                     fontWeight = FontWeight.Bold
-                )
+                ),
+                supportingText = {
+                    if (totalAmount.isNotEmpty()) {
+                        val amount = totalAmount.toDoubleOrNull() ?: 0.0
+                        if (amount > 10_000_000) { // 1천만원 초과
+                            Text(
+                                "최대 1천만원까지 입력 가능합니다",
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        } else if (amount < 100) { // 100원 미만
+                            Text(
+                                "최소 100원 이상 입력해주세요",
+                                color = MaterialTheme.colorScheme.error  
+                            )
+                        }
+                    }
+                },
+                isError = totalAmount.isNotEmpty() && run {
+                    val amount = totalAmount.toDoubleOrNull() ?: 0.0
+                    amount > 10_000_000 || amount < 100
+                }
             )
         }
     }
@@ -308,8 +335,14 @@ private fun AmountBreakdownSection(
 private fun RequestPaymentButton(
     isEnabled: Boolean,
     isLoading: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLoadingComplete: () -> Unit = {}
 ) {
+    LaunchedEffect(isLoading) {
+        if (isLoading) {
+            kotlinx.coroutines.delay(100) // 약간의 딜레이로 UI 업데이트 확인
+        }
+    }
     Button(
         onClick = onClick,
         enabled = isEnabled && !isLoading,
