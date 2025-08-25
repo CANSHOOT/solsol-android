@@ -1,3 +1,37 @@
 <resources>
     <string name="app_name">solsol</string>
+
+    <string name="login_title">쏠쏠\n해영</string>
+    <string name="email_hint">이메일을 입력하세요</string>
+    <string name="student_number_password_hint">학번을 입력하세요 (8자리)</string>
+    <string name="login_button">로그인하기</string>
+    <string name="register_text">계정이 없으신가요? 회원가입</string>
+
+    <string name="error_email_empty">이메일을 입력해주세요</string>
+    <string name="error_email_invalid">올바른 이메일 형식이 아닙니다</string>
+    <string name="error_student_number_empty">학번을 입력해주세요</string>
+    <string name="error_student_number_invalid">학번은 8자리 숫자여야 합니다</string>
+
+    <string name="home_title">쏠쏠대학교</string>
+    <string name="student_greeting">컴퓨터공학과 / 재학생1학년</string>
+    <string name="student_name_format">김신한 (%s)</string>
+    <string name="main_menu_title">바로가기메뉴</string>
+    <string name="mobile_student_id">모바일 학생증</string>
+
+    <string name="menu_payment">결제</string>
+    <string name="menu_settlement">내역조회</string>
+    <string name="menu_settlement_management">정산요청</string>
+    <string name="menu_money_transfer">송금하기</string>
+    <string name="menu_student_council">학생회</string>
+    <string name="menu_coupons">쿠폰</string>
+
+    <string name="nav_home">학사</string>
+    <string name="nav_payment">혜택</string>
+    <string name="nav_menu">전체메뉴</string>
+
+    <string name="dev_quick_test">개발용 빠른 테스트</string>
+    <string name="dev_test1">테스트1</string>
+    <string name="dev_test2">테스트2</string>
+    <string name="dev_demo">데모</string>
+
 </resources>
