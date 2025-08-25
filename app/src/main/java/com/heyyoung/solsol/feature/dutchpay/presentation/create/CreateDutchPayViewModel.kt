@@ -1,5 +1,6 @@
 package com.heyyoung.solsol.feature.dutchpay.presentation.create
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.heyyoung.solsol.feature.auth.domain.usecase.GetCurrentUserUseCase
@@ -7,18 +8,16 @@ import com.heyyoung.solsol.feature.dutchpay.domain.model.User
 import com.heyyoung.solsol.feature.dutchpay.domain.usecase.CreateDutchPayUseCase
 import com.heyyoung.solsol.feature.dutchpay.domain.usecase.SearchUsersUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
  * 더치페이 생성 화면 ViewModel
- * - 참여자 실시간 검색 (300ms debounce)
+ * - 참여자 검색 (버튼 클릭 시 실행)
  * - 1인당 금액 자동 계산 및 UI 상태 관리
  * - 입력값 검증 및 더치페이 생성 처리
  */
-@OptIn(FlowPreview::class)
 @HiltViewModel
 class CreateDutchPayViewModel @Inject constructor(
     private val searchUsersUseCase: SearchUsersUseCase,
@@ -26,31 +25,17 @@ class CreateDutchPayViewModel @Inject constructor(
     private val getCurrentUserUseCase: GetCurrentUserUseCase
 ) : ViewModel() {
 
+    companion object {
+        private const val TAG = "CreateDutchPayVM"
+    }
+
     private val _uiState = MutableStateFlow(CreateDutchPayUiState())
     val uiState = _uiState.asStateFlow()
 
-    private val _searchQuery = MutableStateFlow("")
-    
-    val searchResults = _searchQuery
-        .debounce(300)
-        .distinctUntilChanged()
-        .flatMapLatest { query ->
-            if (query.isBlank()) {
-                flowOf(emptyList())
-            } else {
-                flow {
-                    searchUsersUseCase(query).fold(
-                        onSuccess = { emit(it) },
-                        onFailure = { emit(emptyList()) }
-                    )
-                }
-            }
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+    private val _searchResults = MutableStateFlow<List<User>>(emptyList())
+    val searchResults = _searchResults.asStateFlow().also {
+        Log.d(TAG, "searchResults StateFlow initialized")
+    }
 
     fun onGroupNameChanged(groupName: String) {
         _uiState.update { it.copy(groupName = groupName) }
@@ -63,7 +48,37 @@ class CreateDutchPayViewModel @Inject constructor(
     }
 
     fun onSearchQueryChanged(query: String) {
-        _searchQuery.value = query
+        Log.d(TAG, "🔍 검색 요청 시작: query='$query'")
+        
+        if (query.isBlank()) {
+            Log.d(TAG, "❌ 검색어가 비어있음 - 결과 초기화")
+            _searchResults.value = emptyList()
+            return
+        }
+        
+        // 검색 시작 전 현재 상태 로그
+        Log.d(TAG, "🚀 API 검색 시작, 현재 결과 개수: ${_searchResults.value.size}")
+        
+        viewModelScope.launch {
+            searchUsersUseCase(query).fold(
+                onSuccess = { users ->
+                    Log.d(TAG, "✅ 검색 성공! 받은 사용자 수: ${users.size}")
+                    users.forEachIndexed { index, user ->
+                        Log.d(TAG, "   [$index] ${user.name} (${user.userId}) - ${user.departmentName}")
+                    }
+                    
+                    // 결과 업데이트
+                    _searchResults.value = users
+                    Log.d(TAG, "📋 searchResults 업데이트 완료, 새로운 크기: ${_searchResults.value.size}")
+                },
+                onFailure = { error ->
+                    Log.e(TAG, "❌ 검색 실패: ${error.message}")
+                    // 검색 실패해도 결과를 빈 리스트로 명확히 설정
+                    _searchResults.value = emptyList()
+                    Log.d(TAG, "📋 검색 실패로 인한 결과 초기화 완료, 새로운 크기: ${_searchResults.value.size}")
+                }
+            )
+        }
     }
 
     fun onParticipantAdded(user: User) {
@@ -104,7 +119,7 @@ class CreateDutchPayViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = true, error = null) }
         
         viewModelScope.launch {
-            val currentUserId = getCurrentUserUseCase.getCurrentUserId()?.toLongOrNull() ?: 1L
+            val currentUserId = getCurrentUserUseCase.getCurrentUserId() ?: "default@ssafy.co.kr"
             
             createDutchPayUseCase(
                 organizerId = currentUserId,

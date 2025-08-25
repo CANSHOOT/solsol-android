@@ -28,8 +28,17 @@ import androidx.navigation.compose.rememberNavController
 import com.heyyoung.solsol.feature.auth.domain.repository.AuthRepository
 import com.heyyoung.solsol.feature.auth.presentation.login.LoginScreen
 import com.heyyoung.solsol.feature.auth.presentation.signup.SignUpScreen
-import com.heyyoung.solsol.feature.dutchpay.presentation.create.CreateDutchPayScreen
-import com.heyyoung.solsol.feature.dutchpay.presentation.payment.DutchPaymentScreen
+import com.heyyoung.solsol.feature.dutchpay.presentation.split.SplitMethodSelectionScreen
+import com.heyyoung.solsol.feature.dutchpay.presentation.search.ParticipantSearchScreen
+import com.heyyoung.solsol.feature.dutchpay.presentation.amount.AmountInputScreen
+import com.heyyoung.solsol.feature.dutchpay.presentation.complete.PaymentCompleteScreen
+import com.heyyoung.solsol.feature.dutchpay.domain.model.User
+import com.heyyoung.solsol.feature.dutchpay.presentation.shared.DutchPayFlowViewModel
+import com.heyyoung.solsol.feature.dutchpay.presentation.shared.SplitMethod
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import android.util.Log
 import com.heyyoung.solsol.ui.theme.SolsolPrimary
 import com.heyyoung.solsol.ui.theme.SolsolTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -100,23 +109,88 @@ fun SolsolApp(authRepository: AuthRepository) {
             MainAppScreen(navController = navController)
         }
         
-        composable("create_dutch_pay") {
-            CreateDutchPayScreen(
+        // 1단계: 분할 방식 선택
+        composable("split_method_selection") {
+            val flowViewModel: DutchPayFlowViewModel = hiltViewModel()
+            
+            SplitMethodSelectionScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 },
-                onDutchPayCreated = { groupId ->
-                    navController.navigate("dutch_payment/$groupId") {
+                onEqualSplitSelected = {
+                    flowViewModel.setSplitMethod(SplitMethod.EQUAL_SPLIT)
+                    navController.navigate("participant_search")
+                },
+                onCustomSplitSelected = {
+                    flowViewModel.setSplitMethod(SplitMethod.CUSTOM_SPLIT)
+                    navController.navigate("participant_search")
+                },
+                onRandomGameSelected = {
+                    flowViewModel.setSplitMethod(SplitMethod.RANDOM_GAME)
+                    navController.navigate("participant_search")
+                }
+            )
+        }
+        
+        // 2단계: 참여자 검색
+        composable("participant_search") {
+            val flowViewModel: DutchPayFlowViewModel = hiltViewModel()
+            
+            ParticipantSearchScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onParticipantsSelected = { participants ->
+                    Log.d("MainActivity", "🚀 참여자 검색에서 금액 입력으로 이동")
+                    Log.d("MainActivity", "📋 받은 참여자 수: ${participants.size}")
+                    participants.forEachIndexed { index, user ->
+                        Log.d("MainActivity", "   [$index] ${user.name} (${user.userId})")
+                    }
+                    flowViewModel.setSelectedParticipants(participants)
+                    navController.navigate("amount_input")
+                }
+            )
+        }
+        
+        // 3단계: 금액 입력
+        composable("amount_input") {
+            val flowViewModel: DutchPayFlowViewModel = hiltViewModel()
+            val selectedParticipants by flowViewModel.selectedParticipants.collectAsState()
+            
+            Log.d("MainActivity", "💰 금액 입력 화면 진입")
+            Log.d("MainActivity", "📋 전달받은 참여자 수: ${selectedParticipants.size}")
+            selectedParticipants.forEachIndexed { index, user ->
+                Log.d("MainActivity", "   [$index] ${user.name} (${user.userId})")
+            }
+            
+            AmountInputScreen(
+                participants = selectedParticipants,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onRequestPayment = { totalAmount, participants ->
+                    flowViewModel.setTotalAmount(totalAmount)
+                    navController.navigate("payment_complete") {
                         popUpTo("main")
                     }
                 }
             )
         }
         
-        composable("dutch_payment/{groupId}") {
-            DutchPaymentScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
+        // 4단계: 완료
+        composable("payment_complete") {
+            val flowViewModel: DutchPayFlowViewModel = hiltViewModel()
+            val totalAmount by flowViewModel.totalAmount.collectAsState()
+            val selectedParticipants by flowViewModel.selectedParticipants.collectAsState()
+            
+            PaymentCompleteScreen(
+                totalAmount = totalAmount,
+                participantCount = selectedParticipants.size + 1, // +1 for current user
+                onNavigateToHome = {
+                    flowViewModel.clearAll() // 플로우 완료 후 데이터 초기화
+                    navController.navigate("main") {
+                        popUpTo("main") { inclusive = true }
+                    }
                 }
             )
         }
@@ -197,7 +271,7 @@ fun MainAppScreen(navController: androidx.navigation.NavController) {
             when (selectedTab) {
                 0 -> AcademicScreen(
                     onNavigateToCreateDutchPay = {
-                        navController.navigate("create_dutch_pay")
+                        navController.navigate("split_method_selection")
                     }
                 )
                 1 -> BenefitScreen()

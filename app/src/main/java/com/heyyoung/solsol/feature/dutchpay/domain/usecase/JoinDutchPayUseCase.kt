@@ -24,12 +24,12 @@ class JoinDutchPayUseCase @Inject constructor(
             return Result.failure(IllegalStateException("참여할 수 없는 더치페이입니다"))
         }
         
-        if (dutchPay.organizerId == userId) {
+        if (dutchPay.organizerId.equals(userId)) {
             return Result.failure(IllegalArgumentException("결제자는 참여할 수 없습니다"))
         }
         
         // 이미 참여한 사용자인지 확인
-        val alreadyJoined = dutchPay.participants.any { it.userId == userId }
+        val alreadyJoined = dutchPay.participants.any { it.userId.equals(userId)}
         if (alreadyJoined) {
             return Result.failure(IllegalArgumentException("이미 참여한 더치페이입니다"))
         }

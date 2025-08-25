@@ -1,5 +1,7 @@
 package com.heyyoung.solsol.feature.dutchpay.data.remote.dto
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.heyyoung.solsol.feature.dutchpay.domain.model.DutchPayGroup
 import com.heyyoung.solsol.feature.dutchpay.domain.model.DutchPayStatus
 import java.time.LocalDateTime
@@ -42,9 +44,10 @@ data class PaymentResultDto(
     val message: String
 )
 
+@RequiresApi(Build.VERSION_CODES.O)
 fun DutchPayGroupDto.toDomain() = DutchPayGroup(
     groupId = groupId,
-    organizerId = organizerId.hashCode().toLong(), // String을 Long으로 변환
+    organizerId = organizerId,
     paymentId = paymentId,
     groupName = groupName,
     totalAmount = totalAmount,

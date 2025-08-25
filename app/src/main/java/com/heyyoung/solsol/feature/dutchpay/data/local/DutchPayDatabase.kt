@@ -12,7 +12,7 @@ import com.heyyoung.solsol.feature.dutchpay.data.local.entities.UserEntity
         UserEntity::class,
         DutchPayParticipantEntity::class
     ],
-    version = 1,
+    version = 2, // User 모델 스키마 변경으로 버전 증가
     exportSchema = false
 )
 abstract class DutchPayDatabase : RoomDatabase() {

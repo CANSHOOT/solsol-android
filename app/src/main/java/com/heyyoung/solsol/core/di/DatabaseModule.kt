@@ -22,7 +22,9 @@ object DatabaseModule {
             context,
             DutchPayDatabase::class.java,
             "dutchpay_database"
-        ).build()
+        )
+        .fallbackToDestructiveMigration() // 스키마 변경 시 기존 데이터 삭제 후 재생성
+        .build()
     }
 
     @Provides

@@ -9,7 +9,7 @@ import java.time.LocalDateTime
  */
 data class DutchPayGroup(
     val groupId: Long? = null,
-    val organizerId: Long,
+    val organizerId: String, // 이메일 형태의 사용자 ID
     val paymentId: Long,
     val groupName: String,
     val totalAmount: Double,

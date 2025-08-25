@@ -5,7 +5,7 @@ import java.time.LocalDateTime
 data class DutchPayParticipant(
     val participantId: Long? = null,
     val groupId: Long,
-    val userId: Long,
+    val userId: String, // 이메일 형태의 사용자 ID
     val user: User? = null,
     val joinMethod: JoinMethod,
     val paymentStatus: ParticipantPaymentStatus,

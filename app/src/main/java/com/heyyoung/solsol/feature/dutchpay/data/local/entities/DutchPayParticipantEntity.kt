@@ -1,5 +1,7 @@
 package com.heyyoung.solsol.feature.dutchpay.data.local.entities
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
@@ -28,7 +30,7 @@ import java.time.LocalDateTime
 data class DutchPayParticipantEntity(
     @PrimaryKey val participantId: Long,
     val groupId: Long,
-    val userId: Long,
+    val userId: String,
     val joinMethod: String,
     val paymentStatus: String,
     val transferTransactionId: String?,
@@ -38,6 +40,7 @@ data class DutchPayParticipantEntity(
     val updatedAt: String
 )
 
+@RequiresApi(Build.VERSION_CODES.O)
 fun DutchPayParticipantEntity.toDomain() = DutchPayParticipant(
     participantId = participantId,
     groupId = groupId,

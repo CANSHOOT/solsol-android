@@ -16,11 +16,11 @@ class CreateDutchPayUseCase @Inject constructor(
     private val dutchPayRepository: DutchPayRepository
 ) {
     suspend operator fun invoke(
-        organizerId: Long,
+        organizerId: String, // 이메일 형태의 사용자 ID
         paymentId: Long,
         groupName: String,
         totalAmount: Double,
-        participantUserIds: List<Long>
+        participantUserIds: List<String> // 이메일 형태의 사용자 ID 목록
     ): Result<DutchPayGroup> {
         if (groupName.isBlank()) {
             return Result.failure(IllegalArgumentException("그룹명을 입력해주세요"))

@@ -41,8 +41,8 @@ class DutchPaymentViewModel @Inject constructor(
             
             dutchPayRepository.getDutchPayById(groupId).fold(
                 onSuccess = { dutchPay ->
-                    val currentParticipant = dutchPay.participants.find { it.userId == currentUserId }
-                    val isOrganizer = dutchPay.organizerId == currentUserId
+                    val currentParticipant = dutchPay.participants.find { it.userId.equals(currentUserId)}
+                    val isOrganizer = dutchPay.organizerId.equals(currentUserId)
                     
                     _uiState.update { 
                         it.copy(

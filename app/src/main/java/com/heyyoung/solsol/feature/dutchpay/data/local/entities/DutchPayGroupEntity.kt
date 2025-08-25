@@ -1,5 +1,7 @@
 package com.heyyoung.solsol.feature.dutchpay.data.local.entities
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.heyyoung.solsol.feature.dutchpay.domain.model.DutchPayGroup
@@ -9,7 +11,7 @@ import java.time.LocalDateTime
 @Entity(tableName = "dutch_pay_groups")
 data class DutchPayGroupEntity(
     @PrimaryKey val groupId: Long,
-    val organizerId: Long,
+    val organizerId: String,
     val paymentId: Long,
     val groupName: String,
     val totalAmount: Double,
@@ -20,6 +22,7 @@ data class DutchPayGroupEntity(
     val updatedAt: String
 )
 
+@RequiresApi(Build.VERSION_CODES.O)
 fun DutchPayGroupEntity.toDomain() = DutchPayGroup(
     groupId = groupId,
     organizerId = organizerId,

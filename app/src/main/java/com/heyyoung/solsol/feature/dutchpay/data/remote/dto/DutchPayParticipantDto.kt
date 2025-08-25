@@ -1,5 +1,7 @@
 package com.heyyoung.solsol.feature.dutchpay.data.remote.dto
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.heyyoung.solsol.feature.dutchpay.domain.model.DutchPayParticipant
 import com.heyyoung.solsol.feature.dutchpay.domain.model.JoinMethod
 import com.heyyoung.solsol.feature.dutchpay.domain.model.ParticipantPaymentStatus
@@ -17,10 +19,11 @@ data class DutchPayParticipantDto(
     val paidAt: String?
 )
 
+@RequiresApi(Build.VERSION_CODES.O)
 fun DutchPayParticipantDto.toDomain() = DutchPayParticipant(
     participantId = participantId,
     groupId = groupId,
-    userId = userId.hashCode().toLong(), // String을 Long으로 변환
+    userId = userId,
     user = null, // 새 API에서는 별도 user 객체가 없음
     joinMethod = JoinMethod.valueOf(joinMethod),
     paymentStatus = ParticipantPaymentStatus.valueOf(paymentStatus),
