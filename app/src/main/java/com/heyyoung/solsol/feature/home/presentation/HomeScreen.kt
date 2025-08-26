@@ -20,7 +20,9 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.heyyoung.solsol.R
+import com.heyyoung.solsol.feature.home.HomeViewModel
 import com.heyyoung.solsol.feature.home.presentation.components.MenuGrid
 import com.heyyoung.solsol.feature.home.presentation.components.PagerDots
 import com.heyyoung.solsol.feature.home.presentation.components.StudentCard
@@ -33,9 +35,19 @@ fun HomeScreen(
     onNavigateToSettlement: () -> Unit = {},
     onNavigateToCouncil: () -> Unit = {},
     onLogout: () -> Unit = {},
+    viewModel: HomeViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
 ) {
     val TAG = "HomeScreen"
+
+    val studentName by viewModel.studentName.collectAsState()
+    val studentNumber by viewModel.studentNumber.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadProfile()
+    }
 
     // 홈 화면 진입 로그
     LaunchedEffect(Unit) {
@@ -49,8 +61,8 @@ fun HomeScreen(
     ) {
         // 학생 정보 카드
         StudentCard(
-            studentName = "김신한",
-            studentNumber = "20251234",
+            studentName = studentName ?: if (isLoading) "불러오는 중..." else "이름 없음",
+            studentNumber = studentNumber ?: if (isLoading) "불러오는 중..." else "학번 없음",
             department = "컴퓨터공학과",
             grade = "재학생1학년",
             onQrClick = {
