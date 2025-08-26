@@ -4,10 +4,12 @@ import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,10 +28,11 @@ fun SettlementMethodScreen(
     onNavigateBack: () -> Unit = {},
     onMethodSelected: (String) -> Unit = {}
 ) {
-    // 선택된 방식 상태 관리
+    // 선택된 방식 상태 관리 (초기값을 명시적으로 null로 설정)
     var selectedMethod by remember { mutableStateOf<String?>(null) }
 
     Log.d(TAG, "정산 방식 선택 화면 진입")
+    Log.d(TAG, "현재 선택된 방식: $selectedMethod")
 
     Column(
         modifier = Modifier
@@ -79,21 +82,23 @@ fun SettlementMethodScreen(
                 description = "총 금액을 인원수로 나누어",
                 isSelected = selectedMethod == "equal",
                 onClick = {
-                    Log.d(TAG, "똑같이 나누기 선택")
+                    Log.d(TAG, "🟦 똑같이 나누기 클릭됨")
                     selectedMethod = "equal"
+                    Log.d(TAG, "상태 변경됨: $selectedMethod")
                 }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 직접 입력하기
+            // 직접 입력하기 - 문제가 있던 부분
             SettlementOptionCard(
                 title = "직접 입력하기",
                 description = "사람별로 다른 금액 입력",
                 isSelected = selectedMethod == "manual",
                 onClick = {
-                    Log.d(TAG, "직접 입력하기 선택")
+                    Log.d(TAG, "🟨 직접 입력하기 클릭됨")
                     selectedMethod = "manual"
+                    Log.d(TAG, "상태 변경됨: $selectedMethod")
                 }
             )
 
@@ -105,20 +110,46 @@ fun SettlementMethodScreen(
                 description = "누가 쏠지 제비뽑기로 뽑아보세요!",
                 isSelected = selectedMethod == "random",
                 onClick = {
-                    Log.d(TAG, "랜덤 게임으로 정하기 선택")
+                    Log.d(TAG, "🟩 랜덤 게임으로 정하기 클릭됨")
                     selectedMethod = "random"
+                    Log.d(TAG, "상태 변경됨: $selectedMethod")
                 }
             )
 
             Spacer(modifier = Modifier.weight(1f))
 
+            // 현재 선택 상태 디버그 표시 (개발용)
+            if (selectedMethod != null) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFF0F9FF)
+                    )
+                ) {
+                    Text(
+                        text = "✅ 선택됨: ${when(selectedMethod) {
+                            "equal" -> "똑같이 나누기"
+                            "manual" -> "직접 입력하기"
+                            "random" -> "랜덤 게임"
+                            else -> "알 수 없음"
+                        }}",
+                        modifier = Modifier.padding(12.dp),
+                        color = Color(0xFF1E40AF),
+                        fontSize = 14.sp
+                    )
+                }
+            }
+
             // 다음 버튼
             Button(
                 onClick = {
+                    Log.d(TAG, "다음 버튼 클릭, 선택된 방식: $selectedMethod")
                     selectedMethod?.let { method ->
                         Log.d(TAG, "선택된 방식으로 진행: $method")
                         onMethodSelected(method)
-                    }
+                    } ?: Log.w(TAG, "선택된 방식이 없음")
                 },
                 enabled = selectedMethod != null,
                 modifier = Modifier
@@ -130,13 +161,13 @@ fun SettlementMethodScreen(
                     .width(342.dp)
                     .height(56.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xE58B5FBF),
+                    containerColor = Color(0xFF8B5FBF),
                     disabledContainerColor = Color(0x4D8B5FBF)
                 ),
                 shape = RoundedCornerShape(28.dp)
             ) {
                 Text(
-                    text = "다음",
+                    text = if (selectedMethod != null) "다음" else "방식을 선택하세요",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -155,46 +186,70 @@ private fun SettlementOptionCard(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    Log.d(TAG, "카드 렌더링: $title, 선택됨: $isSelected")
+
     Card(
         modifier = Modifier
             .shadow(
-                elevation = 4.dp,
+                elevation = if (isSelected) 6.dp else 4.dp,
                 spotColor = Color(0x1A000000),
                 ambientColor = Color(0x1A000000)
             )
             .border(
-                width = 2.dp,
+                width = if (isSelected) 2.dp else 1.dp,
                 color = if (isSelected) Color(0xFF8B5FBF) else Color(0xCCE2E8F0),
                 shape = RoundedCornerShape(16.dp)
             )
             .width(330.dp)
             .height(110.dp)
-            .clickable { onClick() },
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null // 리플 효과 제거
+            ) {
+                Log.d(TAG, "카드 클릭됨: $title")
+                onClick()
+            },
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = if (isSelected) Color(0xFFF8F4FD) else Color.White
         ),
         shape = RoundedCornerShape(16.dp)
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(20.dp),
-            verticalArrangement = Arrangement.Center
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = title,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (isSelected) Color(0xFF8B5FBF) else Color(0xFF1C1C1E)
-            )
+            // 메인 텍스트
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = title,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isSelected) Color(0xFF8B5FBF) else Color(0xFF1C1C1E)
+                )
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = description,
-                fontSize = 14.sp,
-                color = if (isSelected) Color(0xFF8B5FBF) else Color(0xFF666666)
-            )
+                Text(
+                    text = description,
+                    fontSize = 14.sp,
+                    color = if (isSelected) Color(0xFF8B5FBF) else Color(0xFF666666)
+                )
+            }
+
+            // 선택 표시 아이콘
+            if (isSelected) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = "선택됨",
+                    tint = Color(0xFF8B5FBF),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
     }
 }

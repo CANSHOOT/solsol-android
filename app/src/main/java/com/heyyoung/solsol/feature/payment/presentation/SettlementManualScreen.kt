@@ -38,12 +38,13 @@ fun SettlementManualScreen(
         )
     }
 
-    // 총합 계산
+    // 이합 계산
     val totalAmount = participantAmounts.values.sumOf { amountText ->
         amountText.toIntOrNull() ?: 0
     }
 
     Log.d(TAG, "직접 입력하기 화면 진입 - 참여자: ${participants.size}명")
+    Log.d(TAG, "현재 입력 상태: $participantAmounts")
 
     Column(
         modifier = Modifier
@@ -102,8 +103,11 @@ fun SettlementManualScreen(
                                 // 숫자만 입력 허용
                                 val filteredAmount = newAmount.filter { it.isDigit() }
                                 if (filteredAmount.length <= 8) { // 최대 8자리까지만
-                                    participantAmounts[person] = filteredAmount
-                                    Log.d(TAG, "${person.name} 금액 입력: ${filteredAmount}원")
+                                    participantAmounts = participantAmounts.toMutableMap().apply {
+                                        this[person] = filteredAmount
+                                    }
+                                    Log.d(TAG, "✅ ${person.name} 금액 입력: ${filteredAmount}원")
+                                    Log.d(TAG, "현재 전체 상태: $participantAmounts")
                                 }
                             }
                         )
@@ -113,7 +117,7 @@ fun SettlementManualScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 총합 표시
+            // 이합 표시
             TotalAmountDisplay(totalAmount = totalAmount)
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -125,7 +129,7 @@ fun SettlementManualScreen(
                         amountText.toIntOrNull() ?: 0
                     }.filterValues { it > 0 }
 
-                    Log.d(TAG, "정산 요청 - 총액: ${totalAmount}원")
+                    Log.d(TAG, "정산 요청 - 이액: ${totalAmount}원")
                     settlementMap.forEach { (person, amount) ->
                         Log.d(TAG, "  ${person.name}: ${amount}원")
                     }
@@ -165,6 +169,8 @@ private fun PersonAmountInputCard(
     amount: String,
     onAmountChange: (String) -> Unit
 ) {
+    Log.d(TAG, "🎨 카드 렌더링: ${person.name}, 현재값: '$amount'")
+
     Card(
         modifier = Modifier
             .shadow(
@@ -174,13 +180,13 @@ private fun PersonAmountInputCard(
             )
             .border(
                 width = 2.dp,
-                color = Color(0xCCE2E8F0),
+                color = if (amount.isNotEmpty()) Color(0xFF8B5FBF) else Color(0xCCE2E8F0),
                 shape = RoundedCornerShape(12.dp)
             )
             .width(342.dp)
             .height(80.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = if (amount.isNotEmpty()) Color(0xFFF8F4FD) else Color.White
         ),
         shape = RoundedCornerShape(12.dp)
     ) {
@@ -211,12 +217,16 @@ private fun PersonAmountInputCard(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // 금액 입력 필드
+            // 🔥 수정된 금액 입력 필드 - 문제 해결!
             OutlinedTextField(
-                value = if (amount.isEmpty()) "" else String.format("%,d", amount.toIntOrNull() ?: 0),
+                value = formatDisplayAmount(amount), // 🎯 새로운 함수 사용
                 onValueChange = { newValue ->
-                    // 콤마 제거하고 숫자만 추출
-                    val numberOnly = newValue.replace(",", "").filter { it.isDigit() }
+                    Log.d(TAG, "📝 입력 감지: '$newValue' (${person.name})")
+
+                    // 콤마와 공백 제거하고 숫자만 추출
+                    val numberOnly = newValue.replace(",", "").replace(" ", "").filter { it.isDigit() }
+
+                    Log.d(TAG, "🔢 필터된 숫자: '$numberOnly'")
                     onAmountChange(numberOnly)
                 },
                 placeholder = {
@@ -251,6 +261,23 @@ private fun PersonAmountInputCard(
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF999999)
             )
+        }
+    }
+}
+
+// 🎯 새로운 함수 - 화면 표시용 금액 포맷팅
+private fun formatDisplayAmount(amount: String): String {
+    return when {
+        amount.isEmpty() -> ""
+        amount.length <= 3 -> amount
+        else -> {
+            try {
+                val number = amount.toLongOrNull() ?: 0L
+                String.format("%,d", number)
+            } catch (e: Exception) {
+                Log.w(TAG, "포맷팅 오류: $amount", e)
+                amount // 오류 시 원본 반환
+            }
         }
     }
 }
