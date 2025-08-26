@@ -1,69 +1,80 @@
 package com.heyyoung.solsol.feature.studentcouncil.presentation
 
-import android.util.Log
 import androidx.compose.runtime.*
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.heyyoung.solsol.core.network.CouncilExpenditureRequest
+import com.heyyoung.solsol.feature.studentcouncil.StudentCouncilViewModel
 
-private const val TAG = "StudentCouncilMain"
-
+/**
+ * Main 엔트리: 학생회 화면
+ * deptId, councilId는 네비게이션 파라미터로만 전달 (API 호출에는 직접 사용하지 않음)
+ */
 @Composable
 fun StudentCouncilMainScreen(
+    deptId: Long,
+    councilId: Long,
     onNavigateBack: () -> Unit = {}
 ) {
-    // 전역 지출 목록 상태 관리
-    var expenseList by remember {
-        mutableStateOf(createDemoExpenseList())
-    }
-
     val navController = rememberNavController()
+    val viewModel: StudentCouncilViewModel = hiltViewModel()
+
+    // 최초 로딩 (deptId, councilId는 전달만 하고 실제 API는 Authentication 기반으로 동작)
+    LaunchedEffect(Unit) {
+        viewModel.loadDeptSummary()
+        viewModel.loadExpenditures()
+        // feeId는 아직 고정값 필요 → 실제 서비스에서는 선택된 회비 ID를 넘겨야 함
+        viewModel.loadFeeStatus(councilId = 1, feeId = 10001L)
+    }
 
     NavHost(
         navController = navController,
         startDestination = "home"
     ) {
-        // 학생회 홈
+        // 홈 화면
         composable("home") {
             StudentCouncilScreen(
+                summary = viewModel.summary,
                 onNavigateBack = onNavigateBack,
-                onNavigateToExpenseHistory = {
-                    navController.navigate("expense_history")
-                },
-                onNavigateToExpenseRegister = {
-                    navController.navigate("ocr_camera")
-                },
-                onNavigateToFeeStatus = {
-                    navController.navigate("fee_status")
-                }
+                onNavigateToExpenseHistory = { navController.navigate("expense_history") },
+                onNavigateToExpenseRegister = { navController.navigate("ocr_camera") },
+                onNavigateToFeeStatus = { navController.navigate("fee_status") }
             )
         }
 
-        // 지출 내역
+        // 지출 내역 화면
         composable("expense_history") {
             StudentCouncilExpenseHistoryScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToRegister = { navController.navigate("ocr_camera") },
-                expenseList = expenseList
+                expenseList = viewModel.expenditureList // ← ViewModel 상태 그대로 사용
             )
         }
 
-        // OCR 카메라
+        // 회비 현황 화면
+        composable("fee_status") {
+            StudentCouncilFeeStatusScreen(
+                onNavigateBack = { navController.popBackStack() },
+                // FeeStatusResponse? 단일 값이므로 list 형태로 변환
+                feeStatusList = viewModel.feeStatus?.let { listOf(it) } ?: emptyList()
+            )
+        }
+
+        // OCR 카메라 → 지출 등록
         composable("ocr_camera") {
             OcrCameraScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onOcrResult = { ocrResult ->
-                    // 새 지출 항목 추가
-                    val newExpense = ExpenseItem(
-                        amount = ocrResult.amount,
-                        storeName = ocrResult.storeName,
-                        date = ocrResult.date
+                onOcrResult = { result ->
+                    val req = CouncilExpenditureRequest(
+                        councilId = councilId,
+                        amount = result.amount,
+                        description = result.description.ifBlank { "${result.storeName} 지출" },
+                        expenditureDate = result.date, // yyyy-MM-dd
+                        category = "일반"
                     )
-
-                    expenseList = listOf(newExpense) + expenseList
-                    Log.i(TAG, "지출 등록 완료: ${ocrResult.storeName} - ${ocrResult.amount}원")
-
-                    // 지출 내역으로 이동
+                    viewModel.addExpenditure(req)
                     navController.navigate("expense_history") {
                         popUpTo("home")
                     }
@@ -72,11 +83,3 @@ fun StudentCouncilMainScreen(
         }
     }
 }
-
-// 데모 데이터 생성 (ExpenseItem은 StudentCouncilModels.kt에서 import됨)
-private fun createDemoExpenseList(): List<ExpenseItem> = listOf(
-    ExpenseItem(amount = 180000L, storeName = "커피 제국", date = "2025.03.15"),
-    ExpenseItem(amount = 85000L, storeName = "팀 회식", date = "2025.03.14"),
-    ExpenseItem(amount = 45000L, storeName = "문구점", date = "2025.03.13"),
-    ExpenseItem(amount = 30000L, storeName = "간식비", date = "2025.03.12")
-)

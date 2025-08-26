@@ -11,9 +11,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.heyyoung.solsol.feature.auth.presentation.LoginScreen
 import com.heyyoung.solsol.feature.home.presentation.HomeScreen
 import com.heyyoung.solsol.feature.settlement.presentation.SettlementEqualScreen
+import com.heyyoung.solsol.feature.studentcouncil.StudentCouncilViewModel
 import com.heyyoung.solsol.feature.studentcouncil.presentation.OcrCameraScreen
 import com.heyyoung.solsol.feature.studentcouncil.presentation.ReceiptFields
 import com.heyyoung.solsol.feature.studentcouncil.presentation.StudentCouncilScreen
@@ -83,6 +85,7 @@ fun SolsolApp() {
     var lastOcrImageUri by remember { mutableStateOf<Uri?>(null) }
     var lastOcrText by remember { mutableStateOf<String?>(null) }
     var lastReceiptFields by remember { mutableStateOf<ReceiptFields?>(null) }
+    val viewModel: StudentCouncilViewModel = hiltViewModel()
 
     // 앱 상태 로깅
     LaunchedEffect(currentScreen) {
@@ -262,9 +265,10 @@ fun SolsolApp() {
         // ✅ 학생회 메인
         "council" -> {
             StudentCouncilScreen(
+                summary = viewModel.summary,
                 onNavigateBack = { currentScreen = "home" },
                 onNavigateToExpenseHistory = { currentScreen = "council_history" },
-                onNavigateToExpenseRegister = { currentScreen = "council_register" } // 영수증 OCR 스캔
+                onNavigateToExpenseRegister = { currentScreen = "council_register" }
             )
         }
 

@@ -40,6 +40,45 @@ interface BackendApiService {
 
     @GET("users/{userId}")
     suspend fun getUser(@Path("userId") userId: String): Response<UserDto>
+
+
+    // ================= 학생회/정산 =======================
+
+    // 1. 학과 홈 요약
+    @GET("/v1/settlement/home")
+    suspend fun getDeptSummary(
+        @Query("month") month: String? = null,
+        @Query("semester") semester: String? = null,
+        @Query("tz") tz: String = "+09:00"
+    ): DeptHomeSummaryResponse
+
+    // 2. 지출 목록
+    @GET("/v1/settlement/expenditures")
+    suspend fun getExpenditures(
+        @Query("month") month: String? = null,
+        @Query("tz") tz: String = "+09:00",
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 20
+    ): DeptExpenditureListResponse
+
+    // 3. 회비 납부 현황 (특정 회비)
+    @GET("/v1/settlement/councils/{councilId}/fees/{feeId}/status")
+    suspend fun getFeeStatus(
+        @Path("councilId") councilId: Long,
+        @Path("feeId") feeId: Long
+    ): FeeStatusResponse
+
+    // 4. 회비 송금
+    @POST("/v1/councils/transfer")
+    suspend fun transferFee(
+        @Body request: CouncilFeeTransferCommand
+    ): AccountTransferResponse
+
+    // 5. 학생회 지출 등록
+    @POST("/v1/council-expenditures")
+    suspend fun addExpenditure(
+        @Body request: CouncilExpenditureRequest
+    ): CouncilExpenditureResponse
 }
 
 // ========== Request 데이터 클래스들 ==========
@@ -71,11 +110,27 @@ data class RefreshTokenRequest(
     val refreshToken: String
 )
 
-// ========== Response 데이터 클래스들 ==========
+data class CouncilExpenditureRequest(
+    val councilId: Long,
+    val amount: Long,
+    val description: String,
+    val expenditureDate: String,  // yyyy-MM-dd
+    val category: String
+)
 
-/**
- * 인증 응답 (로그인/회원가입/토큰갱신 공통)
- */
+data class CouncilFeeTransferCommand(
+    val councilId: Long,
+    val fromUserId: String,
+    val toUserId: String,
+    val feeId: Long,
+    val amount: Long,
+    val withdrawalAccountNo: String,
+    val depositTransactionSummary: String? = null,
+    val withdrawalTransactionSummary: String? = null
+)
+
+// ========== Response DTOs ==========
+
 data class AuthResponse(
     val accessToken: String,
     val refreshToken: String,
@@ -83,12 +138,68 @@ data class AuthResponse(
     val name: String
 )
 
-/**
- * 에러 응답
- */
 data class ErrorResponse(
     val message: String,
     val code: String? = null
+)
+
+data class CouncilExpenditureResponse(
+    val expenditureId: Long,
+    val councilId: Long,
+    val amount: Long,
+    val description: String,
+    val expenditureDate: String,
+    val category: String,
+    val approvedBy: String?
+)
+
+data class DeptHomeSummaryResponse(
+    val header: Header,
+    val balanceCard: BalanceCard,
+    val feeBadge: FeeBadge?
+) {
+    data class Header(
+        val departmentId: Long,
+        val councilId: Long,
+        val councilName: String,
+        val presidentUserId: String,
+        val presidentName: String
+    )
+
+    data class BalanceCard(
+        val currentBalance: Long,
+        val monthSpendTotal: Long,
+        val month: String
+    )
+
+    data class FeeBadge(
+        val semester: String,
+        val paid: Boolean,
+        val feeAmount: Long,
+        val paidAt: String?
+    )
+}
+
+data class DeptExpenditureListResponse(
+    val monthSpendTotal: Long,
+    val currentBalance: Long,
+    val expenditures: List<CouncilExpenditureResponse>
+)
+
+data class FeeStatusResponse(
+    val userId: String,
+    val name: String,
+    val department: String,
+    val studentId: String,
+    val paid: Boolean,
+    val paidAt: String?
+)
+
+data class AccountTransferResponse(
+    val transactionId: String,
+    val status: String,
+    val amount: String,
+    val balance: String
 )
 
 data class UserDto(
