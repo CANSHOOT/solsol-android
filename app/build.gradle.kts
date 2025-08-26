@@ -126,6 +126,9 @@ dependencies {
     // Security (암호화된 SharedPreferences)
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
+    // Google Play Services Nearby (근처 기기 탐색용)
+    implementation(libs.play.services.nearby)
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

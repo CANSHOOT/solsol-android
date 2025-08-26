@@ -21,6 +21,7 @@ camera = "1.4.0"
 accompanistPermissions = "0.36.0"
 kotlinxSerialization = "1.7.3"
 mlkitTextRecognition = "16.0.1"
+playServicesNearby = "19.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -80,6 +81,9 @@ androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = 
 # ML Kit OCR (영수증 텍스트 인식용)
 mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitTextRecognition" }
 mlkit-text-recognition-korean = { group = "com.google.mlkit", name = "text-recognition-korean", version.ref = "mlkitTextRecognition" }
+
+# Google Play Services Nearby (근처 기기 탐색용)
+play-services-nearby = { group = "com.google.android.gms", name = "play-services-nearby", version.ref = "playServicesNearby" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

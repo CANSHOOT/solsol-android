@@ -22,6 +22,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.heyyoung.solsol.feature.dutchpay.domain.model.User
 import com.heyyoung.solsol.feature.dutchpay.presentation.create.CreateDutchPayViewModel
+import com.heyyoung.solsol.feature.dutchpay.presentation.nearby.CheckNearbyPermissions
+import com.heyyoung.solsol.feature.dutchpay.presentation.nearby.NearbyBottomSheet
 import com.heyyoung.solsol.ui.theme.SolsolPrimary
 
 /**
@@ -44,6 +46,8 @@ fun ParticipantSearchScreen(
     
     var searchQuery by remember { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
+    var showNearbyBottomSheet by remember { mutableStateOf(false) }
+    var showPermissionDialog by remember { mutableStateOf(false) }
     
     // 🔍 검색 결과 변경 감지 및 로깅
     LaunchedEffect(searchResults, isSearching) {
@@ -130,10 +134,10 @@ fun ParticipantSearchScreen(
                 }
             )
             
-            // 근처 기기로 찾기 버튼 (추후 구현)
+            // 근처 기기로 찾기 버튼
             NearbyDevicesSection(
                 onNearbySearchClick = { 
-                    // TODO: 추후 구현
+                    showPermissionDialog = true
                 }
             )
             
@@ -197,6 +201,32 @@ fun ParticipantSearchScreen(
                 }
             }
         }
+    }
+    
+    // 권한 확인 다이얼로그
+    if (showPermissionDialog) {
+        CheckNearbyPermissions(
+            onPermissionsGranted = {
+                showPermissionDialog = false
+                showNearbyBottomSheet = true
+            },
+            onPermissionsDenied = { deniedPermissions ->
+                showPermissionDialog = false
+                Log.d(TAG, "권한 거절됨: $deniedPermissions")
+            }
+        )
+    }
+    
+    // Nearby 기기 검색 BottomSheet
+    if (showNearbyBottomSheet) {
+        NearbyBottomSheet(
+            onDismiss = { showNearbyBottomSheet = false },
+            onUserSelected = { user ->
+                Log.d(TAG, "근처에서 사용자 선택: ${user.name}")
+                viewModel.onParticipantAdded(user)
+                showNearbyBottomSheet = false
+            }
+        )
     }
 }
 
@@ -289,17 +319,10 @@ private fun NearbyDevicesSection(
             
             OutlinedButton(
                 onClick = onNearbySearchClick,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = false // 추후 구현 예정
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("근처 기기로 찾기")
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    "(준비 중)",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
         }
     }

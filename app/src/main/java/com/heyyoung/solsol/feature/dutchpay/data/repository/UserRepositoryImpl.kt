@@ -64,6 +64,34 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getUserByStringId(userId: String): Result<User> {
+        return withContext(Dispatchers.IO) {
+            try {
+                // String userId로 서버에서 직접 조회
+                val response = apiService.getUserById(userId)
+                val domain = response.toDomain()
+                
+                // 로컬 캐시에 저장
+                dao.insertUsers(listOf(domain.toEntity()))
+                
+                Result.success(domain)
+            } catch (e: Exception) {
+                // 네트워크 오류 시 로컬에서 검색 시도
+                try {
+                    val localEntities = dao.searchUsers(userId)
+                    val matchedUser = localEntities.find { it.userId == userId }
+                    if (matchedUser != null) {
+                        Result.success(matchedUser.toDomain())
+                    } else {
+                        Result.failure(NoSuchElementException("해당 사용자를 찾을 수 없습니다"))
+                    }
+                } catch (localE: Exception) {
+                    Result.failure(e)
+                }
+            }
+        }
+    }
+
     override suspend fun getUserByStudentNumber(studentNumber: String): Result<User> {
         return withContext(Dispatchers.IO) {
             try {
