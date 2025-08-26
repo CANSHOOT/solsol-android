@@ -15,7 +15,6 @@ import com.heyyoung.solsol.feature.auth.presentation.LoginScreen
 import com.heyyoung.solsol.feature.home.presentation.HomeScreen
 import com.heyyoung.solsol.feature.settlement.presentation.SettlementEqualScreen
 import com.heyyoung.solsol.feature.studentcouncil.presentation.OcrCameraScreen
-import com.heyyoung.solsol.feature.studentcouncil.presentation.OcrResultTestScreen
 import com.heyyoung.solsol.feature.studentcouncil.presentation.ReceiptFields
 import com.heyyoung.solsol.feature.studentcouncil.presentation.StudentCouncilScreen
 import com.heyyoung.solsol.ui.theme.SolsolTheme
@@ -283,27 +282,10 @@ fun SolsolApp() {
                 onOcrResult = { result ->
                     // 필요시 기존 호환용 로직
                     Log.d("SolsolApp", "OCR Result: $result")
-                },
-                onNavigateToTest = { imageUri, ocrText, parsed ->
-                    // OCR 결과 상태에 저장
-                    lastOcrImageUri = imageUri
-                    lastOcrText = ocrText
-                    lastReceiptFields = parsed
-                    // Test 화면으로 이동
-                    currentScreen = "council_ocr_test"
                 }
             )
         }
 
-        // ✅ OCR 테스트 페이지
-        "council_ocr_test" -> {
-            OcrResultTestScreen(
-                imageUri = lastOcrImageUri,
-                ocrText = lastOcrText,
-                parsed = lastReceiptFields,
-                onNavigateBack = { currentScreen = "council" }
-            )
-        }
         else -> {
             // 예상치 못한 화면 상태
             Log.e(TAG, "❌ 알 수 없는 화면 상태: $currentScreen")
