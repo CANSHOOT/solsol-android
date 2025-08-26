@@ -40,7 +40,7 @@ object NetworkModule {
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://10.80.122.156:8080/") // 실제 디바이스용 PC IP 주소
+            .baseUrl("http://70.12.247.113:8080/") // 실제 디바이스용 PC IP 주소
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
