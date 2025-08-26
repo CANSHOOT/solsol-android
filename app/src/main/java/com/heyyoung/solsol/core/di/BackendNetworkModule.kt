@@ -28,7 +28,7 @@ object BackendNetworkModule {
      * 백엔드 API Base URL
      * 해커톤용 로컬 서버 주소
      */
-    private const val BASE_URL = "http://10.0.2.2:8080/api/v1/"
+    private const val BASE_URL = "http://3.34.3.252:8081/api/v1/"
 
     /**
      * HTTP 로깅 인터셉터 제공
