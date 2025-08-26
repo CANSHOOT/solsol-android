@@ -1,10 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <color name="solsol_gradient_start">#FF8B5FBF</color>
+    <color name="solsol_gradient_end">#FFF093FB</color>
+
+    <color name="solsol_white">#FFFFFFFF</color>              <!-- 순수 흰색 -->
+    <color name="solsol_white_20">#33FFFFFF</color>           <!-- 흰색 20% 투명도 -->
+    <color name="solsol_white_50">#80FFFFFF</color>           <!-- 흰색 50% 투명도 -->
+    <color name="solsol_dark_text">#FF2D3748</color>          <!-- 어두운 텍스트 -->
+    <color name="solsol_gray_text">#FF718096</color>          <!-- 회색 텍스트 -->
+    <color name="solsol_purple_30">#4D8B5FBF</color>          <!-- 보라색 30% 투명도 -->
+    <color name="solsol_light_gray">#FFE2E8F0</color>         <!-- 연한 회색 (테두리용) -->
+    <color name="solsol_background_gray">#FFF0F0F0</color>    <!-- 배경 회색 -->
+
+    <color name="solsol_purple">#FF8B5FBF</color>             <!-- 메인 보라색 -->
+    <color name="solsol_light_purple">#FFF093FB</color>       <!-- 연한 보라색 -->
+    <color name="solsol_card_white">#FFFFFFFF</color>         <!-- 카드 배경 -->
+    <color name="solsol_text_gray">#FF718096</color>          <!-- 텍스트 회색 -->
+    <color name="solsol_hint_gray">#FFE2E8F0</color>          <!-- 힌트 회색 -->
+
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
 </resources>

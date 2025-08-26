@@ -17,7 +17,7 @@ class SolsolApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        Log.d(TAG, "솔솔 캠퍼스페이 앱 시작")
+        Log.d(TAG, "쏠쏠 캠퍼스페이 앱 시작")
 
         // 앱 초기화
         initializeApp()
