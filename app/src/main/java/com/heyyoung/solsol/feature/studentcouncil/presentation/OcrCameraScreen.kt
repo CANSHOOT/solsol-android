@@ -16,24 +16,20 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -41,8 +37,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
-import com.google.mlkit.vision.text.latin.TextRecognizerOptions
-import java.io.File
+import com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
@@ -62,51 +57,58 @@ fun OcrCameraScreen(
     var uiState by remember { mutableStateOf(OcrCameraUiState()) }
     var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
     var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
+    var ocrResult by remember { mutableStateOf<OcrResult?>(null) }
 
-    // 카메라 실행기
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
 
-    // 권한 요청
+    // 권한 요청 처리
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        if (isGranted) {
-            Log.d(TAG, "카메라 권한 승인")
+        uiState = uiState.copy(
+            hasPermission = isGranted,
+            showPermissionDialog = !isGranted
+        )
+        Log.d(TAG, "카메라 권한: ${if (isGranted) "승인" else "거부"}")
+    }
+
+    // 초기 권한 확인
+    LaunchedEffect(Unit) {
+        val hasPermission = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.CAMERA
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+        if (hasPermission) {
             uiState = uiState.copy(hasPermission = true)
         } else {
-            Log.w(TAG, "카메라 권한 거부")
-            uiState = uiState.copy(hasPermission = false, showPermissionDialog = true)
+            permissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 
-    // 권한 확인 및 카메라 초기화
-    LaunchedEffect(Unit) {
-        when (PackageManager.PERMISSION_GRANTED) {
-            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
-                Log.d(TAG, "카메라 권한 이미 있음")
-                uiState = uiState.copy(hasPermission = true)
-            }
-            else -> {
-                Log.d(TAG, "카메라 권한 요청")
-                permissionLauncher.launch(Manifest.permission.CAMERA)
-            }
-        }
-    }
-
-    // CameraProvider 초기화
+    // 카메라 초기화
     LaunchedEffect(uiState.hasPermission) {
         if (uiState.hasPermission) {
             val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
             cameraProviderFuture.addListener({
                 cameraProvider = cameraProviderFuture.get()
-                Log.d(TAG, "CameraProvider 준비완료")
             }, ContextCompat.getMainExecutor(context))
         }
     }
 
+    // 리소스 정리
+    DisposableEffect(Unit) {
+        onDispose {
+            try {
+                cameraProvider?.unbindAll()
+                cameraExecutor.shutdown()
+            } catch (_: Exception) { }
+        }
+    }
+
+    // 권한 다이얼로그
     if (uiState.showPermissionDialog) {
         PermissionDialog(
-            onDismiss = { onNavigateBack() },
+            onDismiss = onNavigateBack,
             onConfirm = {
                 permissionLauncher.launch(Manifest.permission.CAMERA)
                 uiState = uiState.copy(showPermissionDialog = false)
@@ -119,125 +121,97 @@ fun OcrCameraScreen(
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        // 상단 앱바
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(
-                onClick = {
-                    Log.d(TAG, "뒤로가기 클릭")
-                    onNavigateBack()
-                }
-            ) {
-                Icon(
-                    Icons.Default.ArrowBack,
-                    contentDescription = "뒤로",
-                    tint = Color.White
-                )
-            }
-
-            Text(
-                text = "영수증 촬영",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-
-            Spacer(modifier = Modifier.size(48.dp)) // 균형을 위한 공간
-        }
+        // 상단 바
+        TopBar(onNavigateBack = {
+            cameraProvider?.unbindAll()
+            onNavigateBack()
+        })
 
         if (uiState.hasPermission && cameraProvider != null) {
-            // 카메라 프리뷰
-            Box(
-                modifier = Modifier.weight(1f)
-            ) {
+            // 메인 카메라 영역
+            Box(modifier = Modifier.weight(1f)) {
                 CameraPreview(
                     cameraProvider = cameraProvider!!,
                     lifecycleOwner = lifecycleOwner,
-                    onImageCaptureReady = { capture ->
-                        imageCapture = capture
-                    }
+                    onImageCaptureReady = { imageCapture = it }
                 )
 
-                // OCR 처리 중 오버레이
+                // 처리 중 오버레이
                 if (uiState.isProcessing) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.7f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            CircularProgressIndicator(
-                                color = Color.White,
-                                modifier = Modifier.size(48.dp)
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = "영수증을 분석중입니다...",
-                                color = Color.White,
-                                fontSize = 16.sp
-                            )
-                        }
-                    }
+                    ProcessingOverlay()
                 }
 
                 // 가이드 프레임
                 CameraGuideFrame()
             }
 
-            // 하단 촬영 컨트롤
-            CameraControls(
-                isProcessing = uiState.isProcessing,
-                onCaptureClick = {
-                    Log.d(TAG, "촬영 버튼 클릭")
-                    captureImage(
-                        imageCapture = imageCapture,
-                        context = context,
-                        cameraExecutor = cameraExecutor
-                    ) { imageUri ->
-                        uiState = uiState.copy(isProcessing = true)
-                        processImageWithOcr(
+            // 하단 컨트롤
+            if (ocrResult == null) {
+                CameraControls(
+                    isProcessing = uiState.isProcessing,
+                    onCaptureClick = {
+                        captureAndProcessImage(
+                            imageCapture = imageCapture,
                             context = context,
-                            imageUri = imageUri,
+                            cameraExecutor = cameraExecutor,
+                            onProcessingStart = {
+                                uiState = uiState.copy(isProcessing = true)
+                            },
                             onResult = { result ->
                                 uiState = uiState.copy(isProcessing = false)
-                                onOcrResult(result)
-                                onNavigateBack()
+                                ocrResult = result
                             },
-                            onError = { error ->
-                                Log.e(TAG, "OCR 처리 실패: $error")
+                            onError = {
                                 uiState = uiState.copy(isProcessing = false)
                             }
                         )
                     }
-                }
-            )
-        } else {
-            // 권한이 없거나 카메라 초기화 중
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    CircularProgressIndicator(color = Color.White)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = if (!uiState.hasPermission) "카메라 권한 필요" else "카메라 준비중...",
-                        color = Color.White,
-                        fontSize = 16.sp
-                    )
-                }
+                )
             }
+
+            // OCR 결과 표시
+            ocrResult?.let { result ->
+                OcrResultCard(
+                    result = result,
+                    onRetake = { ocrResult = null },
+                    onConfirm = {
+                        onOcrResult(result)
+                        onNavigateBack()
+                    }
+                )
+            }
+        } else {
+            // 로딩/권한 없음 상태
+            LoadingState(hasPermission = uiState.hasPermission)
         }
+    }
+}
+
+@Composable
+private fun TopBar(onNavigateBack: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onNavigateBack) {
+            Icon(
+                Icons.Default.ArrowBack,
+                contentDescription = "뒤로",
+                tint = Color.White
+            )
+        }
+
+        Text(
+            text = "영수증 스캔",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+
+        Spacer(modifier = Modifier.size(48.dp))
     }
 }
 
@@ -250,30 +224,22 @@ private fun CameraPreview(
     AndroidView(
         factory = { context ->
             val previewView = PreviewView(context)
-
-            val preview = Preview.Builder()
-                .build()
-                .also {
-                    it.setSurfaceProvider(previewView.surfaceProvider)
-                }
+            val preview = Preview.Builder().build()
+                .also { it.setSurfaceProvider(previewView.surfaceProvider) }
 
             val imageCapture = ImageCapture.Builder()
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                 .build()
 
-            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
             try {
                 cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(
                     lifecycleOwner,
-                    cameraSelector,
+                    CameraSelector.DEFAULT_BACK_CAMERA,
                     preview,
                     imageCapture
                 )
-
                 onImageCaptureReady(imageCapture)
-                Log.d(TAG, "카메라 바인딩 완료")
             } catch (e: Exception) {
                 Log.e(TAG, "카메라 바인딩 실패", e)
             }
@@ -285,51 +251,78 @@ private fun CameraPreview(
 }
 
 @Composable
+private fun ProcessingOverlay() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.7f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                CircularProgressIndicator(
+                    color = Color(0xFF8B5FBF),
+                    modifier = Modifier.size(48.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "영수증을 분석하고 있습니다...",
+                    fontSize = 16.sp,
+                    color = Color(0xFF1C1C1E)
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun CameraGuideFrame() {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
+        // 가이드 프레임
         Box(
             modifier = Modifier
-                .size(width = 300.dp, height = 200.dp)
-                .background(
-                    Color.Transparent,
-                    RoundedCornerShape(16.dp)
-                )
+                .size(width = 320.dp, height = 200.dp)
+                .background(Color.Transparent)
         ) {
-            // 모서리 가이드 라인들
+            // 모서리 가이드
             listOf(
-                Alignment.TopStart,
-                Alignment.TopEnd,
-                Alignment.BottomStart,
-                Alignment.BottomEnd
+                Alignment.TopStart, Alignment.TopEnd,
+                Alignment.BottomStart, Alignment.BottomEnd
             ).forEach { alignment ->
                 Box(
                     modifier = Modifier
                         .align(alignment)
-                        .size(20.dp)
+                        .size(24.dp)
                         .background(
                             Color.White,
                             when (alignment) {
-                                Alignment.TopStart -> RoundedCornerShape(topStart = 16.dp)
-                                Alignment.TopEnd -> RoundedCornerShape(topEnd = 16.dp)
-                                Alignment.BottomStart -> RoundedCornerShape(bottomStart = 16.dp)
-                                Alignment.BottomEnd -> RoundedCornerShape(bottomEnd = 16.dp)
-                                else -> RoundedCornerShape(0.dp)
+                                Alignment.TopStart -> RoundedCornerShape(topStart = 12.dp)
+                                Alignment.TopEnd -> RoundedCornerShape(topEnd = 12.dp)
+                                Alignment.BottomStart -> RoundedCornerShape(bottomStart = 12.dp)
+                                else -> RoundedCornerShape(bottomEnd = 12.dp)
                             }
                         )
                 )
             }
         }
 
+        // 안내 텍스트
         Text(
-            text = "영수증을 프레임 안에 맞춰주세요",
+            text = "영수증을 프레임에 맞춰 주세요",
             color = Color.White,
             fontSize = 14.sp,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .offset(y = (-120).dp)
+                .offset(y = (-140).dp)
                 .background(
                     Color.Black.copy(alpha = 0.6f),
                     RoundedCornerShape(20.dp)
@@ -351,11 +344,7 @@ private fun CameraControls(
         horizontalArrangement = Arrangement.Center
     ) {
         FloatingActionButton(
-            onClick = {
-                if (!isProcessing) {
-                    onCaptureClick()
-                }
-            },
+            onClick = { if (!isProcessing) onCaptureClick() },
             modifier = Modifier.size(72.dp),
             containerColor = if (isProcessing) Color.Gray else Color.White,
             contentColor = Color.Black
@@ -370,37 +359,155 @@ private fun CameraControls(
 }
 
 @Composable
+private fun OcrResultCard(
+    result: OcrResult,
+    onRetake: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .padding(24.dp)
+    ) {
+        // 결과 헤더
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                Icons.Default.AddCircle,
+                contentDescription = null,
+                tint = Color(0xFF10B981),
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "영수증 인식 완료",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1C1C1E)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // 인식 결과
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA)),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                ResultRow("상호명", result.storeName)
+                Spacer(modifier = Modifier.height(12.dp))
+                ResultRow("금액", "${String.format("%,d", result.amount)}원")
+                Spacer(modifier = Modifier.height(12.dp))
+                ResultRow("날짜", result.date)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // 버튼들
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedButton(
+                onClick = onRetake,
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color(0xFF8B5FBF)
+                )
+            ) {
+                Text("다시 촬영")
+            }
+
+            Button(
+                onClick = onConfirm,
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF8B5FBF)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(
+                    Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("등록하기")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@Composable
+private fun ResultRow(label: String, value: String) {
+    Column {
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            color = Color(0xFF666666)
+        )
+        Text(
+            text = value,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color(0xFF1C1C1E)
+        )
+    }
+}
+
+@Composable
+private fun LoadingState(hasPermission: Boolean) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            CircularProgressIndicator(color = Color.White)
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = if (!hasPermission) "카메라 권한이 필요합니다" else "카메라를 준비하고 있습니다...",
+                color = Color.White,
+                fontSize = 16.sp
+            )
+        }
+    }
+}
+
+@Composable
 private fun PermissionDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = {
-            Text("카메라 권한 필요")
-        },
-        text = {
-            Text("영수증을 촬영하려면 카메라 권한이 필요합니다.")
-        },
+        title = { Text("카메라 권한 필요") },
+        text = { Text("영수증을 촬영하려면 카메라 권한이 필요합니다.") },
         confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text("허용")
-            }
+            TextButton(onClick = onConfirm) { Text("허용") }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("취소")
-            }
+            TextButton(onClick = onDismiss) { Text("취소") }
         }
     )
 }
 
-// 이미지 촬영 함수
-private fun captureImage(
+// 이미지 촬영 및 OCR 처리
+private fun captureAndProcessImage(
     imageCapture: ImageCapture?,
     context: Context,
     cameraExecutor: ExecutorService,
-    onImageSaved: (Uri) -> Unit
+    onProcessingStart: () -> Unit,
+    onResult: (OcrResult) -> Unit,
+    onError: () -> Unit
 ) {
     val imageCapture = imageCapture ?: return
 
@@ -419,117 +526,80 @@ private fun captureImage(
         contentValues
     ).build()
 
+    onProcessingStart()
+
     imageCapture.takePicture(
         outputOptions,
-        cameraExecutor,
+        ContextCompat.getMainExecutor(context),
         object : ImageCapture.OnImageSavedCallback {
             override fun onError(exception: ImageCaptureException) {
-                Log.e(TAG, "이미지 촬영 실패: ${exception.message}", exception)
+                Log.e(TAG, "촬영 실패: ${exception.message}", exception)
+                onError()
             }
 
             override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                val savedUri = output.savedUri ?: return
-                Log.d(TAG, "이미지 촬영 성공: $savedUri")
-                onImageSaved(savedUri)
+                output.savedUri?.let { uri ->
+                    processImageWithOcr(context, uri, onResult, onError)
+                } ?: onError()
             }
         }
     )
 }
 
-// ML Kit OCR 처리 함수
+// OCR 처리
 private fun processImageWithOcr(
     context: Context,
     imageUri: Uri,
     onResult: (OcrResult) -> Unit,
-    onError: (String) -> Unit
+    onError: () -> Unit
 ) {
     try {
         val inputStream = context.contentResolver.openInputStream(imageUri)
         val bitmap = BitmapFactory.decodeStream(inputStream)
         inputStream?.close()
 
-        // 이미지 회전 보정
         val rotatedBitmap = rotateImageIfRequired(context, bitmap, imageUri)
-
         val image = InputImage.fromBitmap(rotatedBitmap, 0)
 
-        val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+        val recognizer = TextRecognition.getClient(
+            KoreanTextRecognizerOptions.Builder().build()
+        )
 
         recognizer.process(image)
             .addOnSuccessListener { visionText ->
-                Log.d(TAG, "OCR 처리 성공")
-                Log.d(TAG, "인식된 전체 텍스트: ${visionText.text}")
-
-                val ocrResult = parseReceiptText(visionText.text)
-                Log.d(TAG, "파싱 결과: $ocrResult")
-
-                onResult(ocrResult)
+                val result = parseReceiptText(visionText.text)
+                Log.d(TAG, "OCR 성공: $result")
+                onResult(result)
             }
             .addOnFailureListener { e ->
-                Log.e(TAG, "OCR 처리 실패", e)
-                onError(e.message ?: "OCR 처리 중 오류가 발생했습니다")
+                Log.e(TAG, "OCR 실패", e)
+                onError()
             }
-
     } catch (e: Exception) {
         Log.e(TAG, "이미지 처리 실패", e)
-        onError(e.message ?: "이미지 처리 중 오류가 발생했습니다")
+        onError()
     }
-}
-
-// 이미지 회전 보정
-private fun rotateImageIfRequired(context: Context, bitmap: Bitmap, imageUri: Uri): Bitmap {
-    try {
-        val input = context.contentResolver.openInputStream(imageUri) ?: return bitmap
-        val exif = ExifInterface(input)
-        input.close()
-
-        val orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
-
-        return when (orientation) {
-            ExifInterface.ORIENTATION_ROTATE_90 -> rotateBitmap(bitmap, 90f)
-            ExifInterface.ORIENTATION_ROTATE_180 -> rotateBitmap(bitmap, 180f)
-            ExifInterface.ORIENTATION_ROTATE_270 -> rotateBitmap(bitmap, 270f)
-            else -> bitmap
-        }
-    } catch (e: Exception) {
-        Log.w(TAG, "이미지 회전 보정 실패", e)
-        return bitmap
-    }
-}
-
-private fun rotateBitmap(bitmap: Bitmap, degrees: Float): Bitmap {
-    val matrix = Matrix()
-    matrix.postRotate(degrees)
-    return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
 }
 
 // 영수증 텍스트 파싱
 private fun parseReceiptText(text: String): OcrResult {
     val lines = text.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
 
-    var amount = 0L
-    var storeName = ""
-    var date = ""
-    var description = ""
-
-    // 금액 찾기 (가장 큰 숫자를 총액으로 가정)
+    // 금액 찾기
     val amountRegex = """(\d{1,3}(,\d{3})*|\d+)원?""".toRegex()
     val amounts = lines.flatMap { line ->
         amountRegex.findAll(line).map { match ->
             match.groupValues[1].replace(",", "").toLongOrNull() ?: 0L
         }
     }.filter { it > 0 }
+    val amount = amounts.maxOrNull() ?: 0L
 
-    amount = amounts.maxOrNull() ?: 0L
+    // 상호명 (첫 번째 줄)
+    val storeName = lines.firstOrNull() ?: "상호명 불명"
 
-    // 상호명 찾기 (첫 번째 줄 또는 특정 패턴)
-    storeName = when {
-        lines.isNotEmpty() -> lines[0]
-        else -> "상호명 불명"
-    }
-
-    // 날짜 찾기 (다양한 날짜 형식)
+    // 날짜 찾기
     val dateRegex = """(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})|\d{2}/\d{2}/\d{2}|\d{4}\d{2}\d{2}""".toRegex()
+    var date = ""
     for (line in lines) {
         val dateMatch = dateRegex.find(line)
         if (dateMatch != null) {
@@ -539,25 +609,14 @@ private fun parseReceiptText(text: String): OcrResult {
     }
 
     if (date.isEmpty()) {
-        // 날짜를 찾지 못하면 오늘 날짜 사용
-        val today = SimpleDateFormat("yyyy.MM.dd", Locale.KOREA).format(Date())
-        date = today
+        date = SimpleDateFormat("yyyy.MM.dd", Locale.KOREA).format(Date())
     }
-
-    // 설명은 상호명 사용 또는 "영수증 지출"로 기본값
-    description = if (storeName.isNotEmpty() && storeName != "상호명 불명") {
-        "${storeName} 지출"
-    } else {
-        "영수증 지출"
-    }
-
-    Log.d(TAG, "파싱된 데이터 - 금액: $amount, 상호: $storeName, 날짜: $date")
 
     return OcrResult(
         amount = amount,
         storeName = storeName,
         date = date,
-        description = description
+        description = "${storeName} 지출"
     )
 }
 
@@ -582,8 +641,26 @@ private fun formatDate(dateStr: String): String {
     }
 }
 
-data class OcrCameraUiState(
-    val hasPermission: Boolean = false,
-    val showPermissionDialog: Boolean = false,
-    val isProcessing: Boolean = false
-)
+private fun rotateImageIfRequired(context: Context, bitmap: Bitmap, imageUri: Uri): Bitmap {
+    try {
+        val input = context.contentResolver.openInputStream(imageUri) ?: return bitmap
+        val exif = ExifInterface(input)
+        input.close()
+
+        val orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+        return when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> rotateBitmap(bitmap, 90f)
+            ExifInterface.ORIENTATION_ROTATE_180 -> rotateBitmap(bitmap, 180f)
+            ExifInterface.ORIENTATION_ROTATE_270 -> rotateBitmap(bitmap, 270f)
+            else -> bitmap
+        }
+    } catch (e: Exception) {
+        return bitmap
+    }
+}
+
+private fun rotateBitmap(bitmap: Bitmap, degrees: Float): Bitmap {
+    val matrix = Matrix()
+    matrix.postRotate(degrees)
+    return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+}
