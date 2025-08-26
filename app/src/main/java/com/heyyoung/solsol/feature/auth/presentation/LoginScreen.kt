@@ -182,7 +182,7 @@ private fun LoadingInfoCard(
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = "신한은행 API 연동 중...",
+                text = "서버 통신 중...",
                 color = Color(0xFF8B5FBF)
             )
         }

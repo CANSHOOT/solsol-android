@@ -34,7 +34,7 @@ fun StudentCouncilMainScreen(
                     navController.navigate("ocr_camera")
                 },
                 onNavigateToFeeStatus = {
-                    // TODO: 회비 현황 화면
+                    navController.navigate("fee_status")
                 }
             )
         }

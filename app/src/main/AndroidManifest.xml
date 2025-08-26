@@ -33,6 +33,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Solsol"
+        android:usesCleartextTraffic="true"
         tools:targetApi="31">
 
         <!-- ML Kit 모델 자동 다운로드 설정 -->
