@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import com.heyyoung.solsol.feature.auth.presentation.LoginScreen
 import com.heyyoung.solsol.feature.home.presentation.HomeScreen
+import com.heyyoung.solsol.feature.settlement.presentation.SettlementEqualScreen
 import com.heyyoung.solsol.ui.theme.SolsolTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -70,12 +71,20 @@ fun SolsolApp() {
     var currentUserEmail by remember { mutableStateOf("") }
     var scannedQRData by remember { mutableStateOf<String?>(null) }
 
+    // 정산 관련 상태
+    var selectedSettlementMethod by remember { mutableStateOf<String?>(null) }
+    var settlementParticipants by remember { mutableStateOf<List<com.heyyoung.solsol.feature.settlement.presentation.Person>>(emptyList()) }
+
     // 앱 상태 로깅
     LaunchedEffect(currentScreen) {
         Log.i(TAG, "🔄 화면 전환: $currentScreen")
         when (currentScreen) {
-            "login" -> Log.d(TAG, "🔑 로그인 화면 활성화")
-            "home" -> Log.d(TAG, "🏠 홈 화면 활성화 (사용자: $currentUserEmail)")
+            "login" -> Log.d(TAG, "로그인 화면 활성화")
+            "home" -> Log.d(TAG, "홈 화면 활성화 (사용자: $currentUserEmail)")
+            "qr" -> Log.d(TAG, "QR 스캔 화면 활성화")
+            "payment" -> Log.d(TAG, "결제 화면 활성화")
+            "settlement_method" -> Log.d(TAG, "정산 방식 선택 화면 활성화")
+            "settlement_participants" -> Log.d(TAG, "정산 참여자 화면 활성화")
         }
     }
 
@@ -106,7 +115,7 @@ fun SolsolApp() {
                 },
                 onNavigateToSettlement = {
                     Log.d(TAG, "정산 화면으로 이동 (미구현)")
-                    // TODO: 정산 화면 구현 후 연결
+                    currentScreen = "settlement_method"
                 },
                 onNavigateToCouncil = {
                     Log.d(TAG, "학생회 화면으로 이동 (미구현)")
@@ -146,6 +155,100 @@ fun SolsolApp() {
             )
         }
 
+        "settlement_method" -> {
+            // 정산 방식 선택 화면
+            com.heyyoung.solsol.feature.settlement.presentation.SettlementMethodScreen(
+                onNavigateBack = {
+                    Log.d(TAG, "정산 방식 선택에서 홈으로 돌아가기")
+                    currentScreen = "home"
+                },
+                onMethodSelected = { method ->
+                    Log.d(TAG, "정산 방식 선택됨: $method")
+                    selectedSettlementMethod = method
+                    currentScreen = "settlement_participants"
+                }
+            )
+        }
+
+        "settlement_participants" -> {
+            // 정산 참여자 선택 화면
+            com.heyyoung.solsol.feature.settlement.presentation.SettlementParticipantsScreen(
+                onNavigateBack = {
+                    Log.d(TAG, "참여자 선택에서 방식 선택으로 돌아가기")
+                    currentScreen = "settlement_method"
+                },
+                onNext = { participants ->
+                    Log.d(TAG, "참여자 선택 완료: ${participants.size}명, 방식: $selectedSettlementMethod")
+                    settlementParticipants = participants
+                    when (selectedSettlementMethod) {
+                        "equal" -> {
+                            Log.d(TAG, "똑같이 나누기 화면으로 이동")
+                            currentScreen = "settlement_equal"
+                        }
+                        "manual" -> {
+                            Log.d(TAG, "직접 입력하기 화면으로 이동")
+                            currentScreen = "settlement_manual"
+                        }
+                        "random" -> {
+                            Log.d(TAG, "랜덤 게임 화면으로 이동 (미구현)")
+                            // TODO: 랜덤 게임 화면 구현 후 연결
+                            currentScreen = "home" // 임시로 홈으로
+                        }
+                        else -> {
+                            Log.w(TAG, "알 수 없는 정산 방식: $selectedSettlementMethod")
+                            currentScreen = "home"
+                        }
+                    }
+                }
+            )
+        }
+
+        "settlement_equal" -> {
+            // 똑같이 나누기 화면
+            com.heyyoung.solsol.feature.settlement.presentation.SettlementEqualScreen(
+                participants = settlementParticipants,
+                onNavigateBack = {
+                    Log.d(TAG, "똑같이 나누기에서 참여자 선택으로 돌아가기")
+                    currentScreen = "settlement_participants"
+                },
+                onRequestSettlement = { totalAmount, settlementMap ->
+                    Log.d(TAG, "똑같이 나누기 정산 요청 완료!")
+                    Log.d(TAG, "총액: ${totalAmount}원, 참여자: ${settlementMap.size}명")
+
+                    settlementMap.forEach { (person, amount) ->
+                        Log.d(TAG, "  ${person.name}: ${amount}원")
+                    }
+                    // 해커톤용: 정산 완료 후 홈으로 이동
+                    currentScreen = "home"
+                    // 정산 상태 초기화
+                    selectedSettlementMethod = null
+                    settlementParticipants = emptyList()
+                }
+            )
+        }
+
+        "settlement_manual" -> {
+            // 직접 입력하기 화면
+            com.heyyoung.solsol.feature.settlement.presentation.SettlementManualScreen(
+                participants = settlementParticipants,
+                onNavigateBack = {
+                    Log.d(TAG, "직접 입력하기에서 참여자 선택으로 돌아가기")
+                    currentScreen = "settlement_participants"
+                },
+                onRequestSettlement = { totalAmount, settlementMap ->
+                    Log.d(TAG, "직접 입력하기 정산 요청 완료!")
+                    Log.d(TAG, "총액: ${totalAmount}원, 입력된 사람: ${settlementMap.size}명")
+                    settlementMap.forEach { (person, amount) ->
+                        Log.d(TAG, "  ${person.name}: ${amount}원")
+                    }
+                    // 해커톤용: 정산 완료 후 홈으로 이동
+                    currentScreen = "home"
+                    // 정산 상태 초기화
+                    selectedSettlementMethod = null
+                    settlementParticipants = emptyList()
+                }
+            )
+        }
 
         else -> {
             // 예상치 못한 화면 상태
