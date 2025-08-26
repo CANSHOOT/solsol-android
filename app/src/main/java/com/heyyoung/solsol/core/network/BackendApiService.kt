@@ -37,6 +37,9 @@ interface BackendApiService {
     suspend fun refreshToken(
         @Body request: RefreshTokenRequest
     ): Response<AuthResponse>
+
+    @GET("users/{userId}")
+    suspend fun getUser(@Path("userId") userId: String): Response<UserDto>
 }
 
 // ========== Request 데이터 클래스들 ==========
@@ -86,4 +89,16 @@ data class AuthResponse(
 data class ErrorResponse(
     val message: String,
     val code: String? = null
+)
+
+data class UserDto(
+    val userId: String,
+    val studentNumber: String,
+    val name: String,
+    val departmentId: Int,
+    val departmentName: String,
+    val councilId: Int,
+    val accountNo: String,
+    val accountBalance: Long,
+    val councilOfficer: Boolean
 )

@@ -218,6 +218,38 @@ class BackendAuthRepository @Inject constructor(
         }
     }
 
+    suspend fun getUserProfile(userId: String): BackendApiResult<UserDto> {
+        return try {
+            val res = backendApiService.getUser(userId)
+            if (res.isSuccessful && res.body() != null) {
+                BackendApiResult.Success(res.body()!!)
+            } else {
+                BackendApiResult.Error(parseErrorMessage(res.code(), res.message()))
+            }
+        } catch (e: Exception) {
+            BackendApiResult.Error("네트워크 연결을 확인해주세요")
+        }
+    }
+
+    suspend fun getMyProfile(): BackendApiResult<UserDto> {
+        return try {
+            val userInfo = tokenManager.getUserInfo().first()
+            val userId = userInfo?.userId
+            if (userId.isNullOrBlank()) {
+                return BackendApiResult.Error("로그인이 필요합니다")
+            }
+
+            val response = backendApiService.getUser(userId)
+            if (response.isSuccessful && response.body() != null) {
+                BackendApiResult.Success(response.body()!!)
+            } else {
+                BackendApiResult.Error(parseErrorMessage(response.code(), response.message()))
+            }
+        } catch (e: Exception) {
+            BackendApiResult.Error("네트워크 연결을 확인해주세요")
+        }
+    }
+
     /**
      * HTTP 에러 코드에 따른 사용자 친화적 메시지 생성
      */
