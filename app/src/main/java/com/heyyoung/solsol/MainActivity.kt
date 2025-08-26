@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import com.heyyoung.solsol.feature.auth.presentation.LoginScreen
 import com.heyyoung.solsol.feature.home.presentation.HomeScreen
 import com.heyyoung.solsol.feature.settlement.presentation.SettlementEqualScreen
+import com.heyyoung.solsol.feature.studentcouncil.presentation.OcrCameraScreen
+import com.heyyoung.solsol.feature.studentcouncil.presentation.StudentCouncilScreen
 import com.heyyoung.solsol.ui.theme.SolsolTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -114,12 +116,12 @@ fun SolsolApp() {
                     currentScreen = "qr"
                 },
                 onNavigateToSettlement = {
-                    Log.d(TAG, "정산 화면으로 이동 (미구현)")
+                    Log.d(TAG, "정산 화면으로 이동")
                     currentScreen = "settlement_method"
                 },
                 onNavigateToCouncil = {
-                    Log.d(TAG, "학생회 화면으로 이동 (미구현)")
-                    // TODO: 학생회 화면 구현 후 연결
+                    Log.d(TAG, "학생회 화면으로 이동")
+                    currentScreen = "council"
                 }
             )
         }
@@ -247,6 +249,30 @@ fun SolsolApp() {
                     selectedSettlementMethod = null
                     settlementParticipants = emptyList()
                 }
+            )
+        }
+
+        // ✅ 학생회 메인
+        "council" -> {
+            StudentCouncilScreen(
+                onNavigateBack = { currentScreen = "home" },
+                onNavigateToExpenseHistory = { currentScreen = "council_history" },
+                onNavigateToExpenseRegister = { currentScreen = "council_register" } // 영수증 OCR 스캔
+            )
+        }
+
+//        // 학생회 지출 내역
+//        "council_history" -> {
+//            StudentCouncilExpenseHistoryScreen(
+//                onNavigateBack = { currentScreen = "council" }
+//            )
+//        }
+
+        // 학생회 지출 등록(OCR 카메라)
+        "council_register" -> {
+            OcrCameraScreen(
+                onNavigateBack = { currentScreen = "council" },
+                onOcrResult = { /* 필요하면 결과 저장 후 */ currentScreen = "council_history" }
             )
         }
 
