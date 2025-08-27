@@ -1,5 +1,11 @@
 package com.heyyoung.solsol.feature.settlement.presentation.game
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,12 +19,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.heyyoung.solsol.feature.settlement.domain.game.GameViewModel
+import com.heyyoung.solsol.feature.settlement.domain.game.Phase
 import com.heyyoung.solsol.feature.settlement.domain.game.Role
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,16 +39,56 @@ fun HostScreen(
 ) {
     var roomTitle by remember { mutableStateOf("") }
     var playerName by remember { mutableStateOf("") }
-    
+
     val role by viewModel.role.collectAsState()
     val isAdvertising by viewModel.nearby.isAdvertising.collectAsState()
-    
-    LaunchedEffect(role) {
-        if (role == Role.HOST && isAdvertising) {
+    val roomState by viewModel.roomState.collectAsState()
+
+    val context = LocalContext.current
+
+    /** 요청할 권한 목록: OS 버전에 맞춰 구성 */
+    val requiredPerms = remember {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            buildList {
+                add(Manifest.permission.BLUETOOTH_ADVERTISE)
+                add(Manifest.permission.BLUETOOTH_SCAN)
+                add(Manifest.permission.BLUETOOTH_CONNECT)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    // (선택) Wi-Fi 근거리 탐색을 사용할 경우
+                    add(Manifest.permission.NEARBY_WIFI_DEVICES)
+                } else {
+                    // Android 10~11 스캔 호환
+                    add(Manifest.permission.ACCESS_FINE_LOCATION)
+                }
+            }.toTypedArray()
+        } else {
+            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+    }
+
+    fun hasAllPermissions(): Boolean =
+        requiredPerms.all { perm ->
+            ContextCompat.checkSelfPermission(context, perm) == PackageManager.PERMISSION_GRANTED
+        }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { result ->
+        val granted = result.values.all { it }
+        if (granted) {
+            viewModel.createRoom(roomTitle.trim(), playerName.trim())
+        } else {
+            Toast.makeText(context, "근거리 연결 권한을 모두 허용해주세요.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // 광고 시작되거나 방 단계가 GATHERING이면 룸 화면으로 이동
+    LaunchedEffect(isAdvertising, role, roomState?.phase) {
+        if (role == Role.HOST && (isAdvertising || roomState?.phase == Phase.GATHERING)) {
             onNavigateToRoom()
         }
     }
-    
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -67,10 +116,7 @@ fun HostScreen(
         ) {
             Spacer(modifier = Modifier.height(40.dp))
 
-            Text(
-                text = "🌐",
-                fontSize = 60.sp
-            )
+            Text(text = "🌐", fontSize = 60.sp)
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -134,46 +180,30 @@ fun HostScreen(
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFFF0F9FF)
-                ),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F9FF)),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(20.dp)
-                ) {
+                Column(modifier = Modifier.padding(20.dp)) {
                     Text(
                         text = "💡 호스트 안내",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1E40AF)
                     )
-                    
                     Spacer(modifier = Modifier.height(12.dp))
-                    
                     Text(
                         text = "• 방을 만들면 주변 기기에서 검색할 수 있습니다",
-                        fontSize = 14.sp,
-                        color = Color(0xFF1E40AF),
-                        lineHeight = 20.sp
+                        fontSize = 14.sp, color = Color(0xFF1E40AF), lineHeight = 20.sp
                     )
-                    
                     Spacer(modifier = Modifier.height(4.dp))
-                    
                     Text(
                         text = "• 참가자가 모이면 게임을 시작할 수 있습니다",
-                        fontSize = 14.sp,
-                        color = Color(0xFF1E40AF),
-                        lineHeight = 20.sp
+                        fontSize = 14.sp, color = Color(0xFF1E40AF), lineHeight = 20.sp
                     )
-                    
                     Spacer(modifier = Modifier.height(4.dp))
-                    
                     Text(
                         text = "• 게임 진행과 결과를 관리합니다",
-                        fontSize = 14.sp,
-                        color = Color(0xFF1E40AF),
-                        lineHeight = 20.sp
+                        fontSize = 14.sp, color = Color(0xFF1E40AF), lineHeight = 20.sp
                     )
                 }
             }
@@ -183,7 +213,11 @@ fun HostScreen(
             Button(
                 onClick = {
                     if (roomTitle.isNotBlank() && playerName.isNotBlank()) {
-                        viewModel.createRoom(roomTitle.trim(), playerName.trim())
+                        if (hasAllPermissions()) {
+                            viewModel.createRoom(roomTitle.trim(), playerName.trim())
+                        } else {
+                            permissionLauncher.launch(requiredPerms)
+                        }
                     }
                 },
                 enabled = roomTitle.isNotBlank() && playerName.isNotBlank() && !isAdvertising,
