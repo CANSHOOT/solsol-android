@@ -2,7 +2,6 @@ package com.heyyoung.solsol.feature.studentcouncil.presentation
 
 import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
@@ -14,9 +13,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ArrowBack
@@ -30,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -39,9 +42,16 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+
+// ReceiptParser 연동
+import com.heyyoung.solsol.feature.studentcouncil.presentation.ReceiptParser
+import com.heyyoung.solsol.feature.studentcouncil.presentation.ReceiptFields
 
 private const val TAG = "OcrCameraScreen"
 
@@ -137,12 +147,7 @@ fun OcrCameraScreen(
                 )
 
                 // 처리 중 오버레이
-                if (uiState.isProcessing) {
-                    ProcessingOverlay()
-                }
-
-                // 가이드 프레임
-                CameraGuideFrame()
+                if (uiState.isProcessing) ProcessingOverlay()
             }
 
             // 하단 컨트롤
@@ -169,13 +174,14 @@ fun OcrCameraScreen(
                 )
             }
 
-            // OCR 결과 표시
+            // OCR 결과 표시 (필드 길게 눌러 수정)
             ocrResult?.let { result ->
-                OcrResultCard(
+                OcrResultCardEditable(
                     result = result,
+                    onChange = { updated -> ocrResult = updated },
                     onRetake = { ocrResult = null },
                     onConfirm = {
-                        onOcrResult(result)
+                        ocrResult?.let(onOcrResult)
                         onNavigateBack()
                     }
                 )
@@ -282,57 +288,6 @@ private fun ProcessingOverlay() {
 }
 
 @Composable
-private fun CameraGuideFrame() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        // 가이드 프레임
-        Box(
-            modifier = Modifier
-                .size(width = 320.dp, height = 200.dp)
-                .background(Color.Transparent)
-        ) {
-            // 모서리 가이드
-            listOf(
-                Alignment.TopStart, Alignment.TopEnd,
-                Alignment.BottomStart, Alignment.BottomEnd
-            ).forEach { alignment ->
-                Box(
-                    modifier = Modifier
-                        .align(alignment)
-                        .size(24.dp)
-                        .background(
-                            Color.White,
-                            when (alignment) {
-                                Alignment.TopStart -> RoundedCornerShape(topStart = 12.dp)
-                                Alignment.TopEnd -> RoundedCornerShape(topEnd = 12.dp)
-                                Alignment.BottomStart -> RoundedCornerShape(bottomStart = 12.dp)
-                                else -> RoundedCornerShape(bottomEnd = 12.dp)
-                            }
-                        )
-                )
-            }
-        }
-
-        // 안내 텍스트
-        Text(
-            text = "영수증을 프레임에 맞춰 주세요",
-            color = Color.White,
-            fontSize = 14.sp,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .offset(y = (-140).dp)
-                .background(
-                    Color.Black.copy(alpha = 0.6f),
-                    RoundedCornerShape(20.dp)
-                )
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-    }
-}
-
-@Composable
 private fun CameraControls(
     isProcessing: Boolean,
     onCaptureClick: () -> Unit
@@ -358,12 +313,18 @@ private fun CameraControls(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
-private fun OcrResultCard(
+private fun OcrResultCardEditable(
     result: OcrResult,
+    onChange: (OcrResult) -> Unit,
     onRetake: () -> Unit,
     onConfirm: () -> Unit
 ) {
+    // 편집 다이얼로그 상태
+    var editTarget by remember { mutableStateOf<EditTarget?>(null) }
+    var showDatePicker by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -383,7 +344,7 @@ private fun OcrResultCard(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "영수증 인식 완료",
+                text = "영수증 인식 완료 (필드를 길게 눌러 수정)",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF1C1C1E)
@@ -399,11 +360,29 @@ private fun OcrResultCard(
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
-                ResultRow("상호명", result.storeName)
+                // 상호명 (Long-press)
+                ResultRow(
+                    label = "상호명",
+                    value = result.storeName,
+                    onLongPress = { editTarget = EditTarget.StoreName(result.storeName) }
+                )
                 Spacer(modifier = Modifier.height(12.dp))
-                ResultRow("금액", "${String.format("%,d", result.amount)}원")
+
+                // 금액 (Long-press)
+                ResultRow(
+                    label = "금액",
+                    value = "${String.format("%,d", result.amount)}원",
+                    onLongPress = { editTarget = EditTarget.Amount(result.amount) }
+                )
                 Spacer(modifier = Modifier.height(12.dp))
-                ResultRow("날짜", result.date)
+
+                // 날짜 (Long-press → DatePicker)
+                ResultRow(
+                    label = "날짜",
+                    value = result.date,
+                    onLongPress = { showDatePicker = true }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
             }
         }
 
@@ -445,11 +424,77 @@ private fun OcrResultCard(
 
         Spacer(modifier = Modifier.height(16.dp))
     }
+
+    // ───── 텍스트/숫자 편집 다이얼로그 ─────
+    when (val t = editTarget) {
+        is EditTarget.StoreName -> {
+            EditTextDialog(
+                title = "상호명 수정",
+                initial = t.current,
+                keyboardType = KeyboardType.Text,
+                onDismiss = { editTarget = null },
+                onConfirm = { new ->
+                    onChange(result.copy(storeName = new.ifBlank { result.storeName }))
+                    editTarget = null
+                }
+            )
+        }
+        is EditTarget.Amount -> {
+            EditTextDialog(
+                title = "금액 수정",
+                initial = result.amount.toString(),
+                keyboardType = KeyboardType.Number,
+                onDismiss = { editTarget = null },
+                onConfirm = { new ->
+                    val parsed = new.filter { it.isDigit() }.toLongOrNull()
+                    if (parsed != null) onChange(result.copy(amount = parsed))
+                    editTarget = null
+                }
+            )
+        }
+        null -> Unit
+    }
+
+    // ───── 날짜 선택 다이얼로그 (Material3 DatePicker) ─────
+    if (showDatePicker) {
+        val initialMillis = remember(result.date) { parseDateToMillis(result.date) ?: System.currentTimeMillis() }
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
+
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val millis = datePickerState.selectedDateMillis ?: return@TextButton
+                    val local = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
+                    onChange(result.copy(date = local.format(DateTimeFormatter.ISO_LOCAL_DATE)))
+                    showDatePicker = false
+                }) { Text("확인") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("취소") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ResultRow(label: String, value: String) {
-    Column {
+private fun ResultRow(
+    label: String,
+    value: String,
+    onLongPress: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = {},
+                onLongClick = onLongPress
+            )
+            .padding(vertical = 2.dp)
+    ) {
         Text(
             text = label,
             fontSize = 12.sp,
@@ -460,6 +505,11 @@ private fun ResultRow(label: String, value: String) {
             fontSize = 16.sp,
             fontWeight = FontWeight.SemiBold,
             color = Color(0xFF1C1C1E)
+        )
+        Text(
+            text = "길게 눌러 수정",
+            fontSize = 11.sp,
+            color = Color(0xFF9AA0A6)
         )
     }
 }
@@ -546,7 +596,7 @@ private fun captureAndProcessImage(
     )
 }
 
-// OCR 처리
+// OCR 처리 + ReceiptParser 적용
 private fun processImageWithOcr(
     context: Context,
     imageUri: Uri,
@@ -567,7 +617,9 @@ private fun processImageWithOcr(
 
         recognizer.process(image)
             .addOnSuccessListener { visionText ->
-                val result = parseReceiptText(visionText.text)
+                // ★ ReceiptParser 로 파싱
+                val fields = ReceiptParser.parse(visionText.text)
+                val result = mapReceiptFieldsToOcrResult(fields, fallbackText = visionText.text)
                 Log.d(TAG, "OCR 성공: $result")
                 onResult(result)
             }
@@ -581,64 +633,24 @@ private fun processImageWithOcr(
     }
 }
 
-// 영수증 텍스트 파싱
-private fun parseReceiptText(text: String): OcrResult {
-    val lines = text.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
+// ReceiptParser → OcrResult 매핑
+private fun mapReceiptFieldsToOcrResult(fields: ReceiptFields, fallbackText: String): OcrResult {
+    val store = fields.merchant?.takeIf { it.isNotBlank() }
+        ?: fallbackText.lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "상호명 불명" }
 
-    // 금액 찾기
-    val amountRegex = """(\d{1,3}(,\d{3})*|\d+)원?""".toRegex()
-    val amounts = lines.flatMap { line ->
-        amountRegex.findAll(line).map { match ->
-            match.groupValues[1].replace(",", "").toLongOrNull() ?: 0L
-        }
-    }.filter { it > 0 }
-    val amount = amounts.maxOrNull() ?: 0L
+    val amount = fields.total
+        ?.replace(Regex("[^\\d]"), "")
+        ?.toLongOrNull()
+        ?: 0L
 
-    // 상호명 (첫 번째 줄)
-    val storeName = lines.firstOrNull() ?: "상호명 불명"
-
-    // 날짜 찾기
-    val dateRegex = """(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})|\d{2}/\d{2}/\d{2}|\d{4}\d{2}\d{2}""".toRegex()
-    var date = ""
-    for (line in lines) {
-        val dateMatch = dateRegex.find(line)
-        if (dateMatch != null) {
-            date = formatDate(dateMatch.value)
-            break
-        }
-    }
-
-    if (date.isEmpty()) {
-        date = SimpleDateFormat("yyyy.MM.dd", Locale.KOREA).format(Date())
-    }
+    val dateIso = fields.date ?: SimpleDateFormat("yyyy-MM-dd", Locale.KOREA).format(Date())
 
     return OcrResult(
         amount = amount,
-        storeName = storeName,
-        date = date,
-        description = "${storeName} 지출"
+        storeName = store,
+        date = dateIso, // ISO-8601(yyyy-MM-dd)로 유지
+        description = "${store} 지출"
     )
-}
-
-private fun formatDate(dateStr: String): String {
-    return try {
-        when {
-            dateStr.matches("""\d{4}[.\-/]\d{1,2}[.\-/]\d{1,2}""".toRegex()) -> {
-                dateStr.replace("-", ".").replace("/", ".")
-            }
-            dateStr.matches("""\d{2}/\d{2}/\d{2}""".toRegex()) -> {
-                val parts = dateStr.split("/")
-                "20${parts[0]}.${parts[1].padStart(2, '0')}.${parts[2].padStart(2, '0')}"
-            }
-            dateStr.matches("""\d{8}""".toRegex()) -> {
-                "${dateStr.substring(0,4)}.${dateStr.substring(4,6)}.${dateStr.substring(6,8)}"
-            }
-            else -> dateStr
-        }
-    } catch (e: Exception) {
-        Log.w(TAG, "날짜 형식 변환 실패: $dateStr", e)
-        dateStr
-    }
 }
 
 private fun rotateImageIfRequired(context: Context, bitmap: Bitmap, imageUri: Uri): Bitmap {
@@ -663,4 +675,57 @@ private fun rotateBitmap(bitmap: Bitmap, degrees: Float): Bitmap {
     val matrix = Matrix()
     matrix.postRotate(degrees)
     return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+}
+
+// 편집 타겟 정의
+private sealed interface EditTarget {
+    data class StoreName(val current: String) : EditTarget
+    data class Amount(val current: Long) : EditTarget
+}
+
+@Composable
+private fun EditTextDialog(
+    title: String,
+    initial: String,
+    keyboardType: KeyboardType,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var text by remember { mutableStateOf(initial) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(text) }) { Text("확인") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("취소") }
+        }
+    )
+}
+
+// 날짜 문자열 → epoch millis (여러 포맷 허용)
+private fun parseDateToMillis(s: String): Long? {
+    val candidates = listOf(
+        DateTimeFormatter.ISO_LOCAL_DATE,                 // yyyy-MM-dd
+        DateTimeFormatter.ofPattern("yyyy.MM.dd"),        // yyyy.MM.dd
+        DateTimeFormatter.ofPattern("yyyy/M/d"),          // yyyy/M/d
+        DateTimeFormatter.ofPattern("yyyy.M.d")           // yyyy.M.d
+    )
+    for (fmt in candidates) {
+        try {
+            val local = java.time.LocalDate.parse(s.trim(), fmt)
+            return local.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        } catch (_: Exception) { }
+    }
+    return null
 }
