@@ -211,14 +211,20 @@ data class DeptExpenditureListResponse(
 }
 
 data class FeeStatusResponse(
-    val userId: String,
-    val name: String,
-    val department: String,
-    val studentId: String,
-    val paid: Boolean,
-    val paidAt: String?
-)
-
+    val totalStudents: Int,
+    val paidCount: Int,
+    val students: List<StudentStatus>
+) {
+    data class StudentStatus(
+        val userId: String,
+        val name: String,
+        val departmentName: String,
+        val studentNumber: String,
+        val paid: Boolean,
+        // 백은 Instant로 주지만, 안드로이드에선 문자열로 받는 편이 안전(레트로핏 Instant 어댑터 없을 수 있음)
+        val paidAt: String?
+    )
+}
 data class AccountTransferResponse(
     val transactionId: String,
     val status: String,

@@ -297,7 +297,8 @@ fun SolsolApp() {
         // 학생회 회비 현황
         "council_fee_status" -> {
             StudentCouncilFeeStatusScreen(
-                onNavigateBack = { currentScreen = "council" }
+                onNavigateBack = { currentScreen = "council" },
+                feeStatusList = viewModel.feeStatus?.let { listOf(it) } ?: emptyList()
             )
         }
 
