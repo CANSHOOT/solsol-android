@@ -28,6 +28,9 @@ class StudentCouncilViewModel @Inject constructor(
     var summary by mutableStateOf<DeptHomeSummaryResponse?>(null)
         private set
 
+    var currentBalance by mutableStateOf<Long>(0L)
+        private set
+
     // 로딩/에러 상태
     var isLoading by mutableStateOf(false)
         private set
@@ -75,6 +78,7 @@ class StudentCouncilViewModel @Inject constructor(
                         approvedBy = null
                     )
                 }
+                currentBalance = it.header.currentBalance.toLong()
             }.onFailure { e ->
                 errorMessage = "지출 내역 불러오기 실패: ${e.message}"
                 Log.e("StudentCouncilVM", "지출 내역 실패", e)

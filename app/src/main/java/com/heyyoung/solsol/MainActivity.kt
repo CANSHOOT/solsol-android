@@ -277,7 +277,8 @@ fun SolsolApp() {
         "council_history" -> {
             StudentCouncilExpenseHistoryScreen(
                 onNavigateBack = { currentScreen = "council" },
-                expenseList = viewModel.expenditureList
+                expenseList = viewModel.expenditureList,
+                currentBalance = viewModel.currentBalance
             )
         }
 

@@ -30,7 +30,8 @@ private const val TAG = "ExpenseHistoryScreen"
 fun StudentCouncilExpenseHistoryScreen(
     onNavigateBack: () -> Unit = {},
     onNavigateToRegister: () -> Unit = {},
-    expenseList: List<CouncilExpenditureResponse> = emptyList()
+    expenseList: List<CouncilExpenditureResponse> = emptyList(),
+    currentBalance: Long
 ) {
     Log.d(TAG, "지출 내역 화면 진입 - 총 ${expenseList.size}개 항목")
 
@@ -84,7 +85,10 @@ fun StudentCouncilExpenseHistoryScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             // 이번 달 지출 요약 카드
-            ExpenseSummaryCard(expenseList = expenseList)
+            ExpenseSummaryCard(
+                expenseList = expenseList,
+                currentBalance = currentBalance
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -110,7 +114,10 @@ fun StudentCouncilExpenseHistoryScreen(
 }
 
 @Composable
-private fun ExpenseSummaryCard(expenseList: List<CouncilExpenditureResponse>) {
+private fun ExpenseSummaryCard(
+    expenseList: List<CouncilExpenditureResponse>,
+    currentBalance: Long
+    ) {
     val currentMonth = SimpleDateFormat("yyyy-MM", Locale.KOREA).format(Date())
     val monthlyTotal = expenseList
         .filter { it.expenditureDate.startsWith(currentMonth) }
@@ -152,7 +159,7 @@ private fun ExpenseSummaryCard(expenseList: List<CouncilExpenditureResponse>) {
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "현재 잔액: 1,250,000원",
+                text = "현재 잔액: ${String.format("%,d", currentBalance)}원",
                 fontSize = 14.sp,
                 color = Color(0xFF666666)
             )

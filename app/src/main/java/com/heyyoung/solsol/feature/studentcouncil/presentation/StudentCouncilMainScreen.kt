@@ -52,7 +52,8 @@ fun StudentCouncilMainScreen(
             StudentCouncilExpenseHistoryScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToRegister = { navController.navigate("ocr_camera") },
-                expenseList = viewModel.expenditureList // ← ViewModel 상태 그대로 사용
+                expenseList = viewModel.expenditureList,
+                currentBalance = viewModel.currentBalance
             )
         }
 
