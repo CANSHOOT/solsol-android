@@ -34,6 +34,7 @@ fun HomeScreen(
     onNavigateToQrScan: () -> Unit = {},
     onNavigateToSettlement: () -> Unit = {},
     onNavigateToCouncil: () -> Unit = {},
+    onNavigateToCoupon: () -> Unit = {},
     onLogout: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
@@ -101,6 +102,7 @@ fun HomeScreen(
             },
             onCouponsClick = {
                 Log.d(TAG, "쿠폰 메뉴 클릭")
+                onNavigateToCoupon()
             }
         )
 

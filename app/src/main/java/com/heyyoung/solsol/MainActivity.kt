@@ -144,6 +144,10 @@ fun SolsolApp() {
                 onNavigateToCouncil = {
                     Log.d(TAG, "학생회 화면으로 이동")
                     currentScreen = "council"
+                },
+                onNavigateToCoupon = {
+                    Log.d(TAG, "쿠폰 화면으로 이동")
+                    currentScreen = "coupon"
                 }
             )
         }
@@ -312,6 +316,16 @@ fun SolsolApp() {
                 deptId = 1L,          // 필요 시 실제 값으로 교체
                 councilId = 1L,       // 필요 시 실제 값으로 교체
                 onNavigateBack = { currentScreen = "home" }
+            )
+        }
+
+        "coupon" -> {
+            // 쿠폰 화면
+            com.heyyoung.solsol.feature.coupon.presentation.CouponScreen(
+                onNavigateBack = {
+                    Log.d(TAG, "쿠폰 화면에서 홈으로 돌아가기")
+                    currentScreen = "home"
+                }
             )
         }
 

@@ -136,6 +136,43 @@ class BackendPaymentRepository @Inject constructor(
     }
 
     /**
+     * 쿠폰 목록 조회
+     *
+     * 사용자가 보유한 쿠폰 목록을 조회합니다.
+     */
+    suspend fun getCoupons(): BackendApiResult<List<CouponItem>> {
+        Log.d(TAG, "쿠폰 목록 조회 시작")
+
+        return try {
+            // 토큰 가져오기
+            val accessToken = tokenManager.getAccessToken()?.first()
+            
+            if (accessToken.isNullOrEmpty()) {
+                Log.e(TAG, "액세스 토큰이 없습니다")
+                return BackendApiResult.Error("로그인이 필요합니다")
+            }
+
+            // 쿠폰 목록 조회 API 호출
+            val response = backendApiService.getCoupons("Bearer $accessToken")
+
+            if (response.isSuccessful && response.body() != null) {
+                val couponsResponse = response.body()!!
+                Log.i(TAG, "쿠폰 목록 조회 성공: ${couponsResponse.coupons.size}개 쿠폰")
+                
+                BackendApiResult.Success(couponsResponse.coupons)
+            } else {
+                val errorMessage = parseErrorMessage(response.code(), response.message())
+                Log.e(TAG, "쿠폰 목록 조회 실패: $errorMessage")
+                BackendApiResult.Error(errorMessage)
+            }
+
+        } catch (e: Exception) {
+            Log.e(TAG, "쿠폰 목록 조회 중 예외: ${e.message}", e)
+            BackendApiResult.Error("네트워크 연결을 확인해주세요")
+        }
+    }
+
+    /**
      * HTTP 에러 코드에 따른 사용자 친화적 메시지 생성
      */
     private fun parseErrorMessage(code: Int, message: String?): String {
