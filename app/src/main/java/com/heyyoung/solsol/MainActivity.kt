@@ -93,12 +93,6 @@ fun SolsolApp() {
     var settlementTotalAmount by remember { mutableStateOf(0) }
     var settlementAmountPerPerson by remember { mutableStateOf(0) }
 
-    var settlementParticipants by remember {
-        mutableStateOf<List<com.heyyoung.solsol.feature.settlement.presentation.Person>>(
-            emptyList()
-        )
-    }
-
     // OCR 테스트 페이지로 넘길 상태
     var lastOcrImageUri by remember { mutableStateOf<Uri?>(null) }
     var lastOcrText by remember { mutableStateOf<String?>(null) }
