@@ -1,5 +1,6 @@
 package com.heyyoung.solsol.feature.studentcouncil.presentation
 
+import android.util.Log
 import androidx.compose.runtime.*
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
@@ -7,6 +8,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.heyyoung.solsol.core.network.CouncilExpenditureRequest
 import com.heyyoung.solsol.feature.studentcouncil.StudentCouncilViewModel
+import java.time.LocalDate
+import java.time.ZoneOffset
 
 /**
  * Main 엔트리: 학생회 화면
@@ -67,11 +70,15 @@ fun StudentCouncilMainScreen(
             OcrCameraScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onOcrResult = { result ->
+                    Log.d("OcrResult", "최종 OCR 결과 = $result")
                     val req = CouncilExpenditureRequest(
                         councilId = councilId,
                         amount = result.amount,
                         description = result.description.ifBlank { "${result.storeName} 지출" },
-                        expenditureDate = result.date, // yyyy-MM-dd
+                        expenditureDate = LocalDate.parse(result.date)
+                            .atStartOfDay(ZoneOffset.UTC)
+                            .toInstant()
+                            .toString(), // → "2025-08-27T00:00:00Z"
                         category = "일반"
                     )
                     viewModel.addExpenditure(req)

@@ -1,5 +1,6 @@
 package com.heyyoung.solsol.feature.studentcouncil
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -36,7 +37,7 @@ class StudentCouncilViewModel @Inject constructor(
     /**
      * 홈 요약 불러오기
      */
-    fun loadDeptSummary(month: String? = null, semester: String? = null) {
+    fun loadDeptSummary(month: String? = null, semester: String? = "2025-1") {
         viewModelScope.launch {
             isLoading = true
             runCatching {
@@ -44,6 +45,7 @@ class StudentCouncilViewModel @Inject constructor(
             }.onSuccess {
                 summary = it
                 errorMessage = null
+                Log.d("DeptSummary", "result: " + summary.toString());
             }.onFailure { e ->
                 errorMessage = "홈 요약 실패: ${e.message}"
                 android.util.Log.e("StudentCouncilVM", "home failed", e)
@@ -63,6 +65,7 @@ class StudentCouncilViewModel @Inject constructor(
             }.onSuccess {
                 expenditureList = it.expenditures
                 errorMessage = null
+                Log.d("DeptSummary", "result: " + expenditureList);
             }.onFailure { e ->
                 errorMessage = "지출 내역 불러오기 실패: ${e.message}"
             }
@@ -81,6 +84,7 @@ class StudentCouncilViewModel @Inject constructor(
             }.onSuccess {
                 feeStatus = it
                 errorMessage = null
+                Log.d("DeptSummary", "result: " + feeStatus.toString());
             }.onFailure { e ->
                 errorMessage = "회비 현황 불러오기 실패: ${e.message}"
             }

@@ -45,7 +45,7 @@ interface BackendApiService {
     // ================= 학생회/정산 =======================
 
     // 1. 학과 홈 요약
-    @GET("/v1/settlement/home")
+    @GET("/api/v1/settlement/home")
     suspend fun getDeptSummary(
         @Query("month") month: String? = null,
         @Query("semester") semester: String? = null,
@@ -53,7 +53,7 @@ interface BackendApiService {
     ): DeptHomeSummaryResponse
 
     // 2. 지출 목록
-    @GET("/v1/settlement/expenditures")
+    @GET("/api/v1/settlement/expenditures")
     suspend fun getExpenditures(
         @Query("month") month: String? = null,
         @Query("tz") tz: String = "+09:00",
@@ -62,20 +62,20 @@ interface BackendApiService {
     ): DeptExpenditureListResponse
 
     // 3. 회비 납부 현황 (특정 회비)
-    @GET("/v1/settlement/councils/{councilId}/fees/{feeId}/status")
+    @GET("/api/v1/settlement/councils/{councilId}/fees/{feeId}/status")
     suspend fun getFeeStatus(
         @Path("councilId") councilId: Long,
         @Path("feeId") feeId: Long
     ): FeeStatusResponse
 
     // 4. 회비 송금
-    @POST("/v1/councils/transfer")
+    @POST("/api/v1/councils/transfer")
     suspend fun transferFee(
         @Body request: CouncilFeeTransferCommand
     ): AccountTransferResponse
 
     // 5. 학생회 지출 등록
-    @POST("/v1/council-expenditures")
+    @POST("/api/v1/council-expenditures")
     suspend fun addExpenditure(
         @Body request: CouncilExpenditureRequest
     ): CouncilExpenditureResponse
