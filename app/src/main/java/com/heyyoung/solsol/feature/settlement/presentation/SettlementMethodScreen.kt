@@ -26,7 +26,8 @@ private const val TAG = "SettlementMethodScreen"
 @Composable
 fun SettlementMethodScreen(
     onNavigateBack: () -> Unit = {},
-    onMethodSelected: (String) -> Unit = {}
+    onMethodSelected: (String) -> Unit = {},
+    onNavigateToGame: () -> Unit = {}
 ) {
     // 선택된 방식 상태 관리 (초기값을 명시적으로 null로 설정)
     var selectedMethod by remember { mutableStateOf<String?>(null) }
@@ -148,7 +149,12 @@ fun SettlementMethodScreen(
                     Log.d(TAG, "다음 버튼 클릭, 선택된 방식: $selectedMethod")
                     selectedMethod?.let { method ->
                         Log.d(TAG, "선택된 방식으로 진행: $method")
-                        onMethodSelected(method)
+                        if (method == "random") {
+                            Log.d(TAG, "랜덤 게임으로 네비게이션")
+                            onNavigateToGame()
+                        } else {
+                            onMethodSelected(method)
+                        }
                     } ?: Log.w(TAG, "선택된 방식이 없음")
                 },
                 enabled = selectedMethod != null,
