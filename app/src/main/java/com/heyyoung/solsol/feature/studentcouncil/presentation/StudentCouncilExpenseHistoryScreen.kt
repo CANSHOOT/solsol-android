@@ -119,8 +119,11 @@ private fun ExpenseSummaryCard(
     currentBalance: Long
     ) {
     val currentMonth = SimpleDateFormat("yyyy-MM", Locale.KOREA).format(Date())
+
+    // null-safe + 포맷 유연: "yyyy-MM-dd"나 "yyyy-MM-ddTHH:mm..." 모두 OK
     val monthlyTotal = expenseList
-        .filter { it.expenditureDate.startsWith(currentMonth) }
+        .asSequence()
+        .filter { e -> e.expenditureDate?.take(7) == currentMonth }
         .sumOf { it.amount }
 
     Box(
@@ -143,25 +146,15 @@ private fun ExpenseSummaryCard(
                 shape = RoundedCornerShape(size = 8.dp)
             )
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.Center
-        ) {
+        Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.Center) {
             Text(
                 text = "이번 달 지출: ${String.format("%,d", monthlyTotal)}원",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1C1C1E)
+                fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1C1C1E)
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
+            Spacer(Modifier.height(8.dp))
             Text(
                 text = "현재 잔액: ${String.format("%,d", currentBalance)}원",
-                fontSize = 14.sp,
-                color = Color(0xFF666666)
+                fontSize = 14.sp, color = Color(0xFF666666)
             )
         }
     }
@@ -170,6 +163,7 @@ private fun ExpenseSummaryCard(
 @Composable
 private fun ExpenseItemCard(expense: CouncilExpenditureResponse) {
     Log.v(TAG, "지출 항목 렌더링: ${expense.description} - ${expense.amount}원")
+    val dateText = expense.expenditureDate?.take(10) ?: "—"  // null-safe + ISO 포맷 대응
 
     Box(
         modifier = Modifier
@@ -197,11 +191,7 @@ private fun ExpenseItemCard(expense: CouncilExpenditureResponse) {
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                Text(
-                    text = expense.expenditureDate,
-                    fontSize = 12.sp,
-                    color = Color(0xFF666666)
-                )
+                Text(text = dateText, fontSize = 12.sp, color = Color(0xFF666666))
 
                 Spacer(modifier = Modifier.height(2.dp))
 
