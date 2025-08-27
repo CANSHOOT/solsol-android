@@ -63,11 +63,21 @@ class StudentCouncilViewModel @Inject constructor(
             runCatching {
                 api.getExpenditures(month = month, page = page, size = size)
             }.onSuccess {
-                expenditureList = it.expenditures
-                errorMessage = null
-                Log.d("DeptSummary", "result: " + expenditureList);
+                Log.d("StudentCouncilVM", "백엔드 응답: $it")
+                expenditureList = it.items.map { item ->
+                    CouncilExpenditureResponse(
+                        expenditureId = item.expenditureId,
+                        councilId = summary?.header?.councilId ?: 0L, // 필요시 매핑
+                        amount = item.amount.toLong(),
+                        description = item.description,
+                        expenditureDate = item.date,
+                        category = "일반",
+                        approvedBy = null
+                    )
+                }
             }.onFailure { e ->
                 errorMessage = "지출 내역 불러오기 실패: ${e.message}"
+                Log.e("StudentCouncilVM", "지출 내역 실패", e)
             }
             isLoading = false
         }

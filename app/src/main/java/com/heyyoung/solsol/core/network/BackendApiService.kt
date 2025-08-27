@@ -181,10 +181,34 @@ data class DeptHomeSummaryResponse(
 }
 
 data class DeptExpenditureListResponse(
-    val monthSpendTotal: Long,
-    val currentBalance: Long,
-    val expenditures: List<CouncilExpenditureResponse>
-)
+    val header: Header,
+    val summary: Summary,
+    val page: PageMeta,
+    val items: List<Item>
+) {
+    data class Header(
+        val currentBalance: Double
+    )
+
+    data class Summary(
+        val month: String,
+        val monthSpendTotal: Double
+    )
+
+    data class PageMeta(
+        val page: Int,
+        val size: Int,
+        val totalElements: Long,
+        val totalPages: Int
+    )
+
+    data class Item(
+        val expenditureId: Long,
+        val date: String,
+        val description: String,
+        val amount: Double
+    )
+}
 
 data class FeeStatusResponse(
     val userId: String,

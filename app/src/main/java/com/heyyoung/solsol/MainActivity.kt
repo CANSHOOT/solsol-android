@@ -276,7 +276,8 @@ fun SolsolApp() {
         // 학생회 지출 내역
         "council_history" -> {
             StudentCouncilExpenseHistoryScreen(
-                onNavigateBack = { currentScreen = "council" }
+                onNavigateBack = { currentScreen = "council" },
+                expenseList = viewModel.expenditureList
             )
         }
 

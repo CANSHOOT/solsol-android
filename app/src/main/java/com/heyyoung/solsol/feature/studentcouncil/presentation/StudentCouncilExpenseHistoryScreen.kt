@@ -11,7 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.heyyoung.solsol.core.network.CouncilExpenditureResponse
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -29,7 +30,7 @@ private const val TAG = "ExpenseHistoryScreen"
 fun StudentCouncilExpenseHistoryScreen(
     onNavigateBack: () -> Unit = {},
     onNavigateToRegister: () -> Unit = {},
-    expenseList: List<ExpenseItem> = emptyList()
+    expenseList: List<CouncilExpenditureResponse> = emptyList()
 ) {
     Log.d(TAG, "지출 내역 화면 진입 - 총 ${expenseList.size}개 항목")
 
@@ -89,7 +90,6 @@ fun StudentCouncilExpenseHistoryScreen(
 
             // 지출 내역 리스트
             if (expenseList.isEmpty()) {
-                // 빈 상태
                 EmptyExpenseState(onAddExpense = onNavigateToRegister)
             } else {
                 LazyColumn(
@@ -110,10 +110,10 @@ fun StudentCouncilExpenseHistoryScreen(
 }
 
 @Composable
-private fun ExpenseSummaryCard(expenseList: List<ExpenseItem>) {
-    val currentMonth = SimpleDateFormat("yyyy.MM", Locale.KOREA).format(Date())
+private fun ExpenseSummaryCard(expenseList: List<CouncilExpenditureResponse>) {
+    val currentMonth = SimpleDateFormat("yyyy-MM", Locale.KOREA).format(Date())
     val monthlyTotal = expenseList
-        .filter { it.date.startsWith(currentMonth) }
+        .filter { it.expenditureDate.startsWith(currentMonth) }
         .sumOf { it.amount }
 
     Box(
@@ -161,8 +161,8 @@ private fun ExpenseSummaryCard(expenseList: List<ExpenseItem>) {
 }
 
 @Composable
-private fun ExpenseItemCard(expense: ExpenseItem) {
-    Log.v(TAG, "지출 항목 렌더링: ${expense.storeName} - ${expense.amount}원")
+private fun ExpenseItemCard(expense: CouncilExpenditureResponse) {
+    Log.v(TAG, "지출 항목 렌더링: ${expense.description} - ${expense.amount}원")
 
     Box(
         modifier = Modifier
@@ -186,12 +186,12 @@ private fun ExpenseItemCard(expense: ExpenseItem) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // 왼쪽: 날짜와 상호명
+            // 왼쪽: 날짜와 설명
             Column(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = expense.date,
+                    text = expense.expenditureDate,
                     fontSize = 12.sp,
                     color = Color(0xFF666666)
                 )
@@ -199,7 +199,7 @@ private fun ExpenseItemCard(expense: ExpenseItem) {
                 Spacer(modifier = Modifier.height(2.dp))
 
                 Text(
-                    text = expense.storeName,
+                    text = expense.description,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color(0xFF1C1C1E)
