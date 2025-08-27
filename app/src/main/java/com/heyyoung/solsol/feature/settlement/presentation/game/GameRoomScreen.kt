@@ -170,12 +170,19 @@ fun GameRoomScreen(
                     modifier = Modifier.weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    val isWinner = state.phase == Phase.FINISHED && state.winnerEndpointId == "self"
+                    // 현재 사용자가 당첨자인지 확인 - 이름으로 매칭
+                    val currentUser = state.members.find { it.isSelf }
+                    val winner = state.members.find { it.endpointId == state.winnerEndpointId }
+                    val isWinner = state.phase == Phase.FINISHED && currentUser != null && 
+                                 winner != null && currentUser.displayName == winner.displayName
+                    
                     val isLightOn = when {
                         state.phase == Phase.FINISHED -> {
-                            // 게임 종료 시: 저장된 최종 상태 또는 당첨자 여부 확인
+                            // 게임 종료 시: 이름으로 매칭 확인
                             val finalWinner = finalWinnerState.value ?: state.winnerEndpointId
-                            finalWinner == "self"
+                            val winnerMember = state.members.find { it.endpointId == finalWinner }
+                            currentUser != null && winnerMember != null && 
+                            currentUser.displayName == winnerMember.displayName
                         }
                         state.phase == Phase.RUNNING -> highlightIndex.intValue == 1 // 게임 중 애니메이션
                         else -> false // 대기 상태
@@ -262,7 +269,11 @@ fun GameRoomScreen(
                     }
                     
                     Phase.FINISHED -> {
-                        val isWinner = state.winnerEndpointId == "self"
+                        // 현재 사용자가 당첨자인지 확인 - 이름으로 매칭
+                        val currentUser = state.members.find { it.isSelf }
+                        val winner = state.members.find { it.endpointId == state.winnerEndpointId }
+                        val isWinner = currentUser != null && winner != null && 
+                                     currentUser.displayName == winner.displayName
                         
                         if (isWinner) {
                             // 당첨자용 UI
