@@ -149,6 +149,10 @@ fun SolsolApp() {
                 onNavigateToMoneyTransfer = {  // 이 부분 추가
                     Log.d(TAG, "송금하기 화면으로 이동")
                     currentScreen = "money_transfer"
+                },
+                onNavigateToCoupon = {
+                    Log.d(TAG, "쿠폰 화면으로 이동")
+                    currentScreen = "coupon"
                 }
             )
         }
@@ -345,14 +349,6 @@ fun SolsolApp() {
             StudentCouncilFeeStatusScreen(
                 onNavigateBack = { currentScreen = "council" },
                 feeStatusList = viewModel.feeStatus?.let { listOf(it) } ?: emptyList()
-            )
-        }
-
-        "money_transfer" -> {
-            MoneyTransferScreen(
-                onNavigateBack = {
-                    currentScreen = "home"
-                }
             )
         }
 

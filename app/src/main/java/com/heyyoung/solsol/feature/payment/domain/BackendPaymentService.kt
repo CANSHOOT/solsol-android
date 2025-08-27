@@ -38,6 +38,17 @@ interface BackendPaymentService {
         @Body request: CreatePaymentRequest,
         @Header("Authorization") authorization: String
     ): Response<CreatePaymentResponse>
+
+    /**
+     * 쿠폰 목록 조회
+     * GET discounts
+     *
+     * 사용자가 보유한 쿠폰 목록을 조회합니다.
+     */
+    @GET("discounts")
+    suspend fun getCoupons(
+        @Header("Authorization") authorization: String
+    ): Response<CouponsResponse>
 }
 
 data class PaymentPreviewResponse(
@@ -67,6 +78,23 @@ data class CreatePaymentResponse(
     val paymentId: String,
     val winning: Boolean,        // 쿠폰 당첨 여부
     val amount: Int             // 당첨 금액
+)
+
+/**
+ * 쿠폰 목록 응답
+ */
+data class CouponsResponse(
+    val coupons: List<CouponItem>
+)
+
+/**
+ * 개별 쿠폰 데이터
+ */
+data class CouponItem(
+    val discountCouponId: Int,
+    val amount: Int,
+    val createdDate: String,
+    val endDate: String
 )
 
 /**
