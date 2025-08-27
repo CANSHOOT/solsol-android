@@ -19,6 +19,7 @@ import com.heyyoung.solsol.feature.studentcouncil.StudentCouncilViewModel
 import com.heyyoung.solsol.feature.studentcouncil.presentation.OcrCameraScreen
 import com.heyyoung.solsol.feature.studentcouncil.presentation.ReceiptFields
 import com.heyyoung.solsol.feature.studentcouncil.presentation.StudentCouncilMainScreen
+import com.heyyoung.solsol.feature.studentcouncil.presentation.StudentCouncilExpenseHistoryScreen
 import com.heyyoung.solsol.feature.studentcouncil.presentation.StudentCouncilScreen
 import com.heyyoung.solsol.ui.theme.SolsolTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -263,7 +264,7 @@ fun SolsolApp() {
             )
         }
 
-        // ✅ 학생회 메인
+        // 학생회 메인
         "council" -> {
             StudentCouncilMainScreen(
                 deptId = 1L,          // 필요 시 실제 값으로 교체
@@ -272,12 +273,12 @@ fun SolsolApp() {
             )
         }
 
-//        // 학생회 지출 내역
-//        "council_history" -> {
-//            StudentCouncilExpenseHistoryScreen(
-//                onNavigateBack = { currentScreen = "council" }
-//            )
-//        }
+        // 학생회 지출 내역
+        "council_history" -> {
+            StudentCouncilExpenseHistoryScreen(
+                onNavigateBack = { currentScreen = "council" }
+            )
+        }
 
         // 학생회 지출 등록(OCR 카메라)
         "council_register" -> {
