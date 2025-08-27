@@ -20,6 +20,7 @@ import com.heyyoung.solsol.feature.studentcouncil.presentation.OcrCameraScreen
 import com.heyyoung.solsol.feature.studentcouncil.presentation.ReceiptFields
 import com.heyyoung.solsol.feature.studentcouncil.presentation.StudentCouncilMainScreen
 import com.heyyoung.solsol.feature.studentcouncil.presentation.StudentCouncilExpenseHistoryScreen
+import com.heyyoung.solsol.feature.studentcouncil.presentation.StudentCouncilFeeStatusScreen
 import com.heyyoung.solsol.feature.studentcouncil.presentation.StudentCouncilScreen
 import com.heyyoung.solsol.ui.theme.SolsolTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -290,6 +291,13 @@ fun SolsolApp() {
                     // 필요시 기존 호환용 로직
                     Log.d("SolsolApp", "OCR Result: $result")
                 }
+            )
+        }
+
+        // 학생회 회비 현황
+        "council_fee_status" -> {
+            StudentCouncilFeeStatusScreen(
+                onNavigateBack = { currentScreen = "council" }
             )
         }
 
