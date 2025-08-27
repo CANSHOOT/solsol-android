@@ -24,7 +24,7 @@ data class SerializableUserProfile(
  */
 fun UserDto.toUserProfile(): UserProfile {
     return UserProfile(
-        userId = this.email,
+        userId = this.userId,
         name = this.name,
         department = this.departmentName ?: "알 수 없음",
         studentNumber = this.studentNumber,

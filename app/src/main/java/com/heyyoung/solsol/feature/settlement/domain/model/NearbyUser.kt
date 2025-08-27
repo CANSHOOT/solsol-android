@@ -20,7 +20,9 @@ data class UserProfile(
     val department: String,  // 학과
     val studentNumber: String, // 학번
     val appVersion: String = "1.0" // 앱 버전 (호환성 확인용)
-)
+) {
+    companion object
+}
 
 /**
  * Nearby 연결 상태

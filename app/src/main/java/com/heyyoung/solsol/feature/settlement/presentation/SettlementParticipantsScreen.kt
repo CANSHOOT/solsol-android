@@ -28,6 +28,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.heyyoung.solsol.feature.settlement.domain.model.toPerson
+import com.heyyoung.solsol.feature.settlement.presentation.components.NearbyBottomSheet
+import com.heyyoung.solsol.feature.settlement.presentation.viewmodel.NearbyViewModel
 
 private const val TAG = "SettlementParticipantsScreen"
 
@@ -37,12 +40,18 @@ private const val TAG = "SettlementParticipantsScreen"
 fun SettlementParticipantsScreen(
     onNavigateBack: () -> Unit = {},
     onNext: (List<Person>) -> Unit = {},
-    viewModel: SettlementParticipantsViewModel = hiltViewModel()
+    viewModel: SettlementParticipantsViewModel = hiltViewModel(),
+    nearbyViewModel: NearbyViewModel = hiltViewModel()
 ) {
     // ViewModel 상태 관리
     val uiState by viewModel.uiState.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val currentUser by viewModel.currentUser.collectAsState()
+    
+    // Nearby 상태 관리
+    val nearbyDiscoveryState by nearbyViewModel.discoveryState.collectAsState()
+    val nearbyUsers by nearbyViewModel.discoveredUsers.collectAsState()
+    val isNearbyBottomSheetVisible by nearbyViewModel.isBottomSheetVisible.collectAsState()
     
     // 로컬 상태 관리
     var searchText by remember { mutableStateOf("") }
@@ -52,6 +61,7 @@ fun SettlementParticipantsScreen(
     // 현재 사용자 정보 로드
     LaunchedEffect(Unit) {
         viewModel.loadCurrentUser()
+        nearbyViewModel.initialize()
     }
 
     // 현재 사용자가 로드되면 participants 초기화
@@ -115,7 +125,7 @@ fun SettlementParticipantsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 검색창과 검색 버튼
+            // 검색창과 버튼들
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -141,8 +151,8 @@ fun SettlementParticipantsScreen(
                     },
                     placeholder = {
                         Text(
-                            if (selectedTab == "학번") "학번을 입력하세요 (예: 20251234)"
-                            else "학과명을 입력하세요 (예: 컴퓨터공학과)"
+                            if (selectedTab == "학번") "학번을 입력하세요"
+                            else "학과명을 입력하세요"
                         )
                     },
                     leadingIcon = {
@@ -185,8 +195,7 @@ fun SettlementParticipantsScreen(
                         }
                     },
                     enabled = searchText.isNotBlank() && !uiState.isSearching,
-                    modifier = Modifier
-                        .height(56.dp),
+                    modifier = Modifier.height(56.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF8B5FBF),
                         disabledContainerColor = Color(0xFF8B5FBF).copy(alpha = 0.6f)
@@ -207,6 +216,7 @@ fun SettlementParticipantsScreen(
                         )
                     }
                 }
+                
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -274,8 +284,8 @@ fun SettlementParticipantsScreen(
                         },
                         onAddPersonClick = {
                             if (participants.size < 10) {
-                                Log.d(TAG, "💡 + 사람 추가하기 클릭 - 검색창을 사용하세요")
-                                // 검색창에 포커스를 주는 기능은 필요시 추가 가능
+                                Log.d(TAG, "💡 + 사람 추가하기 클릭 - 주변 기기 검색 시작")
+                                nearbyViewModel.showBottomSheet()
                             } else {
                                 Log.d(TAG, "❌ 최대 인원(10명)으로 추가 불가")
                             }
@@ -360,6 +370,40 @@ fun SettlementParticipantsScreen(
                 Spacer(modifier = Modifier.height(40.dp))
             }
         }
+    }
+    
+    // Nearby Bottom Sheet
+    if (isNearbyBottomSheetVisible) {
+        NearbyBottomSheet(
+            discoveryState = nearbyDiscoveryState,
+            discoveredUsers = nearbyUsers,
+            onStartSearch = {
+                Log.d(TAG, "주변 기기 검색 시작")
+                nearbyViewModel.startNearbySearch()
+            },
+            onStopSearch = {
+                Log.d(TAG, "주변 기기 검색 중지")
+                nearbyViewModel.stopNearbySearch()
+            },
+            onUserSelect = { nearbyUser ->
+                if (participants.size < 10) {
+                    val person = nearbyUser.userProfile.toPerson()
+                    // 중복 확인
+                    if (!participants.any { it.id == person.id }) {
+                        participants = participants + person
+                        Log.d(TAG, "✅ 주변 사용자 추가: ${person.name} (${participants.size}/10)")
+                    } else {
+                        Log.d(TAG, "이미 추가된 사용자: ${person.name}")
+                    }
+                } else {
+                    Log.w(TAG, "❌ 최대 인원(10명) 초과로 추가 불가")
+                }
+            },
+            onCloseSheet = {
+                Log.d(TAG, "주변 기기 검색 바텀시트 닫기")
+                nearbyViewModel.hideBottomSheet()
+            }
+        )
     }
 }
 
@@ -693,13 +737,13 @@ private fun AddPersonButton(
         ) {
             Icon(
                 Icons.Default.Add,
-                contentDescription = "추가",
+                contentDescription = "주변에서 찾기",
                 tint = if (isMaxReached) Color(0xFFCCCCCC) else Color(0xFF8B5FBF),
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = if (isMaxReached) "최대 10명 도달" else "사람 추가하기",
+                text = if (isMaxReached) "최대 10명 도달" else "주변에서 찾기",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
                 color = if (isMaxReached) Color(0xFFCCCCCC) else Color(0xFF8B5FBF)
