@@ -1,6 +1,7 @@
 package com.heyyoung.solsol.feature.settlement.presentation
 
 import android.util.Log
+import com.heyyoung.solsol.feature.settlement.domain.model.Person
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -10,6 +11,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -28,10 +31,16 @@ private const val TAG = "SettlementEqualScreen"
 fun SettlementEqualScreen(
     participants: List<Person>,
     onNavigateBack: () -> Unit = {},
-    onRequestSettlement: (Int, Map<Person, Int>) -> Unit = { _, _ -> }
+    onRequestSettlement: (Int, Map<Person, Int>) -> Unit = { _, _ -> },
+    onNavigateToComplete: (settlementGroup: com.heyyoung.solsol.feature.settlement.domain.model.SettlementGroup, participants: List<Person>, totalAmount: Int, amountPerPerson: Int) -> Unit = { _, _, _, _ -> },
+    viewModel: SettlementEqualViewModel = hiltViewModel()
 ) {
-    // 상태 관리
+    // ViewModel 상태 관리
+    val uiState by viewModel.uiState.collectAsState()
+    
+    // 로컬 상태 관리
     var totalAmountText by remember { mutableStateOf("") }
+    var groupNameText by remember { mutableStateOf("") }
     val totalAmount = totalAmountText.toIntOrNull() ?: 0
 
     // 계산 로직
@@ -42,6 +51,23 @@ fun SettlementEqualScreen(
     val remainder = if (totalAmount > 0 && participants.isNotEmpty()) {
         totalAmount % participants.size
     } else 0
+
+    // API 완료 시 화면 전환
+    LaunchedEffect(uiState.isCompleted) {
+        if (uiState.isCompleted) {
+            uiState.createdSettlement?.let { settlement ->
+                Log.d(TAG, "✅ 정산 생성 완료 - 완료 화면으로 이동")
+                // 상태 초기화 후 완료 화면으로 이동
+                viewModel.onSettlementCompleteNavigated()
+                onNavigateToComplete(
+                    settlement,
+                    participants,
+                    totalAmount,
+                    perPersonAmount
+                )
+            }
+        }
+    }
 
     Log.d(TAG, "똑같이 나누기 화면 진입 - 참여자: ${participants.size}명, 총액: ${totalAmount}원")
     Log.d(TAG, "1인당: ${perPersonAmount}원, 나머지: ${remainder}원 (헤이영 제공)")
@@ -87,6 +113,28 @@ fun SettlementEqualScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            // 그룹명 입력
+            OutlinedTextField(
+                value = groupNameText,
+                onValueChange = { 
+                    if (it.length <= 20) { // 최대 20자까지만
+                        groupNameText = it 
+                    }
+                },
+                label = { Text("정산 그룹명") },
+                placeholder = { Text("예: 치킨값 정산, 카페 모임비") },
+                modifier = Modifier
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF8B5FBF),
+                    unfocusedBorderColor = Color(0xFFE0E0E0)
+                ),
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             // 총 금액 입력 카드
             TotalAmountInputCard(
                 amount = totalAmountText,
@@ -121,14 +169,55 @@ fun SettlementEqualScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
+            // 오류 메시지 표시
+            if (uiState.error != null) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFFFF3F3)
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "⚠️ ${uiState.error}",
+                            color = Color(0xFFE53E3E),
+                            fontSize = 14.sp,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TextButton(onClick = { viewModel.clearError() }) {
+                            Text("확인", color = Color(0xFF8B5FBF))
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
             // 정산 요청하기 버튼
             Button(
                 onClick = {
-                    val settlementMap = participants.associateWith { perPersonAmount }
-                    Log.d(TAG, "정산 요청 - 총액: ${totalAmount}원, 1인당: ${perPersonAmount}원, 나머지: ${remainder}원")
-                    onRequestSettlement(totalAmount, settlementMap)
+                    if (groupNameText.isBlank()) {
+                        // 에러는 ViewModel에서 처리하지만, 여기서 간단히 로그만
+                        Log.w(TAG, "그룹명이 입력되지 않음")
+                        return@Button
+                    }
+                    
+                    val organizerId = participants.find { it.isMe }?.id ?: "me"
+                    Log.d(TAG, "🚀 정산 API 요청 시작: $groupNameText, ${totalAmount}원, ${participants.size}명")
+                    
+                    viewModel.createSettlement(
+                        organizerId = organizerId,
+                        groupName = groupNameText.trim(),
+                        totalAmount = totalAmount.toDouble(),
+                        participants = participants
+                    )
                 },
-                enabled = totalAmount > 0 && participants.isNotEmpty(),
+                enabled = totalAmount > 0 && participants.isNotEmpty() && groupNameText.isNotBlank() && !uiState.isCreating,
                 modifier = Modifier
                     .shadow(
                         elevation = 8.dp,
@@ -143,12 +232,31 @@ fun SettlementEqualScreen(
                 ),
                 shape = RoundedCornerShape(28.dp)
             ) {
-                Text(
-                    text = "정산 요청하기",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+                if (uiState.isCreating) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                        Text(
+                            text = "정산 생성 중...",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "정산 요청하기",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(40.dp))

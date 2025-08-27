@@ -87,6 +87,12 @@ fun SolsolApp() {
 
     // 정산 관련 상태
     var selectedSettlementMethod by remember { mutableStateOf<String?>(null) }
+    
+    var settlementParticipants by remember { mutableStateOf<List<com.heyyoung.solsol.feature.settlement.domain.model.Person>>(emptyList()) }
+    var completedSettlement by remember { mutableStateOf<com.heyyoung.solsol.feature.settlement.domain.model.SettlementGroup?>(null) }
+    var settlementTotalAmount by remember { mutableStateOf(0) }
+    var settlementAmountPerPerson by remember { mutableStateOf(0) }
+
     var settlementParticipants by remember {
         mutableStateOf<List<com.heyyoung.solsol.feature.settlement.presentation.Person>>(
             emptyList()
@@ -250,6 +256,13 @@ fun SolsolApp() {
                     // 정산 상태 초기화
                     selectedSettlementMethod = null
                     settlementParticipants = emptyList()
+                },
+                onNavigateToComplete = { settlementGroup, participants, totalAmount, amountPerPerson ->
+                    Log.d(TAG, "✅ 정산 생성 성공 - 완료 화면으로 이동")
+                    completedSettlement = settlementGroup
+                    settlementTotalAmount = totalAmount
+                    settlementAmountPerPerson = amountPerPerson
+                    currentScreen = "settlement_complete"
                 }
             )
         }
@@ -276,6 +289,28 @@ fun SolsolApp() {
                 }
             )
         }
+
+
+        "settlement_complete" -> {
+            // 정산 완료 화면
+            com.heyyoung.solsol.feature.settlement.presentation.SettlementCompleteScreen(
+                settlementGroup = completedSettlement,
+                participants = settlementParticipants,
+                totalAmount = settlementTotalAmount,
+                amountPerPerson = settlementAmountPerPerson,
+                onNavigateToHome = {
+                    Log.d(TAG, "정산 완료 화면에서 홈으로 이동")
+                    currentScreen = "home"
+                    // 정산 상태 초기화
+                    selectedSettlementMethod = null
+                    settlementParticipants = emptyList()
+                    completedSettlement = null
+                    settlementTotalAmount = 0
+                    settlementAmountPerPerson = 0
+                }
+            )
+        }
+
 
         // 학생회 메인
         "council" -> {
