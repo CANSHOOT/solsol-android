@@ -84,27 +84,35 @@ class SettlementParticipantsViewModel @Inject constructor(
                     is BackendApiResult.Success -> {
                         val profile = result.data
                         val currentUserPerson = Person(
-                            id = "me",
+                            id = profile.userId, // 실제 이메일 사용
                             name = profile.name,
                             department = profile.departmentName ?: "알 수 없음",
                             studentId = profile.studentNumber,
                             isMe = true
                         )
                         _currentUser.value = currentUserPerson
-                        Log.d(TAG, "✅ 현재 사용자 정보 로드 성공: ${profile.name} (${profile.studentNumber})")
+                        Log.d(TAG, "✅ 현재 사용자 정보 로드 성공: ${profile.name} (${profile.userId})")
                     }
                     is BackendApiResult.Error -> {
                         Log.e(TAG, "❌ 현재 사용자 정보 로드 실패: ${result.message}")
-                        // 실패 시 더미 데이터로 fallback
-                        _currentUser.value = Person("me", "김신한", "컴퓨터공학과", "20251234", isMe = true)
+                        // 실패 시 더미 데이터로 fallback (실제 이메일 형식으로)
+                        _currentUser.value = Person("test@ssafy.com", "김신한", "컴퓨터공학과", "20251234", isMe = true)
                     }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "❌ 현재 사용자 정보 로드 예외: ${e.message}")
-                // 예외 발생 시 더미 데이터로 fallback
-                _currentUser.value = Person("me", "김신한", "컴퓨터공학과", "20251234", isMe = true)
+                // 예외 발생 시 더미 데이터로 fallback (실제 이메일 형식으로)
+                _currentUser.value = Person("test@ssafy.com", "김신한", "컴퓨터공학과", "20251234", isMe = true)
             }
         }
+    }
+    
+    // 정산 프로세스 완료 후 상태 초기화
+    fun resetForNewSettlement() {
+        Log.d(TAG, "🧹 새로운 정산을 위한 상태 초기화")
+        _searchResults.value = emptyList()
+        _uiState.value = SettlementParticipantsUiState()
+        // currentUser는 유지 (다시 로드할 필요 없음)
     }
 }
 

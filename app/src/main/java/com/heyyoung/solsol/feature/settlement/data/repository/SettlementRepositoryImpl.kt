@@ -12,7 +12,6 @@ import com.heyyoung.solsol.feature.settlement.data.remote.SettlementApiService
 import com.heyyoung.solsol.feature.settlement.data.remote.dto.*
 import com.heyyoung.solsol.feature.settlement.domain.model.SettlementGroup
 import com.heyyoung.solsol.feature.settlement.domain.model.SettlementParticipant
-import com.heyyoung.solsol.feature.settlement.domain.model.InvitationResult
 import com.heyyoung.solsol.feature.settlement.domain.model.PaymentResult
 import com.heyyoung.solsol.feature.settlement.domain.repository.SettlementRepository
 import kotlinx.coroutines.Dispatchers
@@ -60,11 +59,11 @@ class SettlementRepositoryImpl @Inject constructor(
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    override suspend fun joinSettlement(groupId: Long, userId: Long): Result<SettlementParticipant> {
+    override suspend fun joinSettlement(groupId: Long, userId: String): Result<SettlementParticipant> {
         return withContext(Dispatchers.IO) {
             try {
-                val request = JoinSettlementRequest() // joinMethod은 기본값 "SEARCH" 사용
-                val response = apiService.joinSettlement(groupId, request)
+                val request = JoinSettlementRequest(joinMethod = "SEARCH") // 기본값 SEARCH 사용
+                val response = apiService.joinSettlement(groupId, userId, request)
                 val domain = response.toDomain()
                 
                 Result.success(domain)
@@ -119,28 +118,6 @@ class SettlementRepositoryImpl @Inject constructor(
                 val domains = response.map { it.toDomain() }
                 
                 Result.success(domains)
-            } catch (e: Exception) {
-                Result.failure(e)
-            }
-        }
-    }
-    
-    override suspend fun sendSettlementInvitations(
-        groupId: Long,
-        participantUserIds: List<String>,
-        message: String?
-    ): Result<InvitationResult> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val request = SendInvitationsRequest(
-                    participantUserIds = participantUserIds,
-                    message = message ?: "정산 요청이 도착했습니다! 솔솔 앱에서 확인해보세요."
-                )
-                
-                val response = apiService.sendSettlementInvitations(groupId, request)
-                val domain = response.toDomain()
-                
-                Result.success(domain)
             } catch (e: Exception) {
                 Result.failure(e)
             }

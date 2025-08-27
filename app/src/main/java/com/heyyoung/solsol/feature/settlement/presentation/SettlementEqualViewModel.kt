@@ -99,17 +99,16 @@ class SettlementEqualViewModel @Inject constructor(
             try {
                 Log.d(TAG, "👤 ${participant.name}을(를) 그룹에 참여시키는 중... (ID: ${participant.id})")
                 
-                val userIdLong = participant.id.toLongOrNull()
-                
-                if (userIdLong == null) {
-                    Log.e(TAG, "❌ ${participant.name} ID 변환 실패 - userId: ${participant.id}")
+                // 이메일 형식 검증
+                if (!participant.id.contains("@")) {
+                    Log.e(TAG, "❌ ${participant.name} 잘못된 이메일 형식 - userId: ${participant.id}")
                     joinFailureCount++
                     return@forEach
                 }
                 
                 val joinResult = joinSettlementUseCase(
                     groupId = groupId,
-                    userId = userIdLong
+                    userId = participant.id // String으로 바로 전달
                 )
                 
                 joinResult.fold(
@@ -156,7 +155,14 @@ class SettlementEqualViewModel @Inject constructor(
     }
 
     fun resetState() {
+        Log.d(TAG, "🧹 정산 상태 초기화")
         _uiState.value = SettlementEqualUiState()
+    }
+    
+    // 정산 완료 후 자동으로 상태 초기화하는 메서드
+    fun onSettlementCompleteNavigated() {
+        Log.d(TAG, "🧹 정산 완료 화면 진입 후 자동 상태 초기화")
+        resetState()
     }
 }
 

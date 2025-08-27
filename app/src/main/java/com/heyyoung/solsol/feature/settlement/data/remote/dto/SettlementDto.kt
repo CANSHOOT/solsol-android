@@ -4,7 +4,6 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import com.heyyoung.solsol.feature.settlement.domain.model.SettlementGroup
 import com.heyyoung.solsol.feature.settlement.domain.model.SettlementStatus
-import com.heyyoung.solsol.feature.settlement.domain.model.InvitationResult
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -36,6 +35,7 @@ data class JoinSettlementRequest(
     val joinMethod: String = "SEARCH"
 )
 
+
 data class SendPaymentRequest(
     val accountNumber: String,
     val transactionSummary: String
@@ -48,18 +48,6 @@ data class PaymentResultDto(
     val message: String
 )
 
-data class SendInvitationsRequest(
-    val participantUserIds: List<String>,
-    val message: String? = null
-)
-
-data class InvitationResultDto(
-    val groupId: Long,
-    val sentCount: Int,
-    val failedCount: Int,
-    val failedUserIds: List<String>,
-    val message: String
-)
 
 @RequiresApi(Build.VERSION_CODES.O)
 fun SettlementGroupDto.toDomain() = SettlementGroup(
@@ -77,13 +65,6 @@ fun SettlementGroupDto.toDomain() = SettlementGroup(
     updatedAt = parseDateTime(updatedAt)
 )
 
-fun InvitationResultDto.toDomain() = InvitationResult(
-    groupId = groupId,
-    sentCount = sentCount,
-    failedCount = failedCount,
-    failedUserIds = failedUserIds,
-    message = message
-)
 
 @RequiresApi(Build.VERSION_CODES.O)
 private fun parseDateTime(dateTimeString: String): LocalDateTime {

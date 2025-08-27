@@ -10,7 +10,7 @@ class JoinSettlementUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(
         groupId: Long,
-        userId: Long
+        userId: String
     ): Result<SettlementParticipant> {
         // 정산 그룹 존재 여부 및 상태 확인
         val settlementResult = settlementRepository.getSettlementById(groupId)
@@ -24,12 +24,12 @@ class JoinSettlementUseCase @Inject constructor(
             return Result.failure(IllegalStateException("참여할 수 없는 정산입니다"))
         }
         
-        if (settlement.organizerId.equals(userId)) {
+        if (settlement.organizerId == userId) {
             return Result.failure(IllegalArgumentException("결제자는 참여할 수 없습니다"))
         }
         
         // 이미 참여한 사용자인지 확인
-        val alreadyJoined = settlement.participants.any { it.userId.equals(userId)}
+        val alreadyJoined = settlement.participants.any { it.userId == userId }
         if (alreadyJoined) {
             return Result.failure(IllegalArgumentException("이미 참여한 정산입니다"))
         }

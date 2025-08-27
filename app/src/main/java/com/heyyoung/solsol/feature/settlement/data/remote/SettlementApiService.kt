@@ -26,20 +26,15 @@ interface SettlementApiService {
         @Body request: CreateSettlementRequest
     ): SettlementGroupDto
     
-    @POST("dutchpay/{groupId}/invite")
-    suspend fun sendSettlementInvitations(
-        @Path("groupId") groupId: Long,
-        @Body request: SendInvitationsRequest
-    ): InvitationResultDto
-    
     @GET("dutchpay/{groupId}")
     suspend fun getSettlementById(
         @Path("groupId") groupId: Long
     ): SettlementGroupDto
     
-    @POST("dutchpay/{groupId}/join")
+    @POST("dutchpay/{groupId}/join/{userId}")
     suspend fun joinSettlement(
         @Path("groupId") groupId: Long,
+        @Path("userId") userId: String,
         @Body request: JoinSettlementRequest
     ): SettlementParticipantDto
     

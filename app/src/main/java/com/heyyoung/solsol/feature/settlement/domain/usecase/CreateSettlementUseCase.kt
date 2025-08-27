@@ -19,8 +19,7 @@ import javax.inject.Inject
 import kotlin.math.ceil
 
 class CreateSettlementUseCase @Inject constructor(
-    private val settlementRepository: SettlementRepository,
-    private val sendInvitationsUseCase: SendSettlementInvitationsUseCase
+    private val settlementRepository: SettlementRepository
 ) {
     
     companion object {
@@ -84,30 +83,7 @@ class CreateSettlementUseCase @Inject constructor(
         return createResult.fold(
             onSuccess = { createdSettlement ->
                 Log.d(TAG, "✅ 정산 그룹 생성 성공: groupId=${createdSettlement.groupId}")
-                
-                // 2. 참여자들에게 알림 발송 (그룹 생성 성공 후)
-                if (participantUserIds.isNotEmpty() && createdSettlement.groupId != null) {
-                    Log.d(TAG, "📲 참여자 ${participantUserIds.size}명에게 알림 발송 시작")
-                    
-                    val inviteResult = sendInvitationsUseCase(
-                        groupId = createdSettlement.groupId,
-                        participantUserIds = participantUserIds,
-                        customMessage = "${createdSettlement.groupName}에 초대되었습니다. 총 ${totalAmount.toInt()}원을 ${participantCount}명이 정산해요!"
-                    )
-                    
-                    inviteResult.fold(
-                        onSuccess = { invitation ->
-                            Log.d(TAG, "✅ 알림 발송 완료: 성공 ${invitation.sentCount}명, 실패 ${invitation.failedCount}명")
-                            if (invitation.failedCount > 0) {
-                                Log.w(TAG, "⚠️ 알림 발송 실패한 사용자: ${invitation.failedUserIds}")
-                            }
-                        },
-                        onFailure = { error ->
-                            Log.e(TAG, "❌ 알림 발송 실패: ${error.message}")
-                            // 알림 발송 실패해도 정산 생성은 성공으로 처리
-                        }
-                    )
-                }
+                Log.d(TAG, "📋 참여자들은 join API를 통해 개별적으로 그룹에 참여할 예정")
                 
                 Result.success(createdSettlement)
             },

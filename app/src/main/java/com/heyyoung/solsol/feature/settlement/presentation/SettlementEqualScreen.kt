@@ -57,6 +57,8 @@ fun SettlementEqualScreen(
         if (uiState.isCompleted) {
             uiState.createdSettlement?.let { settlement ->
                 Log.d(TAG, "✅ 정산 생성 완료 - 완료 화면으로 이동")
+                // 상태 초기화 후 완료 화면으로 이동
+                viewModel.onSettlementCompleteNavigated()
                 onNavigateToComplete(
                     settlement,
                     participants,
