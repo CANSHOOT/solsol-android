@@ -38,7 +38,6 @@ fun HostScreen(
     viewModel: GameViewModel = viewModel()
 ) {
     var roomTitle by remember { mutableStateOf("") }
-    var playerName by remember { mutableStateOf("") }
 
     val role by viewModel.role.collectAsState()
     val isAdvertising by viewModel.nearby.isAdvertising.collectAsState()
@@ -76,7 +75,7 @@ fun HostScreen(
     ) { result ->
         val granted = result.values.all { it }
         if (granted) {
-            viewModel.createRoom(roomTitle.trim(), playerName.trim())
+            viewModel.createRoom(roomTitle.trim())
         } else {
             Toast.makeText(context, "근거리 연결 권한을 모두 허용해주세요.", Toast.LENGTH_SHORT).show()
         }
@@ -130,7 +129,7 @@ fun HostScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "방 제목과 닉네임을 입력해주세요",
+                text = "방 제목을 입력해주세요",
                 fontSize = 16.sp,
                 color = Color(0xFF666666)
             )
@@ -143,31 +142,7 @@ fun HostScreen(
                 label = { Text("방 제목") },
                 placeholder = { Text("예: 친구들과 저녁 정산") },
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF8B5FBF),
-                    focusedLabelColor = Color(0xFF8B5FBF),
-                    cursorColor = Color(0xFF8B5FBF)
-                ),
-                shape = RoundedCornerShape(12.dp)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = playerName,
-                onValueChange = { playerName = it },
-                label = { Text("닉네임") },
-                placeholder = { Text("예: 홍길동") },
-                modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = null,
-                        tint = Color(0xFF8B5FBF)
-                    )
-                },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF8B5FBF),
                     focusedLabelColor = Color(0xFF8B5FBF),
@@ -212,15 +187,15 @@ fun HostScreen(
 
             Button(
                 onClick = {
-                    if (roomTitle.isNotBlank() && playerName.isNotBlank()) {
+                    if (roomTitle.isNotBlank()) {
                         if (hasAllPermissions()) {
-                            viewModel.createRoom(roomTitle.trim(), playerName.trim())
+                            viewModel.createRoom(roomTitle.trim())
                         } else {
                             permissionLauncher.launch(requiredPerms)
                         }
                     }
                 },
-                enabled = roomTitle.isNotBlank() && playerName.isNotBlank() && !isAdvertising,
+                enabled = roomTitle.isNotBlank() && !isAdvertising,
                 modifier = Modifier
                     .shadow(
                         elevation = 8.dp,

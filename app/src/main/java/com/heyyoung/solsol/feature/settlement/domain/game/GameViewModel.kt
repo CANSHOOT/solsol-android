@@ -4,15 +4,22 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.heyyoung.solsol.core.auth.TokenManager
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 import kotlin.random.Random
 
-class GameViewModel(app: Application) : AndroidViewModel(app) {
+@HiltViewModel
+class GameViewModel @Inject constructor(
+    app: Application,
+    private val tokenManager: TokenManager
+) : AndroidViewModel(app) {
 
     private val TAG = "GameViewModel"
 
@@ -20,8 +27,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
 
     companion object {
         const val SERVICE_ID = "SOLSOL_ROULETTE"
-        const val TARGET_SPIN_MS = 3000L
-        const val MIN_TICK_MS = 100L
+        const val TARGET_SPIN_MS = 10000L // 10초로 변경
+        const val MIN_TICK_MS = 200L // 불빛 깜빡임 간격
     }
 
     private val _role = MutableStateFlow(Role.NONE)
@@ -79,40 +86,45 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** 방 생성(호스트 시작) */
-    fun createRoom(roomTitle: String, playerName: String) {
-        Log.d(TAG, "createRoom(): title=$roomTitle, player=$playerName")
+    fun createRoom(roomTitle: String) {
+        viewModelScope.launch {
+            val userInfo = tokenManager.getCurrentUserInfo()
+            val playerName = userInfo?.name ?: "사용자"
+            
+            Log.d(TAG, "createRoom(): title=$roomTitle, player=$playerName")
 
-        nearby.localEndpointName = playerName
-        _role.value = Role.HOST
+            nearby.localEndpointName = playerName
+            _role.value = Role.HOST
 
-        val hostMember = Member(
-            endpointId = "self",
-            displayName = playerName,
-            isSelf = true,
-            isHost = true
-        )
+            val hostMember = Member(
+                endpointId = "self",
+                displayName = playerName,
+                isSelf = true,
+                isHost = true
+            )
 
-        _roomState.value = RoomState(
-            title = roomTitle,
-            hostEndpointId = "self",
-            members = listOf(hostMember),
-            phase = Phase.IDLE
-        )
+            _roomState.value = RoomState(
+                title = roomTitle,
+                hostEndpointId = "self",
+                members = listOf(hostMember),
+                phase = Phase.IDLE
+            )
 
-        // 광고 이벤트를 VM에서 수신하여 상태 전환
-        nearby.onAdvertisingEvent = { success, msg ->
-            if (success) {
-                Log.d(TAG, "Advertising started → LOBBY")
-                _roomState.update { it?.copy(phase = Phase.GATHERING) }
-            } else {
-                Log.e(TAG, "Advertising failed: $msg")
-                _errorMessage.value = msg ?: "광고 시작 실패"
-                _roomState.update { it?.copy(phase = Phase.IDLE) }
+            // 광고 이벤트를 VM에서 수신하여 상태 전환
+            nearby.onAdvertisingEvent = { success, msg ->
+                if (success) {
+                    Log.d(TAG, "Advertising started → LOBBY")
+                    _roomState.update { it?.copy(phase = Phase.GATHERING) }
+                } else {
+                    Log.e(TAG, "Advertising failed: $msg")
+                    _errorMessage.value = msg ?: "광고 시작 실패"
+                    _roomState.update { it?.copy(phase = Phase.IDLE) }
+                }
             }
-        }
 
-        // endpointName = playerName 으로 광고 시작
-        nearby.startAdvertising(SERVICE_ID, playerName)
+            // endpointName = playerName 으로 광고 시작
+            nearby.startAdvertising(SERVICE_ID, playerName)
+        }
     }
 
     fun startDiscovering() {
@@ -121,10 +133,15 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         nearby.startDiscovery(SERVICE_ID)
     }
 
-    fun joinRoom(endpointId: String, playerName: String) {
-        Log.d(TAG, "joinRoom: endpointId=$endpointId, name=$playerName")
-        nearby.localEndpointName = playerName
-        nearby.requestConnection(endpointId)
+    fun joinRoom(endpointId: String) {
+        viewModelScope.launch {
+            val userInfo = tokenManager.getCurrentUserInfo()
+            val playerName = userInfo?.name ?: "사용자"
+            
+            Log.d(TAG, "joinRoom: endpointId=$endpointId, name=$playerName")
+            nearby.localEndpointName = playerName
+            nearby.requestConnection(endpointId)
+        }
     }
 
     fun startGathering() {
@@ -158,10 +175,12 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         if (_role.value != Role.HOST) return
         Log.d(TAG, "sendInstruction: $seconds s")
         updateRoomPhase(Phase.INSTRUCTION)
+        // 호스트 자신도 instruction을 받도록 수정
+        startInstruction(seconds)
         nearby.sendToAll(Msg.StartInstruction(seconds).toJson())
     }
 
-    fun startGameHost(tickMs: Long = 180L, cycles: Int = 3) {
+    fun startGameHost(tickMs: Long = 200L, cycles: Int = 1) {
         if (_role.value != Role.HOST) return
 
         var state = _roomState.value ?: return
@@ -181,16 +200,21 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         val winner = members[Random.nextInt(members.size)].endpointId
         val order = members.map { it.endpointId }
 
-        val totalSteps = (order.size * cycles) + order.indexOf(winner) + 1
-        val computedTick = (TARGET_SPIN_MS / totalSteps.coerceAtLeast(1)).coerceAtLeast(MIN_TICK_MS)
+        val totalSteps = (TARGET_SPIN_MS / MIN_TICK_MS).toInt() // 10초 동안 0.2초마다 = 50번 깜빡임
+        val computedTick = MIN_TICK_MS
 
         Log.d(TAG, "startGameHost: winner=$winner, cycles=$cycles, tick=$computedTick, steps=$totalSteps")
 
+        // 호스트 자신도 게임 시작 로직을 받도록 수정
+        startGame(winner, cycles, computedTick, order)
         nearby.sendToAll(Msg.StartGame(winner, cycles, computedTick, order).toJson())
 
-        val delayMs = totalSteps * computedTick
-        viewModelScope.launch {
-            delay(delayMs)
+        // 자동 종료 타이머 제거 - UI에서 수동으로 처리
+    }
+
+    fun finishGame() {
+        if (_role.value == Role.HOST) {
+            Log.d(TAG, "finishGame - transitioning to finished phase")
             updateRoomPhase(Phase.FINISHED)
             broadcastRoom()
         }
@@ -235,18 +259,34 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun mergeSelf(remoteState: RoomState): RoomState {
-        val selfMember = remoteState.members.find { it.endpointId == "self" }
-        return if (selfMember != null) {
-            remoteState
-        } else {
-            val selfName = nearby.localEndpointName ?: "Me"
+        val myName = nearby.localEndpointName ?: "Me"
+        
+        // 모든 멤버를 업데이트하여 자신만 isSelf = true로 설정
+        val updatedMembers = remoteState.members.map { member ->
+            if (member.displayName == myName && member.endpointId != "self") {
+                // 내 이름과 같은 멤버를 찾았지만 endpointId가 "self"가 아닌 경우 (참가자)
+                member.copy(isSelf = true)
+            } else if (member.endpointId == "self") {
+                // 호스트인 경우 - 내 이름으로 업데이트
+                member.copy(displayName = myName, isSelf = true)
+            } else {
+                // 다른 멤버들은 isSelf = false
+                member.copy(isSelf = false)
+            }
+        }
+        
+        // 자신이 목록에 없다면 추가
+        val hasSelf = updatedMembers.any { it.isSelf }
+        return if (!hasSelf) {
             val newSelfMember = Member(
                 endpointId = "self",
-                displayName = selfName,
+                displayName = myName,
                 isSelf = true,
                 isHost = false
             )
-            remoteState.copy(members = remoteState.members + newSelfMember)
+            remoteState.copy(members = updatedMembers + newSelfMember)
+        } else {
+            remoteState.copy(members = updatedMembers)
         }
     }
 
@@ -264,8 +304,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun startInstruction(seconds: Int) {
-        if (_role.value == Role.HOST) return
-
+        // 호스트도 instruction을 받을 수 있도록 수정
         _isInstructionVisible.value = true
         _instructionCountdown.value = seconds
 

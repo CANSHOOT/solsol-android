@@ -45,46 +45,65 @@ fun GameRoomScreen(
 
     val highlightIndex = remember { mutableIntStateOf(-1) }
     val rotationAngle = remember { Animatable(0f) }
+    val finalWinnerState = remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(roomState?.phase, spinOrderIds, roomState?.winnerEndpointId, spinTickMs, spinCycles) {
+    LaunchedEffect(roomState?.phase, spinOrderIds, roomState?.winnerEndpointId, spinTickMs) {
         val state = roomState
         if (state != null && state.phase == Phase.RUNNING && 
             spinOrderIds.isNotEmpty() && 
-            state.winnerEndpointId != null) {
+            state.winnerEndpointId != null &&
+            finalWinnerState.value == null) { // 이미 완료된 게임이 아닌 경우에만 실행
             
-            val winnerIndex = spinOrderIds.indexOfFirst { it == state.winnerEndpointId }
-            if (winnerIndex >= 0) {
-                val totalSteps = spinOrderIds.size * spinCycles + winnerIndex
-                for (step in 0..totalSteps) {
-                    highlightIndex.intValue = step % spinOrderIds.size
-                    rotationAngle.animateTo(
-                        targetValue = rotationAngle.value + 360f / spinOrderIds.size,
-                        animationSpec = tween(
-                            durationMillis = spinTickMs.toInt(),
-                            easing = LinearEasing
-                        )
-                    )
-                    delay(spinTickMs)
+            val myEndpointId = "self" // 내 endpointId
+            val totalMembers = spinOrderIds.size
+            val myIndex = spinOrderIds.indexOf(myEndpointId)
+            val winnerIndex = spinOrderIds.indexOf(state.winnerEndpointId)
+            
+            // 전체 애니메이션: 빠르게 시작 -> 점점 느려짐 -> 당첨자에서 멈춤
+            val totalSteps = 80 // 총 80단계
+            
+            for (step in 0 until totalSteps) {
+                // 순서대로 돌아가며 불빛 표시
+                val currentMemberIndex = step % totalMembers
+                val shouldLightUp = currentMemberIndex == myIndex
+                
+                highlightIndex.intValue = if (shouldLightUp) 1 else 0
+                
+                // 시간이 지날수록 점점 느려짐 (exponential easing)
+                val progress = step.toFloat() / totalSteps
+                val baseDelay = 80L // 시작 속도 (빠름)
+                val maxDelay = 800L // 끝 속도 (느림)
+                
+                // 지수적으로 느려짐
+                val currentDelay = (baseDelay + (maxDelay - baseDelay) * progress * progress * progress).toLong()
+                
+                delay(currentDelay)
+                
+                // 마지막 몇 단계에서 당첨자에게 멈춰야 함
+                if (step > totalSteps - 10) {
+                    if (currentMemberIndex == winnerIndex) {
+                        // 당첨자에게 도달하면 애니메이션 종료
+                        highlightIndex.intValue = if (myIndex == winnerIndex) 1 else 0
+                        finalWinnerState.value = state.winnerEndpointId
+                        break
+                    }
                 }
+            }
+            
+            // 애니메이션 완료 후 Phase.FINISHED로 전환 (호스트만)
+            if (role == Role.HOST) {
+                delay(1000) // 1초 대기
+                viewModel.finishGame()
             }
         }
     }
 
-    LaunchedEffect(roomState?.phase) {
-        val state = roomState
-        if (state != null && state.phase == Phase.FINISHED) {
-            state.winnerEndpointId?.let { winnerId ->
-                val winner = state.members.find { it.endpointId == winnerId }
-                winner?.displayName?.let { winnerName ->
-                    onGameFinished(winnerName)
-                }
-            }
-        }
-    }
+    // 자동 전환 제거 - 사용자가 버튼을 눌러야만 이동하도록 변경
 
     DisposableEffect(Unit) {
         onDispose {
             viewModel.leaveRoom()
+            finalWinnerState.value = null // 상태 초기화
         }
     }
 
@@ -120,47 +139,53 @@ fun GameRoomScreen(
             ) {
                 Spacer(modifier = Modifier.height(20.dp))
 
+                // 현재 사용자 정보 표시
+                val currentUser = state.members.find { it.isSelf }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "참가자 (${state.members.size}명)",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1C1C1E)
-                    )
+                    Column {
+                        Text(
+                            text = currentUser?.displayName ?: "나",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1C1C1E)
+                        )
+                        Text(
+                            text = "참가자 ${state.members.size}명 중",
+                            fontSize = 14.sp,
+                            color = Color(0xFF666666)
+                        )
+                    }
 
                     PhaseIndicator(phase = state.phase)
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(40.dp))
 
-                val orderedMembers = if (spinOrderIds.isNotEmpty()) {
-                    spinOrderIds.mapNotNull { id -> 
-                        state.members.find { it.endpointId == id }
-                    }
-                } else {
-                    state.members.sortedBy { it.number ?: Int.MAX_VALUE }
-                }
-
-                LazyColumn(
+                // 중앙 불빛만 표시
+                Box(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    contentAlignment = Alignment.Center
                 ) {
-                    items(orderedMembers) { member ->
-                        val isHighlighted = state.phase == Phase.RUNNING && 
-                            spinOrderIds.getOrNull(highlightIndex.intValue) == member.endpointId
-                        val isWinner = state.phase == Phase.FINISHED && 
-                            state.winnerEndpointId == member.endpointId
-
-                        MemberCard(
-                            member = member,
-                            isHighlighted = isHighlighted,
-                            isWinner = isWinner
-                        )
+                    val isWinner = state.phase == Phase.FINISHED && state.winnerEndpointId == "self"
+                    val isLightOn = when {
+                        state.phase == Phase.FINISHED -> {
+                            // 게임 종료 시: 저장된 최종 상태 또는 당첨자 여부 확인
+                            val finalWinner = finalWinnerState.value ?: state.winnerEndpointId
+                            finalWinner == "self"
+                        }
+                        state.phase == Phase.RUNNING -> highlightIndex.intValue == 1 // 게임 중 애니메이션
+                        else -> false // 대기 상태
                     }
+                    
+                    CenterLightDisplay(
+                        isLightOn = isLightOn,
+                        isFinished = state.phase == Phase.FINISHED,
+                        isWinner = isWinner
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -237,60 +262,117 @@ fun GameRoomScreen(
                     }
                     
                     Phase.FINISHED -> {
-                        val winner = state.members.find { it.endpointId == state.winnerEndpointId }
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .shadow(8.dp, RoundedCornerShape(16.dp)),
-                            colors = CardDefaults.cardColors(
-                                containerColor = Color(0xFFF8F4FD)
-                            )
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(20.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
+                        val isWinner = state.winnerEndpointId == "self"
+                        
+                        if (isWinner) {
+                            // 당첨자용 UI
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .shadow(12.dp, RoundedCornerShape(20.dp)),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color(0xFFFFF8E1)
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(24.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(text = "🎊", fontSize = 32.sp)
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text(
+                                        text = "축하합니다!",
+                                        fontSize = 24.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFF59E0B)
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "당신이 당첨되었습니다!\n전체 정산을 담당해주세요.",
+                                        fontSize = 16.sp,
+                                        color = Color(0xFFF59E0B),
+                                        lineHeight = 24.sp
+                                    )
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(20.dp))
+                            
+                            Button(
+                                onClick = {
+                                    viewModel.leaveRoom()
+                                    onNavigateBack()
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp)
+                                    .shadow(8.dp, RoundedCornerShape(28.dp)),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFFFC107)
+                                ),
+                                shape = RoundedCornerShape(28.dp)
                             ) {
                                 Text(
-                                    text = "🏆",
-                                    fontSize = 24.sp
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Text(
-                                    text = "🎉 게임 결과",
+                                    text = "정산하러 가기",
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF8B5FBF)
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "${winner?.displayName ?: "알 수 없음"}님이 당첨되었습니다!",
-                                    fontSize = 16.sp,
-                                    color = Color(0xFF8B5FBF)
+                                    color = Color.White
                                 )
                             }
-                        }
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        Button(
-                            onClick = {
-                                viewModel.leaveRoom()
-                                onNavigateBack()
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF8B5FBF)
-                            ),
-                            shape = RoundedCornerShape(24.dp)
-                        ) {
-                            Text(
-                                text = "정산하러 가기",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
+                        } else {
+                            // 일반 참가자용 UI - 당첨자 이름 표시
+                            val winner = state.members.find { it.endpointId == state.winnerEndpointId }
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .shadow(8.dp, RoundedCornerShape(16.dp)),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color(0xFFF0F9FF)
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(20.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(text = "🎯", fontSize = 24.sp)
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Text(
+                                        text = "${winner?.displayName ?: "알 수 없음"}님이 당첨되었습니다!",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF1E40AF)
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "정산을 진행할 예정입니다",
+                                        fontSize = 14.sp,
+                                        color = Color(0xFF1E40AF)
+                                    )
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(16.dp))
+                            
+                            Button(
+                                onClick = {
+                                    viewModel.leaveRoom()
+                                    onNavigateBack()
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF6B7280)
+                                ),
+                                shape = RoundedCornerShape(24.dp)
+                            ) {
+                                Text(
+                                    text = "메인으로 돌아가기",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
                         }
                     }
                 }
@@ -519,6 +601,79 @@ private fun HostControls(
                     shape = RoundedCornerShape(20.dp)
                 ) {
                     Text("게임 시작", fontSize = 14.sp, color = Color.White)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CenterLightDisplay(
+    isLightOn: Boolean,
+    isFinished: Boolean,
+    isWinner: Boolean
+) {
+    Box(
+        modifier = Modifier.size(300.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        // 배경 원 (항상 표시)
+        Box(
+            modifier = Modifier
+                .size(250.dp)
+                .background(
+                    color = Color(0xFF6B7280).copy(alpha = 0.1f),
+                    shape = CircleShape
+                )
+                .shadow(
+                    elevation = 4.dp,
+                    shape = CircleShape
+                )
+        )
+        
+        // 불빛 원 (조건부 표시)
+        if (isLightOn || isFinished) {
+            Box(
+                modifier = Modifier
+                    .size(200.dp)
+                    .background(
+                        color = when {
+                            isFinished && isWinner -> Color(0xFFFFC107).copy(alpha = 0.9f)
+                            isLightOn -> Color(0xFF8B5FBF).copy(alpha = 0.8f)
+                            else -> Color(0xFF6B7280).copy(alpha = 0.2f)
+                        },
+                        shape = CircleShape
+                    )
+                    .shadow(
+                        elevation = if (isLightOn || (isFinished && isWinner)) 20.dp else 8.dp,
+                        shape = CircleShape
+                    )
+            )
+        }
+        
+        // 중앙 아이콘/텍스트
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            when {
+                isFinished && isWinner -> {
+                    Text(text = "🏆", fontSize = 48.sp)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "당첨!",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFF59E0B)
+                    )
+                }
+                isFinished && !isWinner -> {
+                    Text(text = "⚪", fontSize = 48.sp, color = Color(0xFF999999))
+                }
+                isLightOn -> {
+                    Text(text = "💡", fontSize = 48.sp)
+                }
+                else -> {
+                    Text(text = "⚪", fontSize = 48.sp, color = Color(0xFF999999))
                 }
             }
         }

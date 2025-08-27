@@ -32,7 +32,7 @@ fun JoinScreen(
     onNavigateToRoom: () -> Unit = {},
     viewModel: GameViewModel = viewModel()
 ) {
-    var playerName by remember { mutableStateOf("") }
+    // 사용자 이름은 TokenManager에서 자동으로 가져옴
     
     val role by viewModel.role.collectAsState()
     val isDiscovering by viewModel.nearby.isDiscovering.collectAsState()
@@ -94,30 +94,6 @@ fun JoinScreen(
                 .padding(horizontal = 24.dp)
         ) {
             Spacer(modifier = Modifier.height(20.dp))
-
-            OutlinedTextField(
-                value = playerName,
-                onValueChange = { playerName = it },
-                label = { Text("닉네임") },
-                placeholder = { Text("예: 홍길동") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = null,
-                        tint = Color(0xFF8B5FBF)
-                    )
-                },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF8B5FBF),
-                    focusedLabelColor = Color(0xFF8B5FBF),
-                    cursorColor = Color(0xFF8B5FBF)
-                ),
-                shape = RoundedCornerShape(12.dp)
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -218,11 +194,9 @@ fun JoinScreen(
                             RoomCard(
                                 roomTitle = roomTitle,
                                 onJoinClick = {
-                                    if (playerName.isNotBlank()) {
-                                        viewModel.joinRoom(endpointId, playerName.trim())
-                                    }
+                                    viewModel.joinRoom(endpointId)
                                 },
-                                isEnabled = playerName.isNotBlank()
+                                isEnabled = true
                             )
                         }
                     }
@@ -230,25 +204,6 @@ fun JoinScreen(
             }
 
             Spacer(modifier = Modifier.weight(1f))
-
-            if (playerName.isBlank()) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFFFFF3CD)
-                    ),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text(
-                        text = "💡 게임방에 참가하려면 닉네임을 입력해주세요",
-                        fontSize = 14.sp,
-                        color = Color(0xFF856404),
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
-                
-                Spacer(modifier = Modifier.height(20.dp))
-            }
         }
     }
 }
