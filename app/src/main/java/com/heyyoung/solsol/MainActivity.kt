@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import com.heyyoung.solsol.feature.auth.presentation.LoginScreen
 import com.heyyoung.solsol.feature.home.presentation.HomeScreen
+import com.heyyoung.solsol.feature.settlement.presentation.MoneyTransferScreen
 import com.heyyoung.solsol.feature.settlement.presentation.SettlementEqualScreen
 import com.heyyoung.solsol.feature.studentcouncil.presentation.OcrCameraScreen
 import com.heyyoung.solsol.feature.studentcouncil.presentation.StudentCouncilExpenseHistoryScreen
@@ -124,6 +125,10 @@ fun SolsolApp() {
                 onNavigateToCouncil = {
                     Log.d(TAG, "학생회 화면으로 이동")
                     currentScreen = "council"
+                },
+                onNavigateToMoneyTransfer = {  // 이 부분 추가
+                    Log.d(TAG, "송금하기 화면으로 이동")
+                    currentScreen = "money_transfer"
                 }
             )
         }
@@ -283,6 +288,14 @@ fun SolsolApp() {
         "council_fee_status" -> {
             StudentCouncilFeeStatusScreen(
                 onNavigateBack = { currentScreen = "council" }
+            )
+        }
+
+        "money_transfer" -> {
+            MoneyTransferScreen(
+                onNavigateBack = {
+                    currentScreen = "home"
+                }
             )
         }
 
