@@ -1,5 +1,6 @@
 package com.heyyoung.solsol
 
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -8,13 +9,22 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.heyyoung.solsol.feature.auth.presentation.LoginScreen
 import com.heyyoung.solsol.feature.home.presentation.HomeScreen
 import com.heyyoung.solsol.feature.settlement.presentation.MoneyTransferScreen
 import com.heyyoung.solsol.feature.settlement.presentation.SettlementEqualScreen
+import com.heyyoung.solsol.feature.studentcouncil.StudentCouncilViewModel
 import com.heyyoung.solsol.feature.studentcouncil.presentation.OcrCameraScreen
+import com.heyyoung.solsol.feature.studentcouncil.presentation.ReceiptFields
+import com.heyyoung.solsol.feature.studentcouncil.presentation.StudentCouncilMainScreen
 import com.heyyoung.solsol.feature.studentcouncil.presentation.StudentCouncilExpenseHistoryScreen
 import com.heyyoung.solsol.feature.studentcouncil.presentation.StudentCouncilFeeStatusScreen
 import com.heyyoung.solsol.feature.studentcouncil.presentation.StudentCouncilScreen
@@ -78,13 +88,23 @@ fun SolsolApp() {
 
     // 정산 관련 상태
     var selectedSettlementMethod by remember { mutableStateOf<String?>(null) }
-    var settlementParticipants by remember { mutableStateOf<List<com.heyyoung.solsol.feature.settlement.presentation.Person>>(emptyList()) }
+    
+    var settlementParticipants by remember { mutableStateOf<List<com.heyyoung.solsol.feature.settlement.domain.model.Person>>(emptyList()) }
+    var completedSettlement by remember { mutableStateOf<com.heyyoung.solsol.feature.settlement.domain.model.SettlementGroup?>(null) }
+    var settlementTotalAmount by remember { mutableStateOf(0) }
+    var settlementAmountPerPerson by remember { mutableStateOf(0) }
+
+    // OCR 테스트 페이지로 넘길 상태
+    var lastOcrImageUri by remember { mutableStateOf<Uri?>(null) }
+    var lastOcrText by remember { mutableStateOf<String?>(null) }
+    var lastReceiptFields by remember { mutableStateOf<ReceiptFields?>(null) }
+    val viewModel: StudentCouncilViewModel = hiltViewModel()
 
     // 앱 상태 로깅
     LaunchedEffect(currentScreen) {
         Log.i(TAG, "🔄 화면 전환: $currentScreen")
         when (currentScreen) {
-                        "login" -> Log.d(TAG, "로그인 화면 활성화")
+            "login" -> Log.d(TAG, "로그인 화면 활성화")
             "home" -> Log.d(TAG, "홈 화면 활성화 (사용자: $currentUserEmail)")
             "qr" -> Log.d(TAG, "QR 스캔 화면 활성화")
             "payment" -> Log.d(TAG, "결제 화면 활성화")
@@ -194,15 +214,18 @@ fun SolsolApp() {
                             Log.d(TAG, "똑같이 나누기 화면으로 이동")
                             currentScreen = "settlement_equal"
                         }
+
                         "manual" -> {
                             Log.d(TAG, "직접 입력하기 화면으로 이동")
                             currentScreen = "settlement_manual"
                         }
+
                         "random" -> {
                             Log.d(TAG, "랜덤 게임 화면으로 이동 (미구현)")
                             // TODO: 랜덤 게임 화면 구현 후 연결
                             currentScreen = "home" // 임시로 홈으로
                         }
+
                         else -> {
                             Log.w(TAG, "알 수 없는 정산 방식: $selectedSettlementMethod")
                             currentScreen = "home"
@@ -232,6 +255,13 @@ fun SolsolApp() {
                     // 정산 상태 초기화
                     selectedSettlementMethod = null
                     settlementParticipants = emptyList()
+                },
+                onNavigateToComplete = { settlementGroup, participants, totalAmount, amountPerPerson ->
+                    Log.d(TAG, "✅ 정산 생성 성공 - 완료 화면으로 이동")
+                    completedSettlement = settlementGroup
+                    settlementTotalAmount = totalAmount
+                    settlementAmountPerPerson = amountPerPerson
+                    currentScreen = "settlement_complete"
                 }
             )
         }
@@ -259,20 +289,43 @@ fun SolsolApp() {
             )
         }
 
+
+        "settlement_complete" -> {
+            // 정산 완료 화면
+            com.heyyoung.solsol.feature.settlement.presentation.SettlementCompleteScreen(
+                settlementGroup = completedSettlement,
+                participants = settlementParticipants,
+                totalAmount = settlementTotalAmount,
+                amountPerPerson = settlementAmountPerPerson,
+                onNavigateToHome = {
+                    Log.d(TAG, "정산 완료 화면에서 홈으로 이동")
+                    currentScreen = "home"
+                    // 정산 상태 초기화
+                    selectedSettlementMethod = null
+                    settlementParticipants = emptyList()
+                    completedSettlement = null
+                    settlementTotalAmount = 0
+                    settlementAmountPerPerson = 0
+                }
+            )
+        }
+
+
         // 학생회 메인
         "council" -> {
-            StudentCouncilScreen(
-                onNavigateBack = { currentScreen = "home" },
-                onNavigateToExpenseHistory = { currentScreen = "council_history" },
-                onNavigateToExpenseRegister = { currentScreen = "council_register" }, // 영수증 OCR 스캔
-                onNavigateToFeeStatus = { currentScreen = "council_fee_status" }
+            StudentCouncilMainScreen(
+                deptId = 1L,          // 필요 시 실제 값으로 교체
+                councilId = 1L,       // 필요 시 실제 값으로 교체
+                onNavigateBack = { currentScreen = "home" }
             )
         }
 
         // 학생회 지출 내역
         "council_history" -> {
             StudentCouncilExpenseHistoryScreen(
-                onNavigateBack = { currentScreen = "council" }
+                onNavigateBack = { currentScreen = "council" },
+                expenseList = viewModel.expenditureList,
+                currentBalance = viewModel.currentBalance
             )
         }
 
@@ -280,14 +333,18 @@ fun SolsolApp() {
         "council_register" -> {
             OcrCameraScreen(
                 onNavigateBack = { currentScreen = "council" },
-                onOcrResult = { /* 필요하면 결과 저장 후 */ currentScreen = "council_history" }
+                onOcrResult = { result ->
+                    // 필요시 기존 호환용 로직
+                    Log.d("SolsolApp", "OCR Result: $result")
+                }
             )
         }
 
         // 학생회 회비 현황
         "council_fee_status" -> {
             StudentCouncilFeeStatusScreen(
-                onNavigateBack = { currentScreen = "council" }
+                onNavigateBack = { currentScreen = "council" },
+                feeStatusList = viewModel.feeStatus?.let { listOf(it) } ?: emptyList()
             )
         }
 

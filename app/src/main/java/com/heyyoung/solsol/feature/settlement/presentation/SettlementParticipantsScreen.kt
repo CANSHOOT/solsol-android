@@ -1,6 +1,7 @@
 package com.heyyoung.solsol.feature.settlement.presentation
 
 import android.util.Log
+import com.heyyoung.solsol.feature.settlement.domain.model.Person
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,6 +18,8 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -25,68 +28,58 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.heyyoung.solsol.feature.settlement.domain.model.toPerson
+import com.heyyoung.solsol.feature.settlement.presentation.components.NearbyBottomSheet
+import com.heyyoung.solsol.feature.settlement.presentation.viewmodel.NearbyViewModel
 
 private const val TAG = "SettlementParticipantsScreen"
 
-data class Person(
-    val id: String,
-    val name: String,
-    val department: String,
-    val studentId: String,
-    val isMe: Boolean = false
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettlementParticipantsScreen(
     onNavigateBack: () -> Unit = {},
-    onNext: (List<Person>) -> Unit = {}
+    onNext: (List<Person>) -> Unit = {},
+    viewModel: SettlementParticipantsViewModel = hiltViewModel(),
+    nearbyViewModel: NearbyViewModel = hiltViewModel()
 ) {
-    // 상태 관리
+    // ViewModel 상태 관리
+    val uiState by viewModel.uiState.collectAsState()
+    val searchResults by viewModel.searchResults.collectAsState()
+    val currentUser by viewModel.currentUser.collectAsState()
+    
+    // Nearby 상태 관리
+    val nearbyDiscoveryState by nearbyViewModel.discoveryState.collectAsState()
+    val nearbyUsers by nearbyViewModel.discoveredUsers.collectAsState()
+    val isNearbyBottomSheetVisible by nearbyViewModel.isBottomSheetVisible.collectAsState()
+    
+    // 로컬 상태 관리
     var searchText by remember { mutableStateOf("") }
     var selectedTab by remember { mutableStateOf("학번") } // "학번" 또는 "학과"
-    var participants by remember { mutableStateOf(
-        listOf(
-            Person("me", "김신한", "컴퓨터공학과", "20251234", isMe = true)
-        )
-    ) }
-    var showSearchResults by remember { mutableStateOf(false) }
+    var participants by remember { mutableStateOf<List<Person>>(emptyList()) }
 
-    // 더미 사용자 데이터 (전체 사용자 풀)
-    val allUsers = remember {
-        listOf(
-            Person("user1", "이지헌", "컴퓨터공학과", "20251235"),
-            Person("user2", "박민수", "컴퓨터공학과", "20251236"),
-            Person("user3", "최영희", "경영학과", "20251237"),
-            Person("user4", "정수민", "디자인학과", "20251238"),
-            Person("user5", "김철수", "컴퓨터공학과", "20251100"),
-            Person("user6", "박영희", "경영학과", "20251101"),
-            Person("user7", "이민수", "디자인학과", "20251102"),
-            Person("user8", "조현우", "컴퓨터공학과", "20251103")
-        )
+    // 현재 사용자 정보 로드
+    LaunchedEffect(Unit) {
+        viewModel.loadCurrentUser()
+        nearbyViewModel.initialize()
     }
 
-    // 검색 필터링 로직
-    val filteredUsers = remember(searchText, selectedTab, participants) {
-        if (searchText.isBlank()) {
-            emptyList()
-        } else {
-            val participantIds = participants.map { it.id }.toSet()
-            allUsers.filter { user ->
-                !participantIds.contains(user.id) && when (selectedTab) {
-                    "학번" -> {
-                        // 학번은 숫자만 입력 가능하고 포함되는 경우
-                        val numericSearch = searchText.filter { it.isDigit() }
-                        user.studentId.contains(numericSearch)
-                    }
-                    "학과" -> {
-                        // 학과는 부분 매칭 (대소문자 무관)
-                        user.department.contains(searchText, ignoreCase = true)
-                    }
-                    else -> false
-                }
+    // 현재 사용자가 로드되면 participants 초기화
+    LaunchedEffect(currentUser) {
+        currentUser?.let { user ->
+            if (participants.isEmpty()) {
+                participants = listOf(user)
+                Log.d(TAG, "현재 사용자로 participants 초기화: ${user.name}")
             }
         }
+    }
+
+    // 중복 참여자 필터링을 위한 참여자 ID 세트
+    val participantIds = participants.map { it.id }.toSet()
+    
+    // 검색 결과에서 이미 추가된 참여자 제외
+    val filteredSearchResults = searchResults.filter { user ->
+        !participantIds.contains(user.id)
     }
 
     Log.d(TAG, "사람 추가 화면 진입 - 현재 참여자 ${participants.size}명")
@@ -132,56 +125,99 @@ fun SettlementParticipantsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 검색창
-            OutlinedTextField(
-                value = searchText,
-                onValueChange = { newValue ->
-                    // 학번 탭일 때는 숫자만 입력 허용
-                    val filteredValue = if (selectedTab == "학번") {
-                        newValue.filter { it.isDigit() }
-                    } else {
-                        newValue
-                    }
-
-                    searchText = filteredValue
-                    showSearchResults = filteredValue.isNotBlank()
-                    Log.d(TAG, "검색어 입력: $filteredValue (탭: $selectedTab) - 필터된 결과: ${filteredUsers.size}개")
-                },
-                placeholder = {
-                    Text(
-                        if (selectedTab == "학번") "학번을 입력하세요 (숫자만)"
-                        else "학과명을 입력하세요"
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Search,
-                        contentDescription = "검색",
-                        tint = Color(0xFF8B5FBF)
-                    )
-                },
-                trailingIcon = if (searchText.isNotEmpty()) {
-                    {
-                        IconButton(onClick = {
-                            searchText = ""
-                            showSearchResults = false
-                            Log.d(TAG, "검색어 초기화")
-                        }) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = "검색어 지우기",
-                                tint = Color(0xFF999999)
-                            )
-                        }
-                    }
-                } else null,
+            // 검색창과 버튼들
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF8B5FBF),
-                    unfocusedBorderColor = Color(0xFFE0E0E0)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = searchText,
+                    onValueChange = { newValue ->
+                        // 학번 탭일 때는 숫자만 입력 허용
+                        val filteredValue = if (selectedTab == "학번") {
+                            newValue.filter { it.isDigit() }
+                        } else {
+                            newValue
+                        }
+                        searchText = filteredValue
+                        
+                        // 입력이 비워지면 검색 결과 초기화
+                        if (filteredValue.isBlank()) {
+                            viewModel.clearSearchResults()
+                        }
+                        
+                        Log.d(TAG, "검색어 입력: '$filteredValue' (탭: $selectedTab)")
+                    },
+                    placeholder = {
+                        Text(
+                            if (selectedTab == "학번") "학번을 입력하세요"
+                            else "학과명을 입력하세요"
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = "검색",
+                            tint = Color(0xFF8B5FBF)
+                        )
+                    },
+                    trailingIcon = if (searchText.isNotEmpty()) {
+                        {
+                            IconButton(onClick = {
+                                searchText = ""
+                                viewModel.clearSearchResults()
+                                Log.d(TAG, "검색어 초기화")
+                            }) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "검색어 지우기",
+                                    tint = Color(0xFF999999)
+                                )
+                            }
+                        }
+                    } else null,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF8B5FBF),
+                        unfocusedBorderColor = Color(0xFFE0E0E0)
+                    ),
+                    singleLine = true
                 )
-            )
+
+                // 검색 버튼
+                Button(
+                    onClick = {
+                        if (searchText.isNotBlank()) {
+                            Log.d(TAG, "🔍 검색 버튼 클릭: '$searchText' ($selectedTab)")
+                            viewModel.searchUsers(searchText.trim())
+                        }
+                    },
+                    enabled = searchText.isNotBlank() && !uiState.isSearching,
+                    modifier = Modifier.height(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF8B5FBF),
+                        disabledContainerColor = Color(0xFF8B5FBF).copy(alpha = 0.6f)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    if (uiState.isSearching) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = "검색",
+                            tint = Color.White
+                        )
+                    }
+                }
+                
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -191,10 +227,10 @@ fun SettlementParticipantsScreen(
                 onTabSelected = { tab ->
                     Log.d(TAG, "탭 선택: $tab (이전: $selectedTab)")
                     selectedTab = tab
-                    // 탭 변경 시 검색어 초기화
+                    // 탭 변경 시 검색어 및 검색 결과 초기화
                     if (searchText.isNotEmpty()) {
                         searchText = ""
-                        showSearchResults = false
+                        viewModel.clearSearchResults()
                         Log.d(TAG, "탭 변경으로 검색어 초기화")
                     }
                 }
@@ -206,23 +242,39 @@ fun SettlementParticipantsScreen(
             Box(
                 modifier = Modifier.weight(1f)
             ) {
-                if (showSearchResults && searchText.isNotBlank()) {
-                    // 검색 결과 표시
+                // 오류 메시지 표시
+                if (uiState.searchError != null) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "⚠️ ${uiState.searchError}",
+                            color = Color(0xFFE53E3E),
+                            fontSize = 14.sp
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        TextButton(onClick = { viewModel.clearError() }) {
+                            Text("다시 시도", color = Color(0xFF8B5FBF))
+                        }
+                    }
+                } else if (filteredSearchResults.isNotEmpty()) {
+                    // API 검색 결과 표시
                     SearchResultsSection(
-                        searchResults = filteredUsers,
+                        searchResults = filteredSearchResults,
                         onAddPerson = { person ->
                             if (participants.size < 10) {
-                                Log.d(TAG, "사용자 추가: ${person.name} (${participants.size + 1}/10)")
+                                Log.d(TAG, "✅ 사용자 추가: ${person.name} (${participants.size + 1}/10)")
                                 participants = participants + person
                                 searchText = ""
-                                showSearchResults = false
+                                viewModel.clearSearchResults()
                             } else {
-                                Log.w(TAG, "최대 인원(10명) 초과로 추가 불가")
+                                Log.w(TAG, "❌ 최대 인원(10명) 초과로 추가 불가")
                             }
                         },
                         isMaxReached = participants.size >= 10
                     )
-                } else {
+                } else if (currentUser != null) {
                     // 기존 참여자 리스트 + 추가 버튼
                     ParticipantsSection(
                         participants = participants,
@@ -232,14 +284,34 @@ fun SettlementParticipantsScreen(
                         },
                         onAddPersonClick = {
                             if (participants.size < 10) {
-                                Log.d(TAG, "+ 사람 추가하기 클릭 - 검색창에 포커스")
-                                showSearchResults = true
+                                Log.d(TAG, "💡 + 사람 추가하기 클릭 - 주변 기기 검색 시작")
+                                nearbyViewModel.showBottomSheet()
                             } else {
-                                Log.d(TAG, "최대 인원(10명)으로 추가 불가")
+                                Log.d(TAG, "❌ 최대 인원(10명)으로 추가 불가")
                             }
                         },
                         isMaxReached = participants.size >= 10
                     )
+                } else {
+                    // 현재 사용자 정보 로딩 중
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            CircularProgressIndicator(
+                                color = Color(0xFF8B5FBF)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "사용자 정보를 불러오는 중...",
+                                color = Color(0xFF666666),
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
                 }
             }
 
@@ -298,6 +370,40 @@ fun SettlementParticipantsScreen(
                 Spacer(modifier = Modifier.height(40.dp))
             }
         }
+    }
+    
+    // Nearby Bottom Sheet
+    if (isNearbyBottomSheetVisible) {
+        NearbyBottomSheet(
+            discoveryState = nearbyDiscoveryState,
+            discoveredUsers = nearbyUsers,
+            onStartSearch = {
+                Log.d(TAG, "주변 기기 검색 시작")
+                nearbyViewModel.startNearbySearch()
+            },
+            onStopSearch = {
+                Log.d(TAG, "주변 기기 검색 중지")
+                nearbyViewModel.stopNearbySearch()
+            },
+            onUserSelect = { nearbyUser ->
+                if (participants.size < 10) {
+                    val person = nearbyUser.userProfile.toPerson()
+                    // 중복 확인
+                    if (!participants.any { it.id == person.id }) {
+                        participants = participants + person
+                        Log.d(TAG, "✅ 주변 사용자 추가: ${person.name} (${participants.size}/10)")
+                    } else {
+                        Log.d(TAG, "이미 추가된 사용자: ${person.name}")
+                    }
+                } else {
+                    Log.w(TAG, "❌ 최대 인원(10명) 초과로 추가 불가")
+                }
+            },
+            onCloseSheet = {
+                Log.d(TAG, "주변 기기 검색 바텀시트 닫기")
+                nearbyViewModel.hideBottomSheet()
+            }
+        )
     }
 }
 
@@ -631,13 +737,13 @@ private fun AddPersonButton(
         ) {
             Icon(
                 Icons.Default.Add,
-                contentDescription = "추가",
+                contentDescription = "주변에서 찾기",
                 tint = if (isMaxReached) Color(0xFFCCCCCC) else Color(0xFF8B5FBF),
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = if (isMaxReached) "최대 10명 도달" else "사람 추가하기",
+                text = if (isMaxReached) "최대 10명 도달" else "주변에서 찾기",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
                 color = if (isMaxReached) Color(0xFFCCCCCC) else Color(0xFF8B5FBF)

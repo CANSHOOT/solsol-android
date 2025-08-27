@@ -53,7 +53,7 @@ fun DeveloperQuickTest(
                 DevTestButton(
                     text = "테스트1",
                     onClick = {
-                        onFillTestData("test1@ssafy.com", "20251234")
+                        onFillTestData("solsol1@ssafy.co.kr", "20250001")
                     },
                     modifier = Modifier.weight(1f)
                 )
@@ -62,7 +62,7 @@ fun DeveloperQuickTest(
                 DevTestButton(
                     text = "테스트2",
                     onClick = {
-                        onFillTestData("student@heyyoung.ac.kr", "20251111")
+                        onFillTestData("solsol4@ssafy.co.kr", "20250004")
                     },
                     modifier = Modifier.weight(1f)
                 )

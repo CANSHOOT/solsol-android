@@ -11,7 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.heyyoung.solsol.core.network.CouncilExpenditureResponse
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -29,7 +30,8 @@ private const val TAG = "ExpenseHistoryScreen"
 fun StudentCouncilExpenseHistoryScreen(
     onNavigateBack: () -> Unit = {},
     onNavigateToRegister: () -> Unit = {},
-    expenseList: List<ExpenseItem> = emptyList()
+    expenseList: List<CouncilExpenditureResponse> = emptyList(),
+    currentBalance: Long
 ) {
     Log.d(TAG, "지출 내역 화면 진입 - 총 ${expenseList.size}개 항목")
 
@@ -83,13 +85,15 @@ fun StudentCouncilExpenseHistoryScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             // 이번 달 지출 요약 카드
-            ExpenseSummaryCard(expenseList = expenseList)
+            ExpenseSummaryCard(
+                expenseList = expenseList,
+                currentBalance = currentBalance
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
             // 지출 내역 리스트
             if (expenseList.isEmpty()) {
-                // 빈 상태
                 EmptyExpenseState(onAddExpense = onNavigateToRegister)
             } else {
                 LazyColumn(
@@ -110,10 +114,16 @@ fun StudentCouncilExpenseHistoryScreen(
 }
 
 @Composable
-private fun ExpenseSummaryCard(expenseList: List<ExpenseItem>) {
-    val currentMonth = SimpleDateFormat("yyyy.MM", Locale.KOREA).format(Date())
+private fun ExpenseSummaryCard(
+    expenseList: List<CouncilExpenditureResponse>,
+    currentBalance: Long
+    ) {
+    val currentMonth = SimpleDateFormat("yyyy-MM", Locale.KOREA).format(Date())
+
+    // null-safe + 포맷 유연: "yyyy-MM-dd"나 "yyyy-MM-ddTHH:mm..." 모두 OK
     val monthlyTotal = expenseList
-        .filter { it.date.startsWith(currentMonth) }
+        .asSequence()
+        .filter { e -> e.expenditureDate?.take(7) == currentMonth }
         .sumOf { it.amount }
 
     Box(
@@ -136,33 +146,24 @@ private fun ExpenseSummaryCard(expenseList: List<ExpenseItem>) {
                 shape = RoundedCornerShape(size = 8.dp)
             )
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.Center
-        ) {
+        Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.Center) {
             Text(
                 text = "이번 달 지출: ${String.format("%,d", monthlyTotal)}원",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1C1C1E)
+                fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1C1C1E)
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
+            Spacer(Modifier.height(8.dp))
             Text(
-                text = "현재 잔액: 1,250,000원",
-                fontSize = 14.sp,
-                color = Color(0xFF666666)
+                text = "현재 잔액: ${String.format("%,d", currentBalance)}원",
+                fontSize = 14.sp, color = Color(0xFF666666)
             )
         }
     }
 }
 
 @Composable
-private fun ExpenseItemCard(expense: ExpenseItem) {
-    Log.v(TAG, "지출 항목 렌더링: ${expense.storeName} - ${expense.amount}원")
+private fun ExpenseItemCard(expense: CouncilExpenditureResponse) {
+    Log.v(TAG, "지출 항목 렌더링: ${expense.description} - ${expense.amount}원")
+    val dateText = expense.expenditureDate?.take(10) ?: "—"  // null-safe + ISO 포맷 대응
 
     Box(
         modifier = Modifier
@@ -186,20 +187,16 @@ private fun ExpenseItemCard(expense: ExpenseItem) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // 왼쪽: 날짜와 상호명
+            // 왼쪽: 날짜와 설명
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                Text(
-                    text = expense.date,
-                    fontSize = 12.sp,
-                    color = Color(0xFF666666)
-                )
+                Text(text = dateText, fontSize = 12.sp, color = Color(0xFF666666))
 
                 Spacer(modifier = Modifier.height(2.dp))
 
                 Text(
-                    text = expense.storeName,
+                    text = expense.description,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color(0xFF1C1C1E)

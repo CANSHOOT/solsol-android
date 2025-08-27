@@ -13,6 +13,26 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    
+    <!-- Nearby Connections API 권한들 -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    
+    <!-- API 31+ (Android 12) Bluetooth 권한 -->
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" 
+        android:minSdkVersion="31" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" 
+        android:minSdkVersion="31" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" 
+        android:minSdkVersion="31" />
+    
+    <!-- API 32+ (Android 13) WiFi 권한 -->
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" 
+        android:minSdkVersion="32" />
 
     <!-- 카메라 기능 선언 -->
     <uses-feature

@@ -65,6 +65,12 @@ android {
 }
 
 dependencies {
+    // ML Kit Text Recognition (Korean) - 번들 방식
+    implementation("com.google.mlkit:text-recognition-korean:16.0.1") // :contentReference[oaicite:3]{index=3}
+    // 사진 미리보기용 (선택)
+    implementation("io.coil-kt:coil-compose:2.6.0")
+
+
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -122,6 +128,9 @@ dependencies {
 
     // Permissions
     implementation(libs.accompanist.permissions)
+    
+    // Google Nearby Connections API (주변 기기 탐색용)
+    implementation("com.google.android.gms:play-services-nearby:19.0.0")
 
     // Local Database
     implementation(libs.androidx.room.runtime)
