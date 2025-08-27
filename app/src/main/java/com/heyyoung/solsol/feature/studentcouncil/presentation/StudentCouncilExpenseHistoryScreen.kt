@@ -2,6 +2,7 @@ package com.heyyoung.solsol.feature.studentcouncil.presentation
 
 import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -39,7 +40,13 @@ fun StudentCouncilExpenseHistoryScreen(
     ) {
         // 상단 앱바
         CenterAlignedTopAppBar(
-            title = { Text("지출 내역") },
+            title = {
+                Text(
+                    text = "지출 내역",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            },
             navigationIcon = {
                 IconButton(onClick = {
                     Log.d(TAG, "뒤로가기 클릭")
@@ -67,27 +74,35 @@ fun StudentCouncilExpenseHistoryScreen(
             )
         )
 
-        // 이번 달 지출 요약 카드
-        ExpenseSummaryCard(expenseList = expenseList)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(20.dp))
 
-        Spacer(modifier = Modifier.height(16.dp))
+            // 이번 달 지출 요약 카드
+            ExpenseSummaryCard(expenseList = expenseList)
 
-        // 지출 내역 리스트
-        if (expenseList.isEmpty()) {
-            // 빈 상태
-            EmptyExpenseState(onAddExpense = onNavigateToRegister)
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(expenseList) { expense ->
-                    ExpenseItemCard(expense = expense)
-                }
+            Spacer(modifier = Modifier.height(24.dp))
 
-                item {
-                    Spacer(modifier = Modifier.height(20.dp))
+            // 지출 내역 리스트
+            if (expenseList.isEmpty()) {
+                // 빈 상태
+                EmptyExpenseState(onAddExpense = onNavigateToRegister)
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(expenseList) { expense ->
+                        ExpenseItemCard(expense = expense)
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(20.dp))
+                    }
                 }
             }
         }
@@ -101,29 +116,40 @@ private fun ExpenseSummaryCard(expenseList: List<ExpenseItem>) {
         .filter { it.date.startsWith(currentMonth) }
         .sumOf { it.amount }
 
-    Card(
+    Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp)
             .shadow(
                 elevation = 4.dp,
                 spotColor = Color(0x1A000000),
                 ambientColor = Color(0x1A000000)
-            ),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F9FF)),
-        shape = RoundedCornerShape(12.dp)
+            )
+            .border(
+                width = 1.dp,
+                color = Color(0xCC8B5FBF),
+                shape = RoundedCornerShape(size = 8.dp)
+            )
+            .padding(1.dp)
+            .width(342.dp)
+            .height(100.dp)
+            .background(
+                color = Color(0xFFF8F7FF),
+                shape = RoundedCornerShape(size = 8.dp)
+            )
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
+                .fillMaxSize()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.Center
         ) {
             Text(
                 text = "이번 달 지출: ${String.format("%,d", monthlyTotal)}원",
-                fontSize = 16.sp,
+                fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF1C1C1E)
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = "현재 잔액: 1,250,000원",
@@ -136,53 +162,57 @@ private fun ExpenseSummaryCard(expenseList: List<ExpenseItem>) {
 
 @Composable
 private fun ExpenseItemCard(expense: ExpenseItem) {
-    Card(
+    Log.v(TAG, "지출 항목 렌더링: ${expense.storeName} - ${expense.amount}원")
+
+    Box(
         modifier = Modifier
-            .fillMaxWidth()
             .shadow(
-                elevation = 2.dp,
-                spotColor = Color(0x0D000000),
-                ambientColor = Color(0x0D000000)
-            ),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(12.dp)
+                elevation = 4.dp,
+                spotColor = Color(0x1A000000),
+                ambientColor = Color(0x1A000000)
+            )
+            .padding(1.dp)
+            .width(342.dp)
+            .height(60.dp)
+            .background(
+                color = Color(0xFFFFFFFF),
+                shape = RoundedCornerShape(size = 8.dp)
+            )
     ) {
-        Column(
+        Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+            // 왼쪽: 날짜와 상호명
+            Column(
+                modifier = Modifier.weight(1f)
             ) {
-                // 상호명과 날짜
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = expense.storeName,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF1C1C1E)
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Text(
-                        text = expense.date,
-                        fontSize = 12.sp,
-                        color = Color(0xFF666666)
-                    )
-                }
-
-                // 금액
                 Text(
-                    text = "-${String.format("%,d", expense.amount)}원",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
+                    text = expense.date,
+                    fontSize = 12.sp,
+                    color = Color(0xFF666666)
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Text(
+                    text = expense.storeName,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
                     color = Color(0xFF1C1C1E)
                 )
             }
+
+            // 오른쪽: 금액
+            Text(
+                text = "-${String.format("%,d", expense.amount)}원",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1C1C1E)
+            )
         }
     }
 }
@@ -192,7 +222,7 @@ private fun EmptyExpenseState(onAddExpense: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(vertical = 60.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -202,27 +232,43 @@ private fun EmptyExpenseState(onAddExpense: () -> Unit) {
             color = Color(0xFF666666)
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         Button(
             onClick = {
                 Log.d(TAG, "첫 지출 등록 버튼 클릭")
                 onAddExpense()
             },
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8B5FBF)),
-            shape = RoundedCornerShape(12.dp)
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF8B5FBF)
+            ),
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier
+                .shadow(
+                    elevation = 4.dp,
+                    spotColor = Color(0x1A8B5FBF),
+                    ambientColor = Color(0x1A8B5FBF)
+                )
+                .height(48.dp)
+                .width(200.dp)
         ) {
             Row(
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
                 Icon(
                     Icons.Default.Add,
                     contentDescription = null,
                     tint = Color.White,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(18.dp)
                 )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("지출 등록하기", color = Color.White)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "지출 등록하기",
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
     }
