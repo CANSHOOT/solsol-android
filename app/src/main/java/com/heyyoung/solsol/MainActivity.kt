@@ -8,11 +8,15 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.heyyoung.solsol.feature.auth.presentation.LoginScreen
 import com.heyyoung.solsol.feature.home.presentation.HomeScreen
-import com.heyyoung.solsol.feature.settlement.presentation.SettlementEqualScreen
 import com.heyyoung.solsol.feature.studentcouncil.presentation.OcrCameraScreen
 import com.heyyoung.solsol.feature.studentcouncil.presentation.StudentCouncilScreen
 import com.heyyoung.solsol.ui.theme.SolsolTheme
@@ -75,7 +79,11 @@ fun SolsolApp() {
 
     // 정산 관련 상태
     var selectedSettlementMethod by remember { mutableStateOf<String?>(null) }
-    var settlementParticipants by remember { mutableStateOf<List<com.heyyoung.solsol.feature.settlement.presentation.Person>>(emptyList()) }
+    var settlementParticipants by remember {
+        mutableStateOf<List<com.heyyoung.solsol.feature.settlement.presentation.Person>>(
+            emptyList()
+        )
+    }
 
     // 앱 상태 로깅
     LaunchedEffect(currentScreen) {
@@ -187,15 +195,18 @@ fun SolsolApp() {
                             Log.d(TAG, "똑같이 나누기 화면으로 이동")
                             currentScreen = "settlement_equal"
                         }
+
                         "manual" -> {
                             Log.d(TAG, "직접 입력하기 화면으로 이동")
                             currentScreen = "settlement_manual"
                         }
+
                         "random" -> {
                             Log.d(TAG, "랜덤 게임 화면으로 이동 (미구현)")
                             // TODO: 랜덤 게임 화면 구현 후 연결
                             currentScreen = "home" // 임시로 홈으로
                         }
+
                         else -> {
                             Log.w(TAG, "알 수 없는 정산 방식: $selectedSettlementMethod")
                             currentScreen = "home"
