@@ -17,7 +17,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -28,7 +31,7 @@ private const val TAG = "FeeStatusScreen"
 fun StudentCouncilFeeStatusScreen(
     onNavigateBack: () -> Unit = {}
 ) {
-    // 회비 납부 데이터 (데모용)
+    // 회비 납부 데이터
     val feeStatusList = remember { createFeeStatusList() }
     val paidCount = feeStatusList.count { it.isPaid }
     val totalCount = feeStatusList.size
@@ -42,7 +45,13 @@ fun StudentCouncilFeeStatusScreen(
     ) {
         // 상단 앱바
         CenterAlignedTopAppBar(
-            title = { Text("회비 현황") },
+            title = {
+                Text(
+                    text = "회비 현황",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            },
             navigationIcon = {
                 IconButton(onClick = {
                     Log.d(TAG, "뒤로가기 클릭")
@@ -78,8 +87,8 @@ fun StudentCouncilFeeStatusScreen(
 
             // 납부 현황 요약 카드
             FeeStatusSummaryCard(
-                paidCount = paidCount,
-                totalCount = totalCount
+                totalCount = totalCount,
+                paidCount = paidCount
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -103,10 +112,11 @@ fun StudentCouncilFeeStatusScreen(
 
 @Composable
 private fun FeeStatusSummaryCard(
-    paidCount: Int,
-    totalCount: Int
+    totalCount: Int,
+    paidCount: Int
 ) {
-    Card(
+
+    Box(
         modifier = Modifier
             .shadow(
                 elevation = 8.dp,
@@ -119,55 +129,48 @@ private fun FeeStatusSummaryCard(
                 shape = RoundedCornerShape(size = 12.dp)
             )
             .width(342.dp)
-            .height(100.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFF8F7FF)
-        ),
-        shape = RoundedCornerShape(12.dp)
+            .height(100.dp)
+            .background(
+                color = Color(0xFFF8F7FF),
+                shape = RoundedCornerShape(size = 12.dp)
+            )
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "총 ",
-                    fontSize = 18.sp,
-                    color = Color(0xFF1C1C1E)
-                )
-                Text(
-                    text = "$totalCount",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF8B5FBF)
-                )
-                Text(
-                    text = "명 중 ",
-                    fontSize = 18.sp,
-                    color = Color(0xFF1C1C1E)
-                )
-                Text(
-                    text = "$paidCount",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF8B5FBF)
-                )
-                Text(
-                    text = "명 납부 완료",
-                    fontSize = 18.sp,
-                    color = Color(0xFF1C1C1E)
-                )
-            }
+            // 숫자만 강조하는 텍스트
+            Text(
+                text = buildAnnotatedString {
+                    append("총 ")
+                    withStyle(style = SpanStyle(
+                        color = Color(0xFF8B5FBF),
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold
+                    )) {
+                        append("$totalCount")
+                    }
+                    append("명 중 ")
+                    withStyle(style = SpanStyle(
+                        color = Color(0xFF8B5FBF),
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold
+                    )) {
+                        append("$paidCount")
+                    }
+                    append("명 납부 완료")
+                },
+                fontSize = 18.sp,
+                color = Color(0xFF1C1C1E)
+            )
         }
     }
 }
 
 @Composable
 private fun StudentFeeCard(student: StudentFeeStatus) {
-    Card(
+
+    Box(
         modifier = Modifier
             .shadow(
                 elevation = 4.dp,
@@ -175,11 +178,11 @@ private fun StudentFeeCard(student: StudentFeeStatus) {
                 ambientColor = Color(0x0D000000)
             )
             .width(342.dp)
-            .height(60.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        ),
-        shape = RoundedCornerShape(12.dp)
+            .height(60.dp)
+            .background(
+                color = Color(0xFFFFFFFF),
+                shape = RoundedCornerShape(size = 12.dp)
+            )
     ) {
         Row(
             modifier = Modifier
@@ -227,7 +230,7 @@ private fun StudentFeeCard(student: StudentFeeStatus) {
                 }
             }
 
-            // 납부 상태 버튼
+            // 납부 상태 버튼 (요청하신 세 번째 스타일)
             FeeStatusButton(isPaid = student.isPaid)
         }
     }
@@ -235,48 +238,68 @@ private fun StudentFeeCard(student: StudentFeeStatus) {
 
 @Composable
 private fun FeeStatusButton(isPaid: Boolean) {
-    Button(
-        onClick = {
-            // 클릭 시 상태 변경 로직 (데모에서는 비활성화)
-            Log.d(TAG, "회비 상태 변경 클릭")
-        },
-        modifier = Modifier
-            .height(32.dp)
-            .width(60.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (isPaid) Color(0xFF8B5FBF) else Color.White
-        ),
-        shape = RoundedCornerShape(16.dp),
-        border = if (!isPaid) ButtonDefaults.outlinedButtonBorder.copy(
-            brush = androidx.compose.ui.graphics.SolidColor(Color(0xFF8B5FBF))
-        ) else null,
-        contentPadding = PaddingValues(4.dp)
-    ) {
-        Text(
-            text = if (isPaid) "완료" else "미완료",
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            color = if (isPaid) Color.White else Color(0xFF8B5FBF)
-        )
+    if (isPaid) {
+        // 완료 상태
+        Box(
+            modifier = Modifier
+                .width(45.dp)
+                .height(20.dp)
+                .background(
+                    color = Color(0xFF8B5FBF),
+                    shape = RoundedCornerShape(size = 10.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "완료",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.White
+            )
+        }
+    } else {
+        // 미완료
+        Box(
+            modifier = Modifier
+                .width(60.dp)
+                .height(20.dp)
+                .border(
+                    width = 1.dp,
+                    color = Color(0xFF8B5FBF),
+                    shape = RoundedCornerShape(size = 10.dp)
+                )
+                .background(
+                    color = Color.White,
+                    shape = RoundedCornerShape(size = 10.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "미완료",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF8B5FBF)
+            )
+        }
     }
 }
 
-// 데모 데이터 생성
+// 데모 데이터
 private fun createFeeStatusList(): List<StudentFeeStatus> = listOf(
     StudentFeeStatus("김신한", "컴퓨터공학과", "20251234", true),
-    StudentFeeStatus("이지헌", "컴퓨터공학과", "20251234", false),
-    StudentFeeStatus("박민수", "컴퓨터공학과", "20251234", true),
-    StudentFeeStatus("김신한", "컴퓨터공학과", "20251234", true),
-    StudentFeeStatus("이지헌", "컴퓨터공학과", "20251234", false),
-    StudentFeeStatus("박민수", "컴퓨터공학과", "20251234", true),
-    StudentFeeStatus("최영희", "컴퓨터공학과", "20251235", true),
-    StudentFeeStatus("한석봉", "컴퓨터공학과", "20251236", false),
-    StudentFeeStatus("윤서연", "컴퓨터공학과", "20251237", true),
-    StudentFeeStatus("임창수", "컴퓨터공학과", "20251238", true),
-    StudentFeeStatus("조미정", "컴퓨터공학과", "20251239", true),
-    StudentFeeStatus("강태호", "컴퓨터공학과", "20251240", false),
-    StudentFeeStatus("송은지", "컴퓨터공학과", "20251241", true),
-    StudentFeeStatus("배준혁", "컴퓨터공학과", "20251242", true),
+    StudentFeeStatus("이휘", "컴퓨터공학과", "20251234", false),
+    StudentFeeStatus("김경훈", "컴퓨터공학과", "20251234", true),
+    StudentFeeStatus("한강섭", "컴퓨터공학과", "20251234", true),
+    StudentFeeStatus("홍정인", "컴퓨터공학과", "20251234", false),
+    StudentFeeStatus("김소연", "컴퓨터공학과", "20251234", true),
+    StudentFeeStatus("노다빈", "컴퓨터공학과", "20251235", true),
+    StudentFeeStatus("정민주", "컴퓨터공학과", "20251236", false),
+    StudentFeeStatus("이태호", "컴퓨터공학과", "20251237", true),
+    StudentFeeStatus("이주현", "컴퓨터공학과", "20251238", true),
+    StudentFeeStatus("박병찬", "컴퓨터공학과", "20251239", true),
+    StudentFeeStatus("김영규", "컴퓨터공학과", "20251240", false),
+    StudentFeeStatus("장규민", "컴퓨터공학과", "20251241", true),
+    StudentFeeStatus("이인우", "컴퓨터공학과", "20251242", true),
     StudentFeeStatus("신유진", "컴퓨터공학과", "20251243", false),
     StudentFeeStatus("오성민", "컴퓨터공학과", "20251244", true),
     StudentFeeStatus("허지우", "컴퓨터공학과", "20251245", true),

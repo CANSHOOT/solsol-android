@@ -15,6 +15,7 @@ import com.heyyoung.solsol.feature.home.presentation.HomeScreen
 import com.heyyoung.solsol.feature.settlement.presentation.SettlementEqualScreen
 import com.heyyoung.solsol.feature.studentcouncil.presentation.OcrCameraScreen
 import com.heyyoung.solsol.feature.studentcouncil.presentation.StudentCouncilExpenseHistoryScreen
+import com.heyyoung.solsol.feature.studentcouncil.presentation.StudentCouncilFeeStatusScreen
 import com.heyyoung.solsol.feature.studentcouncil.presentation.StudentCouncilScreen
 import com.heyyoung.solsol.ui.theme.SolsolTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -82,7 +83,7 @@ fun SolsolApp() {
     LaunchedEffect(currentScreen) {
         Log.i(TAG, "🔄 화면 전환: $currentScreen")
         when (currentScreen) {
-            "login" -> Log.d(TAG, "로그인 화면 활성화")
+                        "login" -> Log.d(TAG, "로그인 화면 활성화")
             "home" -> Log.d(TAG, "홈 화면 활성화 (사용자: $currentUserEmail)")
             "qr" -> Log.d(TAG, "QR 스캔 화면 활성화")
             "payment" -> Log.d(TAG, "결제 화면 활성화")
@@ -258,7 +259,8 @@ fun SolsolApp() {
             StudentCouncilScreen(
                 onNavigateBack = { currentScreen = "home" },
                 onNavigateToExpenseHistory = { currentScreen = "council_history" },
-                onNavigateToExpenseRegister = { currentScreen = "council_register" } // 영수증 OCR 스캔
+                onNavigateToExpenseRegister = { currentScreen = "council_register" }, // 영수증 OCR 스캔
+                onNavigateToFeeStatus = { currentScreen = "council_fee_status" }
             )
         }
 
@@ -274,6 +276,13 @@ fun SolsolApp() {
             OcrCameraScreen(
                 onNavigateBack = { currentScreen = "council" },
                 onOcrResult = { /* 필요하면 결과 저장 후 */ currentScreen = "council_history" }
+            )
+        }
+
+        // 학생회 회비 현황
+        "council_fee_status" -> {
+            StudentCouncilFeeStatusScreen(
+                onNavigateBack = { currentScreen = "council" }
             )
         }
 
