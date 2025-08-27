@@ -122,6 +122,9 @@ dependencies {
 
     // Permissions
     implementation(libs.accompanist.permissions)
+    
+    // Google Nearby Connections API (주변 기기 탐색용)
+    implementation("com.google.android.gms:play-services-nearby:19.0.0")
 
     // Local Database
     implementation(libs.androidx.room.runtime)
