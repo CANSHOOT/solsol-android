@@ -32,6 +32,13 @@ class MoneyTransferViewModel @Inject constructor(
 
     init { refresh() }
 
+    private val _selectedRequest = MutableStateFlow<MoneyTransferItem?>(null)
+    val selectedRequest: StateFlow<MoneyTransferItem?> = _selectedRequest
+
+    fun selectRequest(request: MoneyTransferItem) {
+        _selectedRequest.value = request
+    }
+
     fun refresh() {
         viewModelScope.launch {
             _loading.value = true

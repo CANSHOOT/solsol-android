@@ -3,6 +3,7 @@ package com.heyyoung.solsol.feature.settlement.presentation
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -27,7 +28,8 @@ enum class TransferSide { SENT, RECEIVED }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MoneyTransferScreen(
-    onNavigateBack: () -> Unit = {}
+    onNavigateBack: () -> Unit = {},
+    onNavigateToRemittance: (receiverName: String, amount: Long) -> Unit
 ) {
     val viewModel: MoneyTransferViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 
@@ -98,8 +100,7 @@ fun MoneyTransferScreen(
                 if (currentList.isEmpty()) {
                     // 비어있을 때 상태
                     Box(
-                        modifier = Modifier
-                            .fillMaxSize(),
+                        modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -139,7 +140,15 @@ fun MoneyTransferScreen(
                             MoneyTransferCard(
                                 name = request.name,
                                 amount = request.amount,
-                                status = request.status
+                                status = request.status,
+                                onClick = {
+                                    if (request.status == MoneyTransferStatus.PENDING) {
+                                        // 진행중인 건만 이동
+                                        onNavigateToRemittance(request.name, request.amount)
+                                    } else {
+                                        Log.d(TAG, "완료 항목 클릭 무시: ${request.name}")
+                                    }
+                                }
                             )
                         }
 
@@ -155,7 +164,8 @@ fun MoneyTransferScreen(
 private fun MoneyTransferCard(
     name: String,
     amount: Long,
-    status: MoneyTransferStatus
+    status: MoneyTransferStatus,
+    onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -170,7 +180,8 @@ private fun MoneyTransferCard(
                 shape = RoundedCornerShape(12.dp)
             )
             .fillMaxWidth()
-            .height(60.dp),
+            .height(60.dp)
+            .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(12.dp)
     ) {
@@ -220,7 +231,7 @@ private fun MoneyTransferCard(
                     color = Color(0xFF1C1C1E)
                 )
 
-                // 상태 버튼
+                // 상태 버튼(표시용)
                 StatusButton(status = status)
             }
         }

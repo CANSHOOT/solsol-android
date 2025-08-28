@@ -21,6 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.heyyoung.solsol.feature.auth.presentation.LoginScreen
 import com.heyyoung.solsol.feature.home.presentation.HomeScreen
+import com.heyyoung.solsol.feature.remittance.presentation.RemittanceScreen
+import com.heyyoung.solsol.feature.remittance.presentation.RemittanceSuccessScreen
 import com.heyyoung.solsol.feature.settlement.presentation.MoneyTransferScreen
 import com.heyyoung.solsol.feature.settlement.presentation.SettlementEqualScreen
 import com.heyyoung.solsol.feature.settlement.presentation.SettlementManualScreen
@@ -103,6 +105,9 @@ fun SolsolApp() {
     var lastReceiptFields by remember { mutableStateOf<ReceiptFields?>(null) }
     val viewModel: StudentCouncilViewModel = hiltViewModel()
 
+    // ✅ 송금 화면으로 전달할 선택 항목 상태
+    var remittanceReceiverName by remember { mutableStateOf<String?>(null) }
+    var remittanceAmount by remember { mutableStateOf<Long?>(null) }
 
     // 앱 상태 로깅
     LaunchedEffect(currentScreen) {
@@ -263,7 +268,7 @@ fun SolsolApp() {
 
         "settlement_equal" -> {
             // 똑같이 나누기 화면
-            com.heyyoung.solsol.feature.settlement.presentation.SettlementEqualScreen(
+            SettlementEqualScreen(
                 participants = settlementParticipants,
                 onNavigateBack = {
                     Log.d(TAG, "똑같이 나누기에서 참여자 선택으로 돌아가기")
@@ -330,6 +335,39 @@ fun SolsolApp() {
             )
         }
 
+        // ✅ 송금 목록
+        "money_transfer" -> {
+            MoneyTransferScreen(
+                onNavigateBack = { currentScreen = "home" },
+                onNavigateToRemittance = { receiverName, amount ->
+                    // 선택값 저장 후 송금 화면으로 이동
+                    remittanceReceiverName = receiverName
+                    remittanceAmount = amount
+                    currentScreen = "remittance"
+                }
+            )
+        }
+
+        // ✅ 송금 실행 화면
+        "remittance" -> {
+            RemittanceScreen(
+                receiverName = remittanceReceiverName ?: "",
+                receiverInfo = "", // 필요 시 이메일/계좌 등 표시
+                amount = String.format("%,d", remittanceAmount ?: 0),
+                cardNumber = "**** **** **** 1234", // TODO: 실제 카드/계좌 연동
+                onNavigateBack = { currentScreen = "money_transfer" },
+                onRemittanceComplete = {
+                    currentScreen = "remittance_success"
+                }
+            )
+        }
+
+        // ✅ 송금 성공 화면
+        "remittance_success" -> {
+            RemittanceSuccessScreen(
+                onComplete = { currentScreen = "home" }
+            )
+        }
 
         // 학생회 메인
         "council" -> {
@@ -344,6 +382,7 @@ fun SolsolApp() {
         "council_history" -> {
             StudentCouncilExpenseHistoryScreen(
                 onNavigateBack = { currentScreen = "council" },
+                onNavigateToRegister = { currentScreen = "council_register" },
                 expenseList = viewModel.expenditureList,
                 currentBalance = viewModel.currentBalance
             )
@@ -365,14 +404,6 @@ fun SolsolApp() {
             StudentCouncilFeeStatusScreen(
                 onNavigateBack = { currentScreen = "council" },
                 feeStatusList = viewModel.feeStatus?.let { listOf(it) } ?: emptyList()
-            )
-        }
-
-        "money_transfer" -> {
-            MoneyTransferScreen(
-                onNavigateBack = {
-                    currentScreen = "home"
-                }
             )
         }
 

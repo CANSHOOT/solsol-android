@@ -94,7 +94,6 @@ fun RemittanceSuccessScreen(
         Spacer(Modifier.weight(1f))
 
         // 완료 버튼
-        /*
         Button(
             onClick = onComplete,
             modifier = Modifier
@@ -106,7 +105,6 @@ fun RemittanceSuccessScreen(
         ) {
             Text("완료", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
         }
-        */
 
         Spacer(Modifier.height(32.dp))
     }

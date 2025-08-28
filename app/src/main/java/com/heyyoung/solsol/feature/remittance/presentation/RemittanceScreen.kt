@@ -128,7 +128,7 @@ fun RemittanceScreen(
 
             // 송금하기 버튼
             Button(
-                onClick = { showSuccessScreen = true },
+                onClick = { onRemittanceComplete() },
                 modifier = Modifier
                     .shadow(
                         elevation = 4.dp,
