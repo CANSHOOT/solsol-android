@@ -29,28 +29,25 @@ enum class TransferSide { SENT, RECEIVED }
 fun MoneyTransferScreen(
     onNavigateBack: () -> Unit = {}
 ) {
-    // 데모 데이터
-    val receivedRequests = remember { getReceivedRequests() }
-    val sentRequests = remember { getSentRequests() }
+    val viewModel: MoneyTransferViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 
-    // ① 탭 상태 (보낸요청 / 받은요청)
     var selectedSide by remember { mutableStateOf(TransferSide.SENT) }
 
-    Log.d(TAG, "송금하기 화면 진입")
+    val loading by viewModel.loading.collectAsState(initial = false)
+    val error by viewModel.error.collectAsState(initial = null)
+    val sent by viewModel.sent.collectAsState(initial = emptyList())
+    val received by viewModel.received.collectAsState(initial = emptyList())
+    val currentList = if (selectedSide == TransferSide.SENT) sent else received
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
     ) {
-        // 상단 앱바
         CenterAlignedTopAppBar(
             title = { Text("송금하기") },
             navigationIcon = {
-                IconButton(onClick = {
-                    Log.d(TAG, "뒤로가기 클릭")
-                    onNavigateBack()
-                }) {
+                IconButton(onClick = onNavigateBack) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "뒤로")
                 }
             },
@@ -61,70 +58,90 @@ fun MoneyTransferScreen(
             )
         )
 
-        // ② 탭 UI (앱바 바로 아래에 추가)
         val tabs = listOf("보낸요청", "받은요청")
         val selectedIndex = if (selectedSide == TransferSide.SENT) 0 else 1
-        TabRow(
-            selectedTabIndex = selectedIndex,
-            containerColor = Color.White
-        ) {
+        TabRow(selectedTabIndex = selectedIndex, containerColor = Color.White) {
             tabs.forEachIndexed { index, title ->
                 Tab(
                     selected = selectedIndex == index,
-                    onClick = {
-                        selectedSide = if (index == 0) TransferSide.SENT else TransferSide.RECEIVED
-                    },
+                    onClick = { selectedSide = if (index == 0) TransferSide.SENT else TransferSide.RECEIVED },
                     text = { Text(title) }
                 )
             }
         }
 
-        // 선택된 탭의 리스트만 보여주기
-        val currentList = if (selectedSide == TransferSide.SENT) sentRequests else receivedRequests
-
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            item { Spacer(modifier = Modifier.height(12.dp)) }
-
-            // 페이지 제목
-            item {
-                Text(
-                    text = "정산현황",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1C1C1E)
-                )
+        when {
+            loading -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
             }
-
-            // 섹션 타이틀 (선택된 탭에 맞춰 표시)
-            item {
-                val title = if (selectedSide == TransferSide.SENT)
-                    "보낸 요청 (내가 받아야 할 돈)"
-                else
-                    "받은 요청 (내가 보내야 할 돈)"
-                Text(
-                    text = title,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF666666),
-                    modifier = Modifier.padding(top = 8.dp)
-                )
+            error != null -> {
+                Column(
+                    Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text("목록을 불러오지 못했습니다.\n$error", color = Color.Red)
+                    Spacer(Modifier.height(12.dp))
+                    Button(onClick = { viewModel.refresh() }) { Text("다시 시도") }
+                }
             }
+            else -> {
+                if (currentList.isEmpty()) {
+                    // 비어있을 때 상태
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (selectedSide == TransferSide.SENT)
+                                "보낸 요청이 없습니다."
+                            else
+                                "받은 요청이 없습니다.",
+                            fontSize = 16.sp,
+                            color = Color(0xFF666666)
+                        )
+                    }
+                } else {
+                    // 실제 목록 렌더링
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        item { Spacer(Modifier.height(12.dp)) }
 
-            // 리스트
-            items(currentList) { request ->
-                MoneyTransferCard(
-                    name = request.name,
-                    amount = request.amount,
-                    status = request.status
-                )
+                        item {
+                            val title = if (selectedSide == TransferSide.SENT)
+                                "보낸 요청 (내가 받아야 할 돈)"
+                            else
+                                "받은 요청 (내가 보내야 할 돈)"
+                            Text(
+                                text = title,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF666666),
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
+
+                        items(currentList) { request ->
+                            MoneyTransferCard(
+                                name = request.name,
+                                amount = request.amount,
+                                status = request.status
+                            )
+                        }
+
+                        item { Spacer(Modifier.height(20.dp)) }
+                    }
+                }
             }
-
-            item { Spacer(modifier = Modifier.height(20.dp)) }
         }
     }
 }
@@ -225,37 +242,7 @@ private fun StatusButton(status: MoneyTransferStatus) {
     }
 }
 
-// 데모 데이터 (side 값을 올바르게 지정)
-private fun getReceivedRequests(): List<MoneyTransferItem> = listOf(
-    MoneyTransferItem(
-        name = "김신한",
-        amount = 29002L,
-        status = MoneyTransferStatus.PENDING,
-        side = TransferSide.RECEIVED
-    ),
-    MoneyTransferItem(
-        name = "이지헌",
-        amount = 8500L,
-        status = MoneyTransferStatus.COMPLETED,
-        side = TransferSide.RECEIVED
-    )
-)
-
-private fun getSentRequests(): List<MoneyTransferItem> = listOf(
-    MoneyTransferItem(
-        name = "박민수",
-        amount = 15000L,
-        status = MoneyTransferStatus.PENDING,
-        side = TransferSide.SENT
-    ),
-    MoneyTransferItem(
-        name = "최영희",
-        amount = 12500L,
-        status = MoneyTransferStatus.COMPLETED,
-        side = TransferSide.SENT
-    )
-)
-
+/** 화면 표시용 도메인 아이템 (ViewModel에서 채움) */
 data class MoneyTransferItem(
     val name: String,
     val amount: Long,

@@ -55,4 +55,7 @@ interface SettlementApiService {
     suspend fun getUserParticipations(
         @Path("userId") userId: String
     ): List<SettlementParticipantDto>
+
+    @GET("dutchpay/me/summary")
+    suspend fun getMySettlementSummary(): MySettlementSummaryResponseDto
 }
