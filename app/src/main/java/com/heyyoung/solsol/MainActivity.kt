@@ -142,6 +142,10 @@ fun SolsolApp() {
                     Log.d(TAG, "QR 스캔 화면으로 이동")
                     currentScreen = "qr"
                 },
+                onNavigateToPaymentHistory = {
+                    Log.d(TAG, "결제 내역 화면으로 이동")
+                    currentScreen = "payment_history"
+                },
                 onNavigateToSettlement = {
                     Log.d(TAG, "정산 화면으로 이동")
                     currentScreen = "settlement_method"
@@ -188,6 +192,16 @@ fun SolsolApp() {
                     // 결제 완료 시 홈으로 이동
                     currentScreen = "home"
                     scannedQRData = null // QR 데이터 초기화
+                }
+            )
+        }
+
+        "payment_history" -> {
+            // 결제 내역 화면
+            com.heyyoung.solsol.feature.payment.presentation.PaymentHistoryScreen(
+                onNavigateBack = {
+                    Log.d(TAG, "결제 내역에서 홈으로 돌아가기")
+                    currentScreen = "home"
                 }
             )
         }
