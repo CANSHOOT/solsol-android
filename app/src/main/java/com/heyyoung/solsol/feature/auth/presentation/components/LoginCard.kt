@@ -19,12 +19,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,7 +55,7 @@ fun LoginCard(
             onStudentNumberChange = onStudentNumberChange
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
         // 버튼들
         LoginButtons(
@@ -71,23 +68,34 @@ fun LoginCard(
 }
 
 /**
- * 로고 이미지
+ * 로고 이미지 (입체감 추가)
  */
 @Composable
 private fun SolsolLogoImage(
     modifier: Modifier = Modifier
 ) {
-    Image(
-        painter = painterResource(id = R.drawable.logo_image),
-        contentDescription = "쏠쏠해영 로고",
+    Box(
         modifier = modifier
-            .size(100.dp)
-            .clip(RoundedCornerShape(20.dp))
-    )
+            .shadow(
+                elevation = 12.dp,
+                shape = RoundedCornerShape(24.dp),
+                spotColor = Color(0xFF8B5FBF).copy(alpha = 0.3f),
+                ambientColor = Color(0xFF8B5FBF).copy(alpha = 0.15f)
+            )
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.logo_image),
+            contentDescription = "솔솔의 로고",
+            modifier = Modifier
+                .size(100.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color.White)
+        )
+    }
 }
 
 /**
- * 입력 필드들 (새로운 스타일 적용)
+ * 입력 필드들 (모던한 스타일 적용)
  */
 @Composable
 private fun LoginInputFields(
@@ -102,17 +110,17 @@ private fun LoginInputFields(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // 이메일 입력 필드
-        UpdatedTextField(
+        ModernTextField(
             value = email,
             onValueChange = onEmailChange,
             placeholder = "이메일을 입력하세요",
             keyboardType = KeyboardType.Email
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         // 학번 입력 필드
-        UpdatedTextField(
+        ModernTextField(
             value = studentNumber,
             onValueChange = { newValue ->
                 if (newValue.all { it.isDigit() } && newValue.length <= 8) {
@@ -127,10 +135,10 @@ private fun LoginInputFields(
 }
 
 /**
- * 새로운 스타일의 텍스트 필드
+ * 현대적인 스타일의 텍스트 필드
  */
 @Composable
-private fun UpdatedTextField(
+private fun ModernTextField(
     value: String,
     onValueChange: (String) -> Unit,
     placeholder: String,
@@ -142,20 +150,20 @@ private fun UpdatedTextField(
         modifier = modifier
             .shadow(
                 elevation = 8.dp,
-                spotColor = Color(0x0D000000),
-                ambientColor = Color(0x0D000000)
+                shape = RoundedCornerShape(16.dp),
+                spotColor = Color(0xFF8B5FBF).copy(alpha = 0.15f),
+                ambientColor = Color(0xFF8B5FBF).copy(alpha = 0.08f)
+            )
+            .width(342.dp)
+            .height(56.dp)
+            .background(
+                color = Color(0xFFFAFBFC),
+                shape = RoundedCornerShape(16.dp)
             )
             .border(
-                width = 1.dp,
-                color = Color(0xFFE2E8F0),
-                shape = RoundedCornerShape(size = 12.dp)
-            )
-            .padding(0.5.dp)
-            .width(342.dp)
-            .height(52.dp)
-            .background(
-                color = Color(0xFFFFFFFF),
-                shape = RoundedCornerShape(size = 12.dp)
+                width = 1.5.dp,
+                color = if (value.isNotEmpty()) Color(0xFF8B5FBF).copy(alpha = 0.3f) else Color(0xFFE2E8F0),
+                shape = RoundedCornerShape(16.dp)
             ),
         contentAlignment = Alignment.CenterStart
     ) {
@@ -164,11 +172,11 @@ private fun UpdatedTextField(
             onValueChange = onValueChange,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 20.dp),
             textStyle = TextStyle(
-                fontSize = 14.sp,
-                color = Color(0xFF333333),
-                fontWeight = FontWeight.Normal
+                fontSize = 16.sp,
+                color = Color(0xFF2D3748),
+                fontWeight = FontWeight.Medium
             ),
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             visualTransformation = if (isPassword) {
@@ -185,8 +193,9 @@ private fun UpdatedTextField(
                     if (value.isEmpty()) {
                         Text(
                             text = placeholder,
-                            color = Color(0xFF999999),
-                            fontSize = 14.sp
+                            color = Color(0xFF718096),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Normal
                         )
                     }
                     innerTextField()
@@ -197,7 +206,7 @@ private fun UpdatedTextField(
 }
 
 /**
- * 버튼들 (새로운 스타일 적용)
+ * 버튼들 (현대적인 스타일 적용)
  */
 @Composable
 private fun LoginButtons(
@@ -212,27 +221,27 @@ private fun LoginButtons(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // 로그인 버튼
-        UpdatedLoginButton(
+        ModernLoginButton(
             text = "로그인하기",
             onClick = onLoginClick,
             enabled = isLoginEnabled,
             isLoading = isLoading
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
-        // 회원가입 버튼 (새로운 스타일)
-        UpdatedRegisterButton(
+        // 회원가입 버튼
+        ModernRegisterButton(
             onClick = onRegisterClick
         )
     }
 }
 
 /**
- * 새로운 스타일의 로그인 버튼
+ * 현대적인 스타일의 로그인 버튼
  */
 @Composable
-private fun UpdatedLoginButton(
+private fun ModernLoginButton(
     text: String,
     onClick: () -> Unit,
     enabled: Boolean = true,
@@ -241,26 +250,31 @@ private fun UpdatedLoginButton(
 ) {
     Box(
         modifier = modifier
-            .alpha(0.9f)
+            .shadow(
+                elevation = if (enabled) 12.dp else 4.dp,
+                shape = RoundedCornerShape(16.dp),
+                spotColor = Color(0xFF8B5FBF).copy(alpha = if (enabled) 0.4f else 0.15f),
+                ambientColor = Color(0xFF8B5FBF).copy(alpha = if (enabled) 0.2f else 0.08f)
+            )
             .width(342.dp)
             .height(56.dp)
             .background(
                 brush = if (enabled) {
-                    Brush.verticalGradient(
+                    Brush.horizontalGradient(
                         colors = listOf(
-                            Color(0xFF8B5FBF).copy(alpha = 0.8f),
+                            Color(0xFF8B5FBF),
                             Color(0xFFF093FB)
                         )
                     )
                 } else {
-                    Brush.verticalGradient(
+                    Brush.horizontalGradient(
                         colors = listOf(
                             Color(0xFF8B5FBF).copy(alpha = 0.4f),
                             Color(0xFFF093FB).copy(alpha = 0.4f)
                         )
                     )
                 },
-                shape = RoundedCornerShape(size = 12.dp)
+                shape = RoundedCornerShape(16.dp)
             )
             .clickable(enabled = enabled && !isLoading) { onClick() },
         contentAlignment = Alignment.Center
@@ -269,7 +283,7 @@ private fun UpdatedLoginButton(
             CircularProgressIndicator(
                 modifier = Modifier.size(24.dp),
                 color = Color.White,
-                strokeWidth = 2.dp
+                strokeWidth = 2.5.dp
             )
         } else {
             Text(
@@ -283,10 +297,10 @@ private fun UpdatedLoginButton(
 }
 
 /**
- * 새로운 스타일의 회원가입 버튼
+ * 현대적인 스타일의 회원가입 버튼
  */
 @Composable
-private fun UpdatedRegisterButton(
+private fun ModernRegisterButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -294,12 +308,13 @@ private fun UpdatedRegisterButton(
         text = "계정이 없으신가요? 회원가입",
         style = TextStyle(
             fontSize = 14.sp,
-            // fontFamily = FontFamily(Font(R.font.nanum_gothic)), // 폰트 파일이 있을 때 사용
-            fontWeight = FontWeight(400),
-            color = Color(0x96718096),
-            letterSpacing = 2.1.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color(0xFF8B5FBF).copy(alpha = 0.8f),
+            letterSpacing = 0.5.sp,
             textDecoration = TextDecoration.Underline,
         ),
-        modifier = modifier.clickable { onClick() }
+        modifier = modifier
+            .clickable { onClick() }
+            .padding(vertical = 8.dp, horizontal = 12.dp)
     )
 }

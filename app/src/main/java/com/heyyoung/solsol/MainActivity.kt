@@ -484,6 +484,7 @@ fun SolsolApp(initialScreen: String = "login",
 
         "remittance" -> {
             RemittanceScreen(
+                groupId = remittanceGroupId,
                 receiverName = payeeName ?: "상대방",
                 amount = payAmount ?: "0",
                 onNavigateBack = { currentScreen = "home" },
