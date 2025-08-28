@@ -82,3 +82,4 @@ data class CouponUiState(
     val coupons: List<CouponItem> = emptyList(),
     val errorMessage: String? = null
 )
+
