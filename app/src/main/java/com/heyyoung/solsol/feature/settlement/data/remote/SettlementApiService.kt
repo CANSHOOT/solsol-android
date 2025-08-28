@@ -25,7 +25,14 @@ interface SettlementApiService {
     suspend fun createSettlement(
         @Body request: CreateSettlementRequest
     ): SettlementGroupDto
-    
+
+    @POST("dutchpay/game/{organizerId}")
+    suspend fun createSettlementGame(
+        @Path("organizerId") organizerId: String,
+        @Body request: CreateSettlementRequest
+    ): SettlementGroupDto
+
+
     @GET("dutchpay/{groupId}")
     suspend fun getSettlementById(
         @Path("groupId") groupId: Long
