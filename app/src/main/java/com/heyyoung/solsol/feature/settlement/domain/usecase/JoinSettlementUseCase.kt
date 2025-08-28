@@ -26,9 +26,9 @@ class JoinSettlementUseCase @Inject constructor(
             return Result.failure(IllegalStateException("참여할 수 없는 정산입니다"))
         }
         
-        if (settlement.organizerId == userId) {
-            return Result.failure(IllegalArgumentException("결제자는 참여할 수 없습니다"))
-        }
+//        if (settlement.organizerId == userId) {
+//            return Result.failure(IllegalArgumentException("결제자는 참여할 수 없습니다"))
+//        }
         
         // 이미 참여한 사용자인지 확인
         val alreadyJoined = settlement.participants.any { it.userId == userId }

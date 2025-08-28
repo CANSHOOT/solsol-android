@@ -4,11 +4,18 @@ import android.app.Application
 import android.util.Log
 import com.google.android.gms.nearby.Nearby
 import com.google.android.gms.nearby.connection.*
+import com.heyyoung.solsol.core.auth.TokenManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
-class NearbyManager private constructor(private val app: Application) {
+class NearbyManager private constructor(
+    private val app: Application,
+    private val tokenManager: TokenManager // ✅ 추가
+) {
 
     companion object {
         private const val TAG = "NearbyManager"
@@ -16,9 +23,9 @@ class NearbyManager private constructor(private val app: Application) {
         @Volatile
         private var INSTANCE: NearbyManager? = null
 
-        fun get(app: Application): NearbyManager {
+        fun get(app: Application, tokenManager: TokenManager): NearbyManager {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: NearbyManager(app).also { INSTANCE = it }
+                INSTANCE ?: NearbyManager(app, tokenManager).also { INSTANCE = it }
             }
         }
     }
@@ -166,9 +173,16 @@ class NearbyManager private constructor(private val app: Application) {
                     current[endpointId] = "Connected"
                     _connected.value = current
 
-                    // 연결 즉시 헬로 메시지로 동기화
-                    val hello = Msg.Hello(localEndpointName ?: "User").toJson()
-                    sendTo(endpointId, hello)
+                    // ✅ userId 불러오기
+                    CoroutineScope(Dispatchers.IO).launch {
+                        val userInfo = tokenManager.getCurrentUserInfo()
+                        val hello = Msg.Hello(
+                            name = localEndpointName ?: "User",
+                            userId = userInfo?.userId ?: "unknown"
+                        ).toJson()
+
+                        sendTo(endpointId, hello)
+                    }
                 }
                 ConnectionsStatusCodes.STATUS_CONNECTION_REJECTED -> {
                     current.remove(endpointId); _connected.value = current
@@ -178,7 +192,6 @@ class NearbyManager private constructor(private val app: Application) {
                 }
             }
         }
-
         override fun onDisconnected(endpointId: String) {
             Log.d(TAG, "onDisconnected(): $endpointId")
             val current = _connected.value.toMutableMap()

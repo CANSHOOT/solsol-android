@@ -16,7 +16,8 @@ data class Member(
     val displayName: String,
     val number: Int? = null,
     val isSelf: Boolean = false,
-    val isHost: Boolean = false
+    val isHost: Boolean = false,
+    val userId: String
 )
 
 data class RoomState(
@@ -24,11 +25,12 @@ data class RoomState(
     val hostEndpointId: String,
     val members: List<Member>,
     val phase: Phase = Phase.IDLE,
-    val winnerEndpointId: String? = null
+    val winnerEndpointId: String? = null,
+    val settlementAmount: Long? = null   // ✅ 추가
 )
 
 sealed class Msg(val type: String) {
-    class Hello(val name: String) : Msg("HELLO")
+    class Hello(val name: String, val userId: String) : Msg("HELLO")
     class RoomUpdate(val state: RoomState) : Msg("ROOM_UPDATE")
     class AssignNumbers(val assignments: Map<String, Int>) : Msg("ASSIGN_NUMBERS")
     class StartInstruction(val seconds: Int) : Msg("START_INSTRUCTION")

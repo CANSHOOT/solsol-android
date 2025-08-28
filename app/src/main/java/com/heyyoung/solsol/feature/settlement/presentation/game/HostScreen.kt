@@ -38,6 +38,7 @@ fun HostScreen(
     viewModel: GameViewModel = viewModel()
 ) {
     var roomTitle by remember { mutableStateOf("") }
+    var roomAmountText by remember { mutableStateOf("") }
 
     val role by viewModel.role.collectAsState()
     val isAdvertising by viewModel.nearby.isAdvertising.collectAsState()
@@ -74,9 +75,10 @@ fun HostScreen(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { result ->
         val granted = result.values.all { it }
-        if (granted) {
-            viewModel.createRoom(roomTitle.trim())
-        } else {
+        val amount = roomAmountText.toLongOrNull()
+        if (granted && !roomTitle.isBlank() && amount != null && amount > 0L) {
+            viewModel.createRoom(roomTitle.trim(), amount)        // ✅ 변경
+        } else if (!granted) {
             Toast.makeText(context, "근거리 연결 권한을 모두 허용해주세요.", Toast.LENGTH_SHORT).show()
         }
     }
@@ -151,7 +153,18 @@ fun HostScreen(
                 shape = RoundedCornerShape(12.dp)
             )
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+            // ✅ 정산 금액 입력 (숫자만)
+            OutlinedTextField(
+                value = roomAmountText,
+                onValueChange = { input -> roomAmountText = input.filter { it.isDigit() } },
+                label = { Text("정산 금액 (원)") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(Modifier.height(24.dp))
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -187,12 +200,15 @@ fun HostScreen(
 
             Button(
                 onClick = {
-                    if (roomTitle.isNotBlank()) {
-                        if (hasAllPermissions()) {
-                            viewModel.createRoom(roomTitle.trim())
-                        } else {
-                            permissionLauncher.launch(requiredPerms)
-                        }
+                    val amount = roomAmountText.toLongOrNull()
+                    if (amount == null || amount <= 0L || roomTitle.isBlank()) {
+                        Toast.makeText(context, "제목과 금액을 올바르게 입력해주세요.", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+                    if (hasAllPermissions()) {
+                        viewModel.createRoom(roomTitle.trim(), amount)    // ✅ 변경
+                    } else {
+                        permissionLauncher.launch(requiredPerms)
                     }
                 },
                 enabled = roomTitle.isNotBlank() && !isAdvertising,

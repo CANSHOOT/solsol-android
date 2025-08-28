@@ -25,6 +25,8 @@ import com.google.firebase.messaging.FirebaseMessaging
 import com.heyyoung.solsol.feature.auth.presentation.LoginScreen
 import com.heyyoung.solsol.feature.home.presentation.HomeScreen
 import com.heyyoung.solsol.feature.remittance.presentation.RemittanceScreen
+import com.heyyoung.solsol.feature.remittance.presentation.RemittanceScreen
+import com.heyyoung.solsol.feature.remittance.presentation.RemittanceSuccessScreen
 import com.heyyoung.solsol.feature.settlement.presentation.MoneyTransferScreen
 import com.heyyoung.solsol.feature.settlement.presentation.SettlementEqualScreen
 import com.heyyoung.solsol.feature.settlement.presentation.SettlementManualScreen
@@ -112,7 +114,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        handleNotificationIntent(intent) 
+        handleNotificationIntent(intent)
     }
 
     private fun handleNotificationIntent(intent: Intent) {
@@ -158,6 +160,12 @@ fun SolsolApp(initialScreen: String = "login",
     var lastReceiptFields by remember { mutableStateOf<ReceiptFields?>(null) }
     val viewModel: StudentCouncilViewModel = hiltViewModel()
 
+    // ✅ 송금 화면으로 전달할 선택 항목 상태
+    var remittanceReceiverName by remember { mutableStateOf<String?>(null) }
+    var remittanceAmount by remember { mutableStateOf<Long?>(null) }
+
+    // 이체용 상태
+    var remittanceGroupId by remember { mutableStateOf<Long?>(null) }
 
     // 앱 상태 로깅
     LaunchedEffect(currentScreen) {
@@ -196,6 +204,10 @@ fun SolsolApp(initialScreen: String = "login",
                 onNavigateToQrScan = {
                     Log.d(TAG, "QR 스캔 화면으로 이동")
                     currentScreen = "qr"
+                },
+                onNavigateToPaymentHistory = {
+                    Log.d(TAG, "결제 내역 화면으로 이동")
+                    currentScreen = "payment_history"
                 },
                 onNavigateToSettlement = {
                     Log.d(TAG, "정산 화면으로 이동")
@@ -243,6 +255,16 @@ fun SolsolApp(initialScreen: String = "login",
                     // 결제 완료 시 홈으로 이동
                     currentScreen = "home"
                     scannedQRData = null // QR 데이터 초기화
+                }
+            )
+        }
+
+        "payment_history" -> {
+            // 결제 내역 화면
+            com.heyyoung.solsol.feature.payment.presentation.PaymentHistoryScreen(
+                onNavigateBack = {
+                    Log.d(TAG, "결제 내역에서 홈으로 돌아가기")
+                    currentScreen = "home"
                 }
             )
         }
@@ -304,7 +326,7 @@ fun SolsolApp(initialScreen: String = "login",
 
         "settlement_equal" -> {
             // 똑같이 나누기 화면
-            com.heyyoung.solsol.feature.settlement.presentation.SettlementEqualScreen(
+            SettlementEqualScreen(
                 participants = settlementParticipants,
                 onNavigateBack = {
                     Log.d(TAG, "똑같이 나누기에서 참여자 선택으로 돌아가기")
@@ -371,6 +393,50 @@ fun SolsolApp(initialScreen: String = "login",
             )
         }
 
+        // ✅ 송금 목록
+        "money_transfer" -> {
+            MoneyTransferScreen(
+                onNavigateBack = { currentScreen = "home" },
+                onNavigateToRemittance = { groupId, receiverName, amount ->
+                    // 선택값 저장 후 송금 화면으로 이동
+                    remittanceGroupId = groupId
+                    remittanceReceiverName = receiverName
+                    remittanceAmount = amount
+                    currentScreen = "remittance"
+                }
+            )
+        }
+
+//        // ✅ 송금 실행 화면
+//        "remittance" -> {
+//            RemittanceScreen(
+//                groupId = remittanceGroupId,
+//                receiverName = remittanceReceiverName ?: "",
+//                receiverInfo = "", // 필요 시 이메일/계좌 등 표시
+//                amount = String.format("%,d", remittanceAmount ?: 0),
+//                cardNumber = "**** **** **** 1234", // TODO: 실제 카드/계좌 연동
+//                onNavigateBack = { currentScreen = "money_transfer" },
+//                onRemittanceComplete = {
+//                    currentScreen = "remittance_success"
+//                }
+//            )
+//        }
+
+        // ✅ 송금 성공 화면
+        "remittance_success" -> {
+            RemittanceSuccessScreen(
+                receiverName = remittanceReceiverName ?: "",
+                amount = String.format("%,d", remittanceAmount ?: 0),
+                onComplete = {
+                    // 홈으로 이동
+                    currentScreen = "home"
+                    // ✅ 상태 초기화
+                    remittanceGroupId = null
+                    remittanceReceiverName = null
+                    remittanceAmount = null
+                }
+            )
+        }
 
         // 학생회 메인
         "council" -> {
@@ -385,6 +451,7 @@ fun SolsolApp(initialScreen: String = "login",
         "council_history" -> {
             StudentCouncilExpenseHistoryScreen(
                 onNavigateBack = { currentScreen = "council" },
+                onNavigateToRegister = { currentScreen = "council_register" },
                 expenseList = viewModel.expenditureList,
                 currentBalance = viewModel.currentBalance
             )
@@ -409,11 +476,11 @@ fun SolsolApp(initialScreen: String = "login",
             )
         }
 
-        "money_transfer" -> {
-            MoneyTransferScreen(
-                onNavigateBack = { currentScreen = "home" }
-            )
-        }
+//        "money_transfer" -> {
+//            MoneyTransferScreen(
+//                onNavigateBack = { currentScreen = "home" }
+//            )
+//        }
 
         "remittance" -> {
             RemittanceScreen(
@@ -478,10 +545,12 @@ fun SolsolApp(initialScreen: String = "login",
                     Log.d(TAG, "게임 룸에서 게임 홈으로 돌아가기")
                     currentScreen = "game_home"
                 },
-                onGameFinished = { winnerName ->
-                    Log.d(TAG, "게임 완료! 승자: $winnerName")
+                onGameFinished = {
                     // 게임 완료 후 홈으로 이동
                     currentScreen = "home"
+                },
+                onNavigateRemittance = {
+                    currentScreen = "money_transfer"
                 }
             )
         }

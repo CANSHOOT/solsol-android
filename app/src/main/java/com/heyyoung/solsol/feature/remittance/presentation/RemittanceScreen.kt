@@ -29,6 +29,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,10 +46,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RemittanceScreen(
+    groupId: Long?,
     receiverName: String = "김신한",
     receiverInfo: String = "관리자명의 | 2020.7.8",
     amount: String = "29,002",
@@ -56,6 +60,10 @@ fun RemittanceScreen(
     onRemittanceComplete: () -> Unit = {}
 ) {
     var showSuccessScreen by remember { mutableStateOf(false) }
+    val viewModel: RemittanceViewModel = hiltViewModel()
+    val paymentResponse by viewModel.paymentResponse.collectAsState()
+    val loading by viewModel.loading.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     if (showSuccessScreen) {
         RemittanceSuccessScreen(
@@ -128,7 +136,11 @@ fun RemittanceScreen(
 
             // 송금하기 버튼
             Button(
-                onClick = { showSuccessScreen = true },
+                onClick = {
+                    groupId?.let {
+                        viewModel.sendPayment(it, "정산 송금")
+                    }
+                },
                 modifier = Modifier
                     .shadow(
                         elevation = 4.dp,
@@ -150,7 +162,18 @@ fun RemittanceScreen(
                     fontWeight = FontWeight.ExtraBold
                 )
             }
-
+            // ✅ 응답 처리
+            when {
+                loading -> Text("송금 처리중...", color = Color.Gray)
+                error != null -> Text("에러: $error", color = Color.Red)
+                paymentResponse != null -> {
+                    // ✅ 성공 응답 소비
+                    LaunchedEffect(paymentResponse) {
+                        viewModel.clearPaymentResponse()
+                        onRemittanceComplete()
+                    }
+                }
+            }
             Spacer(Modifier.height(20.dp))
         }
     }

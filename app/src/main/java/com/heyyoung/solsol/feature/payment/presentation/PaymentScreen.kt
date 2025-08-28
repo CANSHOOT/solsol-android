@@ -15,10 +15,13 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -54,6 +57,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.heyyoung.solsol.feature.payment.domain.PaymentViewModel
 import com.heyyoung.solsol.feature.payment.domain.DiscountCoupon
+import com.heyyoung.solsol.feature.payment.domain.CouponType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -169,11 +173,12 @@ fun PaymentScreen(
 
         // 결제 정보가 로드된 경우에만 표시
         uiState.paymentInfo?.let { paymentInfo ->
-            // 본문
+            // 본문 (스크롤 가능)
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 16.dp),
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(Modifier.height(12.dp))
@@ -264,13 +269,15 @@ fun PaymentScreen(
                         discountCouponId = 14L,
                         amount = 500,
                         createdDate = "2025-07-30",
-                        endDate = "2025-08-29"
+                        endDate = "2025-08-29",
+                        couponType = "RANDOM"
                     ),
                     DiscountCoupon(
                         discountCouponId = 13L,
                         amount = 500,
                         createdDate = "2025-08-24",
-                        endDate = "2025-09-23"
+                        endDate = "2025-09-23",
+                        couponType = "ATTENDANCE"
                     )
                 )
                 
@@ -328,7 +335,8 @@ fun PaymentScreen(
                     Text("결제 중…", fontSize = 12.sp, color = Color(0xFF7D6BB0))
                 }
 
-                Spacer(Modifier.height(20.dp))
+                // 결제 버튼이 화면에서 보이도록 충분한 공간 확보
+                Spacer(Modifier.height(40.dp))
             }
         } ?: run {
             // 결제 정보가 없고 로딩도 아닌 경우
@@ -581,11 +589,13 @@ private fun CouponSelector(
             }
         }
         
-        // 드롭다운 메뉴
+        // 드롭다운 메뉴 (최대 높이 제한)
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 200.dp)  // 최대 높이를 200dp로 제한
         ) {
             // "쿠폰 사용 안함" 옵션
             DropdownMenuItem(
@@ -612,14 +622,32 @@ private fun CouponSelector(
             
             // 사용 가능한 쿠폰들
             availableCoupons.forEach { coupon ->
+                val couponType = CouponType.fromString(coupon.couponType)
+                
                 DropdownMenuItem(
                     text = { 
                         Column {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = couponType.emoji,
+                                    fontSize = 12.sp
+                                )
+                                Text(
+                                    "${String.format("%,d", coupon.amount)}원 할인",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF1C1C1E)
+                                )
+                            }
+                            Spacer(Modifier.height(2.dp))
                             Text(
-                                "${String.format("%,d", coupon.amount)}원 할인",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color(0xFF1C1C1E)
+                                couponType.displayName,
+                                fontSize = 11.sp,
+                                color = Color(0xFF7D6BB0),
+                                fontWeight = FontWeight.Medium
                             )
                             Text(
                                 "만료일: ${formatCouponDate(coupon.endDate)}",
@@ -646,14 +674,25 @@ private fun CouponSelector(
         
         // 선택된 쿠폰 정보 표시
         selectedCoupon?.let { coupon ->
+            val couponType = CouponType.fromString(coupon.couponType)
             Spacer(Modifier.height(8.dp))
-            Text(
-                text = "💰 ${String.format("%,d", coupon.amount)}원 추가 할인이 적용됩니다",
-                fontSize = 12.sp,
-                color = Color(0xFF7D6BB0),
-                fontWeight = FontWeight.Medium,
+            
+            Column(
                 modifier = Modifier.padding(horizontal = 4.dp)
-            )
+            ) {
+                Text(
+                    text = "${couponType.emoji} ${String.format("%,d", coupon.amount)}원 추가 할인이 적용됩니다",
+                    fontSize = 12.sp,
+                    color = Color(0xFF7D6BB0),
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = couponType.description,
+                    fontSize = 10.sp,
+                    color = Color(0xFF999999),
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
         }
     }
 }

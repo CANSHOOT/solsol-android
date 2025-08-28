@@ -96,6 +96,9 @@ class PaymentViewModel @Inject constructor(
                 val finalAmount = calculateFinalAmount()
                 val paymentId = currentPaymentInfo.paymentId
                 val discountCouponId = uiState.selectedCoupon?.discountCouponId
+                
+                Log.d(TAG, "결제 요청 - PaymentId: $paymentId, 최종금액: ${finalAmount}원")
+                Log.d(TAG, "전송할 쿠폰ID: ${discountCouponId ?: "null -> -1로 전송"}")
 
                 when (val result = repository.processPayment(paymentId, finalAmount, discountCouponId)) {
                     is BackendApiResult.Success -> {
@@ -175,7 +178,11 @@ class PaymentViewModel @Inject constructor(
      * 쿠폰 선택
      */
     fun selectCoupon(coupon: DiscountCoupon?) {
-        Log.d(TAG, "쿠폰 선택: ${coupon?.let { "${it.amount}원 쿠폰 (ID: ${it.discountCouponId})" } ?: "쿠폰 미선택"}")
+        if (coupon != null) {
+            Log.d(TAG, "쿠폰 선택: ${coupon.amount}원 쿠폰 (ID: ${coupon.discountCouponId})")
+        } else {
+            Log.d(TAG, "쿠폰 사용 안함 선택 -> discountCouponId: -1로 전송")
+        }
         uiState = uiState.copy(selectedCoupon = coupon)
     }
 

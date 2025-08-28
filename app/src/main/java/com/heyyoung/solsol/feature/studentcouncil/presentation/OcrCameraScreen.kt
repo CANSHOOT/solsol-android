@@ -180,8 +180,8 @@ fun OcrCameraScreen(
                     result = result,
                     onChange = { updated -> ocrResult = updated },
                     onRetake = { ocrResult = null },
-                    onConfirm = {
-                        ocrResult?.let(onOcrResult)
+                    onConfirm = { latest ->
+                        onOcrResult(latest)   // ✅ 항상 최신 값 전달
                         onNavigateBack()
                     }
                 )
@@ -319,9 +319,8 @@ private fun OcrResultCardEditable(
     result: OcrResult,
     onChange: (OcrResult) -> Unit,
     onRetake: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: (OcrResult) -> Unit // ✅ 최신값 직접 전달
 ) {
-    // 편집 다이얼로그 상태
     var editTarget by remember { mutableStateOf<EditTarget?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
 
@@ -353,14 +352,12 @@ private fun OcrResultCardEditable(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // 인식 결과
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA)),
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
-                // 상호명 (Long-press)
                 ResultRow(
                     label = "상호명",
                     value = result.storeName,
@@ -368,7 +365,6 @@ private fun OcrResultCardEditable(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // 금액 (Long-press)
                 ResultRow(
                     label = "금액",
                     value = "${String.format("%,d", result.amount)}원",
@@ -376,19 +372,16 @@ private fun OcrResultCardEditable(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // 날짜 (Long-press → DatePicker)
                 ResultRow(
                     label = "날짜",
                     value = result.date,
                     onLongPress = { showDatePicker = true }
                 )
-                Spacer(modifier = Modifier.height(12.dp))
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // 버튼들
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -400,32 +393,25 @@ private fun OcrResultCardEditable(
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = Color(0xFF8B5FBF)
                 )
-            ) {
-                Text("다시 촬영")
-            }
+            ) { Text("다시 촬영") }
 
             Button(
-                onClick = onConfirm,
+                onClick = {
+                    val synced = result.copy(description = autoDescription(result.storeName))
+                    onConfirm(synced)    // ✅ 항상 최신 상호명으로 만든 description 전달
+                },
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF8B5FBF)
-                ),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8B5FBF)),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Icon(
-                    Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
+                Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("등록하기")
             }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
     }
 
-    // ───── 텍스트/숫자 편집 다이얼로그 ─────
+    // ───── 편집 다이얼로그 ─────
     when (val t = editTarget) {
         is EditTarget.StoreName -> {
             EditTextDialog(
@@ -455,7 +441,7 @@ private fun OcrResultCardEditable(
         null -> Unit
     }
 
-    // ───── 날짜 선택 다이얼로그 (Material3 DatePicker) ─────
+    // ───── 날짜 다이얼로그 ─────
     if (showDatePicker) {
         val initialMillis = remember(result.date) { parseDateToMillis(result.date) ?: System.currentTimeMillis() }
         val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
@@ -473,44 +459,22 @@ private fun OcrResultCardEditable(
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) { Text("취소") }
             }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+        ) { DatePicker(state = datePickerState) }
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ResultRow(
-    label: String,
-    value: String,
-    onLongPress: () -> Unit
-) {
+private fun ResultRow(label: String, value: String, onLongPress: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(
-                onClick = {},
-                onLongClick = onLongPress
-            )
+            .combinedClickable(onClick = {}, onLongClick = onLongPress)
             .padding(vertical = 2.dp)
     ) {
-        Text(
-            text = label,
-            fontSize = 12.sp,
-            color = Color(0xFF666666)
-        )
-        Text(
-            text = value,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF1C1C1E)
-        )
-        Text(
-            text = "길게 눌러 수정",
-            fontSize = 11.sp,
-            color = Color(0xFF9AA0A6)
-        )
+        Text(text = label, fontSize = 12.sp, color = Color(0xFF666666))
+        Text(text = value, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1C1C1E))
+        Text(text = "길게 눌러 수정", fontSize = 11.sp, color = Color(0xFF9AA0A6))
     }
 }
 
@@ -729,3 +693,6 @@ private fun parseDateToMillis(s: String): Long? {
     }
     return null
 }
+
+private fun autoDescription(storeName: String): String =
+    "${storeName.ifBlank { "상호명 불명" }} 지출"

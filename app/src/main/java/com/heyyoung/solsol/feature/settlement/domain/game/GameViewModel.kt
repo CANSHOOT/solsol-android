@@ -23,7 +23,7 @@ class GameViewModel @Inject constructor(
 
     private val TAG = "GameViewModel"
 
-    val nearby = NearbyManager.get(app)
+    val nearby = NearbyManager.get(app, tokenManager)
 
     companion object {
         const val SERVICE_ID = "SOLSOL_ROULETTE"
@@ -86,11 +86,11 @@ class GameViewModel @Inject constructor(
     }
 
     /** 방 생성(호스트 시작) */
-    fun createRoom(roomTitle: String) {
+    fun createRoom(roomTitle: String, settlementAmount: Long) {
         viewModelScope.launch {
             val userInfo = tokenManager.getCurrentUserInfo()
             val playerName = userInfo?.name ?: "사용자"
-            
+            val userId = userInfo?.userId ?: " "
             Log.d(TAG, "createRoom(): title=$roomTitle, player=$playerName")
 
             nearby.localEndpointName = playerName
@@ -100,14 +100,16 @@ class GameViewModel @Inject constructor(
                 endpointId = "self",
                 displayName = playerName,
                 isSelf = true,
-                isHost = true
+                isHost = true,
+                userId = userId
             )
 
             _roomState.value = RoomState(
                 title = roomTitle,
                 hostEndpointId = "self",
                 members = listOf(hostMember),
-                phase = Phase.IDLE
+                phase = Phase.IDLE,
+                settlementAmount = settlementAmount
             )
 
             // 광고 이벤트를 VM에서 수신하여 상태 전환
@@ -247,7 +249,8 @@ class GameViewModel @Inject constructor(
                 endpointId = from,
                 displayName = msg.name,
                 isSelf = false,
-                isHost = false
+                isHost = false,
+                userId = msg.userId
             )
 
             val updatedMembers = state.members + newMember
@@ -258,31 +261,31 @@ class GameViewModel @Inject constructor(
         }
     }
 
-    private fun mergeSelf(remoteState: RoomState): RoomState {
+    private suspend fun mergeSelf(remoteState: RoomState): RoomState {
         val myName = nearby.localEndpointName ?: "Me"
-        
-        // 모든 멤버를 업데이트하여 자신만 isSelf = true로 설정
+        val myUserId = tokenManager.getCurrentUserInfo()?.userId
+
         val updatedMembers = remoteState.members.map { member ->
-            if (member.displayName == myName && member.endpointId != "self") {
-                // 내 이름과 같은 멤버를 찾았지만 endpointId가 "self"가 아닌 경우 (참가자)
-                member.copy(isSelf = true)
-            } else if (member.endpointId == "self") {
-                // 호스트인 경우 - 내 이름으로 업데이트
-                member.copy(displayName = myName, isSelf = true)
-            } else {
-                // 다른 멤버들은 isSelf = false
-                member.copy(isSelf = false)
+            when {
+                // 참가자: userId 같고 endpointId != self → isSelf
+                member.userId == myUserId -> {
+                    member.copy(isSelf = true)
+                }
+                // 나머지 멤버는 전부 false
+                else -> member.copy(isSelf = false)
             }
         }
-        
-        // 자신이 목록에 없다면 추가
+
+        // 혹시 자기 자신이 아예 없다면 새로 추가
         val hasSelf = updatedMembers.any { it.isSelf }
         return if (!hasSelf) {
+            val userInfo = tokenManager.getCurrentUserInfo()
             val newSelfMember = Member(
                 endpointId = "self",
                 displayName = myName,
                 isSelf = true,
-                isHost = false
+                isHost = false,
+                userId = userInfo?.userId ?: "unknown"
             )
             remoteState.copy(members = updatedMembers + newSelfMember)
         } else {
