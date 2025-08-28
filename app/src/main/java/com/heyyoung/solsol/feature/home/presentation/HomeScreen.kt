@@ -34,6 +34,7 @@ fun HomeScreen(
     onNavigateToQrScan: () -> Unit = {},
     onNavigateToSettlement: () -> Unit = {},
     onNavigateToCouncil: () -> Unit = {},
+    onNavigateToMoneyTransfer: () -> Unit = {},
     onNavigateToCoupon: () -> Unit = {},
     onLogout: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
@@ -95,6 +96,7 @@ fun HomeScreen(
             },
             onMoneyTransferClick = {
                 Log.d(TAG, "송금하기 메뉴 클릭")
+                onNavigateToMoneyTransfer()
             },
             onStudentCouncilClick = {
                 Log.d(TAG, "학생회 메뉴 클릭")
@@ -102,7 +104,6 @@ fun HomeScreen(
             },
             onCouponsClick = {
                 Log.d(TAG, "쿠폰 메뉴 클릭")
-                onNavigateToCoupon()
             }
         )
 
