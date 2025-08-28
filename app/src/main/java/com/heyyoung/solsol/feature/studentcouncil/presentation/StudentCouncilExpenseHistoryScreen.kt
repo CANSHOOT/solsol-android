@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -31,9 +32,14 @@ fun StudentCouncilExpenseHistoryScreen(
     onNavigateBack: () -> Unit = {},
     onNavigateToRegister: () -> Unit = {},
     expenseList: List<CouncilExpenditureResponse> = emptyList(),
-    currentBalance: Long
+    currentBalance: Long,
+    onRefresh: () -> Unit = {} // ✅ ViewModel refresh 주입
 ) {
     Log.d(TAG, "지출 내역 화면 진입 - 총 ${expenseList.size}개 항목")
+    // ✅ 화면 진입 시 자동으로 refresh 실행
+    LaunchedEffect(Unit) {
+        onRefresh()
+    }
 
     Column(
         modifier = Modifier

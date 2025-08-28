@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -37,6 +38,11 @@ fun StudentCouncilFeeStatusScreen(
     feeStatusList: List<FeeStatusResponse>,
     viewModel: StudentCouncilViewModel = hiltViewModel()
 ) {
+    // 화면 진입 시마다 refresh 실행
+    LaunchedEffect(Unit) {
+        viewModel.loadFeeStatus(councilId = 1, feeId = 10001L)
+    }
+
     val isLoading by remember { androidx.compose.runtime.derivedStateOf { viewModel.isLoading } }
     val errorMessage by remember { androidx.compose.runtime.derivedStateOf { viewModel.errorMessage } }
     val feeStatus = feeStatusList.firstOrNull()
