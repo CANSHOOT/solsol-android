@@ -123,7 +123,7 @@ fun SettlementManualScreen(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(participants) { person ->
+                    items(participants.filter { !it.isMe }) { person ->   // 👈 '나' 제외
                         PersonAmountInputCard(
                             person = person,
                             amount = participantAmounts[person] ?: "",
