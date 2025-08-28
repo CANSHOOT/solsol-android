@@ -46,6 +46,15 @@ class GameViewModel @Inject constructor(
     private val _spinOrderIds = MutableStateFlow<List<String>>(emptyList())
     val spinOrderIds: StateFlow<List<String>> = _spinOrderIds.asStateFlow()
 
+    private val _currentSpinStep = MutableStateFlow(0)
+    val currentSpinStep: StateFlow<Int> = _currentSpinStep.asStateFlow()
+
+    private val _totalSpinSteps = MutableStateFlow(0)
+    val totalSpinSteps: StateFlow<Int> = _totalSpinSteps.asStateFlow()
+
+    private val _currentHighlightIndex = MutableStateFlow(-1)
+    val currentHighlightIndex: StateFlow<Int> = _currentHighlightIndex.asStateFlow()
+
     private val _isInstructionVisible = MutableStateFlow(false)
     val isInstructionVisible: StateFlow<Boolean> = _isInstructionVisible.asStateFlow()
 
@@ -78,6 +87,14 @@ class GameViewModel @Inject constructor(
                     is Msg.StartGame -> {
                         Log.d(TAG, "StartGame: winner=${msg.winnerEndpointId}, cycles=${msg.cycles}, tick=${msg.tickMs}")
                         startGame(msg.winnerEndpointId, msg.cycles, msg.tickMs, msg.order)
+                    }
+                    is Msg.SpinStep -> {
+                        Log.d(TAG, "SpinStep: step=${msg.currentStep}/${msg.totalSteps}, highlight=${msg.currentHighlightIndex}")
+                        handleSpinStep(msg.currentStep, msg.totalSteps, msg.currentHighlightIndex)
+                    }
+                    is Msg.CircularStep -> {
+                        Log.d(TAG, "CircularStep: step=${msg.currentStep}/${msg.totalSteps}, next=${msg.nextMemberIndex}, winner=${msg.winnerIndex}")
+                        handleCircularStep(from, msg.currentStep, msg.totalSteps, msg.nextMemberIndex, msg.winnerIndex)
                     }
                     null -> Log.w(TAG, "Unknown message ignored: $msgStr")
                 }
@@ -211,7 +228,12 @@ class GameViewModel @Inject constructor(
         startGame(winner, cycles, computedTick, order)
         nearby.sendToAll(Msg.StartGame(winner, cycles, computedTick, order).toJson())
 
-        // 자동 종료 타이머 제거 - UI에서 수동으로 처리
+        // 호스트가 순환형 애니메이션을 시작 - 첫 번째 멤버에게 토큰 전달
+        if (_role.value == Role.HOST) {
+            viewModelScope.launch {
+                startCircularAnimation(winner, order, totalSteps)
+            }
+        }
     }
 
     fun finishGame() {
@@ -333,6 +355,120 @@ class GameViewModel @Inject constructor(
 
         val state = _roomState.value ?: return
         _roomState.value = state.copy(winnerEndpointId = winnerEndpointId)
+    }
+
+    private suspend fun startCircularAnimation(winner: String, order: List<String>, totalSteps: Int) {
+        val winnerIndex = order.indexOf(winner)
+        _totalSpinSteps.value = totalSteps
+        
+        Log.d(TAG, "startCircularAnimation: winner=$winner, winnerIndex=$winnerIndex, order=$order, totalSteps=$totalSteps")
+        
+        // 첫 번째 멤버부터 시작 (index 0)
+        val firstMemberEndpointId = order[0]
+        val firstMemberIsMe = firstMemberEndpointId == "self"
+        
+        Log.d(TAG, "startCircularAnimation: firstMember=$firstMemberEndpointId, isMe=$firstMemberIsMe")
+        
+        if (firstMemberIsMe) {
+            // 호스트가 첫 번째 멤버인 경우, 직접 시작
+            Log.d(TAG, "startCircularAnimation: starting from host (self)")
+            passTokenToNext(0, totalSteps, order, winnerIndex, 80L)
+        } else {
+            // 다른 멤버가 첫 번째인 경우, 해당 멤버에게 토큰 전달
+            Log.d(TAG, "startCircularAnimation: sending initial token to $firstMemberEndpointId")
+            nearby.sendTo(firstMemberEndpointId, Msg.CircularStep(0, totalSteps, 0, winnerIndex).toJson())
+        }
+    }
+
+    private suspend fun passTokenToNext(currentStep: Int, totalSteps: Int, order: List<String>, winnerIndex: Int, delay: Long) {
+        val totalMembers = order.size
+        val currentMemberIndex = currentStep % totalMembers
+        
+        Log.d(TAG, "passTokenToNext: step=$currentStep/$totalSteps, currentIndex=$currentMemberIndex, winnerIndex=$winnerIndex, delay=${delay}ms")
+        
+        // 현재 멤버 하이라이트
+        _currentSpinStep.value = currentStep
+        _currentHighlightIndex.value = currentMemberIndex
+        
+        Log.d(TAG, "passTokenToNext: highlighting member at index $currentMemberIndex")
+        
+        delay(delay)
+        
+        // 게임 종료 조건 확인
+        if (currentStep >= totalSteps || 
+            (currentStep > totalSteps - 10 && currentMemberIndex == winnerIndex)) {
+            // 게임 종료
+            Log.d(TAG, "passTokenToNext: GAME END - step=$currentStep, memberIndex=$currentMemberIndex, winnerIndex=$winnerIndex")
+            delay(1000)
+            if (_role.value == Role.HOST) {
+                finishGame()
+            }
+            return
+        }
+        
+        // 다음 단계 계산
+        val nextStep = currentStep + 1
+        val nextMemberIndex = nextStep % totalMembers
+        val nextEndpointId = order[nextMemberIndex]
+        
+        // 시간이 지날수록 점점 느려짐
+        val progress = nextStep.toFloat() / totalSteps
+        val baseDelay = 200L
+        val maxDelay = 800L
+        val nextDelay = (baseDelay + (maxDelay - baseDelay) * progress * progress * progress).toLong()
+        
+        Log.d(TAG, "passTokenToNext: nextStep=$nextStep, nextIndex=$nextMemberIndex, nextEndpoint=$nextEndpointId, nextDelay=${nextDelay}ms")
+        
+        // 다음 멤버에게 토큰 전달
+        if (nextEndpointId == "self") {
+            // 나 자신에게 토큰이 돌아온 경우
+            Log.d(TAG, "passTokenToNext: token returns to self, continuing...")
+            passTokenToNext(nextStep, totalSteps, order, winnerIndex, nextDelay)
+        } else {
+            // 다른 멤버에게 토큰 전달
+            Log.d(TAG, "passTokenToNext: sending token to $nextEndpointId")
+            nearby.sendTo(nextEndpointId, Msg.CircularStep(nextStep, totalSteps, nextMemberIndex, winnerIndex).toJson())
+        }
+    }
+
+    private fun handleCircularStep(from: String, currentStep: Int, totalSteps: Int, nextMemberIndex: Int, winnerIndex: Int) {
+        val order = _spinOrderIds.value
+        if (order.isEmpty()) {
+            Log.w(TAG, "handleCircularStep: order is empty")
+            return
+        }
+        
+        val myIndex = order.indexOf("self")
+        val currentMemberIndex = currentStep % order.size
+        Log.d(TAG, "handleCircularStep: from=$from, step=$currentStep, nextIndex=$nextMemberIndex, myIndex=$myIndex, currentIndex=$currentMemberIndex, order=$order")
+        
+        // 현재 단계가 내 차례인지 확인 (nextMemberIndex가 아니라 currentMemberIndex 사용)
+        if (myIndex == currentMemberIndex) {
+            // 내 차례 - 하이라이트 표시하고 다음으로 전달
+            Log.d(TAG, "handleCircularStep: MY TURN! highlighting and passing token")
+            _currentSpinStep.value = currentStep
+            _currentHighlightIndex.value = currentMemberIndex
+            _totalSpinSteps.value = totalSteps
+            
+            viewModelScope.launch {
+                // 시간이 지날수록 점점 느려짐
+                val progress = currentStep.toFloat() / totalSteps
+                val baseDelay = 80L
+                val maxDelay = 800L
+                val currentDelay = (baseDelay + (maxDelay - baseDelay) * progress * progress * progress).toLong()
+                
+                passTokenToNext(currentStep, totalSteps, order, winnerIndex, currentDelay)
+            }
+        } else {
+            Log.d(TAG, "handleCircularStep: not my turn (myIndex=$myIndex, currentIndex=$currentMemberIndex)")
+        }
+    }
+
+    private fun handleSpinStep(currentStep: Int, totalSteps: Int, highlightIndex: Int) {
+        // 기존 SpinStep 메시지 처리 (호환성 유지)
+        _currentSpinStep.value = currentStep
+        _totalSpinSteps.value = totalSteps
+        _currentHighlightIndex.value = highlightIndex
     }
 
     private fun updateRoomPhase(phase: Phase) {

@@ -40,6 +40,17 @@ sealed class Msg(val type: String) {
         val tickMs: Long,
         val order: List<String>
     ) : Msg("START_GAME")
+    class SpinStep(
+        val currentStep: Int,
+        val totalSteps: Int,
+        val currentHighlightIndex: Int
+    ) : Msg("SPIN_STEP")
+    class CircularStep(
+        val currentStep: Int,
+        val totalSteps: Int,
+        val nextMemberIndex: Int,
+        val winnerIndex: Int
+    ) : Msg("CIRCULAR_STEP")
 
     fun toJson(): String = gson.toJson(this)
 
@@ -55,6 +66,8 @@ sealed class Msg(val type: String) {
                     "ASSIGN_NUMBERS" -> gson.fromJson(jsonString, AssignNumbers::class.java)
                     "START_INSTRUCTION" -> gson.fromJson(jsonString, StartInstruction::class.java)
                     "START_GAME" -> gson.fromJson(jsonString, StartGame::class.java)
+                    "SPIN_STEP" -> gson.fromJson(jsonString, SpinStep::class.java)
+                    "CIRCULAR_STEP" -> gson.fromJson(jsonString, CircularStep::class.java)
                     else -> null
                 }
             } catch (e: JsonSyntaxException) {

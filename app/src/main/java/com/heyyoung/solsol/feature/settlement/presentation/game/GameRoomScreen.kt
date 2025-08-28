@@ -48,6 +48,7 @@ fun GameRoomScreen(
     val spinOrderIds by viewModel.spinOrderIds.collectAsState()
     val spinTickMs by viewModel.spinTickMs.collectAsState()
     val spinCycles by viewModel.spinCycles.collectAsState()
+    val currentHighlightIndex by viewModel.currentHighlightIndex.collectAsState()
 
     val highlightIndex = remember { mutableIntStateOf(-1) }
     val rotationAngle = remember { Animatable(0f) }
@@ -65,54 +66,11 @@ fun GameRoomScreen(
         }
     }
 
-    LaunchedEffect(roomState?.phase, spinOrderIds, roomState?.winnerEndpointId, spinTickMs) {
+    // 기존 독립적인 애니메이션 로직을 제거하고 네트워크 메시지 기반으로 변경
+    LaunchedEffect(roomState?.phase) {
         val state = roomState
-        if (state != null && state.phase == Phase.RUNNING && 
-            spinOrderIds.isNotEmpty() && 
-            state.winnerEndpointId != null &&
-            finalWinnerState.value == null) { // 이미 완료된 게임이 아닌 경우에만 실행
-
-            val myEndpointId = "self" // 내 endpointId
-            val totalMembers = spinOrderIds.size
-            val myIndex = spinOrderIds.indexOf(myEndpointId)
-            val winnerIndex = spinOrderIds.indexOf(state.winnerEndpointId)
-
-            // 전체 애니메이션: 빠르게 시작 -> 점점 느려짐 -> 당첨자에서 멈춤
-            val totalSteps = 80 // 총 80단계
-
-            for (step in 0 until totalSteps) {
-                // 순서대로 돌아가며 불빛 표시
-                val currentMemberIndex = step % totalMembers
-                val shouldLightUp = currentMemberIndex == myIndex
-
-                highlightIndex.intValue = if (shouldLightUp) 1 else 0
-
-                // 시간이 지날수록 점점 느려짐 (exponential easing)
-                val progress = step.toFloat() / totalSteps
-                val baseDelay = 80L // 시작 속도 (빠름)
-                val maxDelay = 800L // 끝 속도 (느림)
-
-                // 지수적으로 느려짐
-                val currentDelay = (baseDelay + (maxDelay - baseDelay) * progress * progress * progress).toLong()
-
-                delay(currentDelay)
-
-                // 마지막 몇 단계에서 당첨자에게 멈춰야 함
-                if (step > totalSteps - 10) {
-                    if (currentMemberIndex == winnerIndex) {
-                        // 당첨자에게 도달하면 애니메이션 종료
-                        highlightIndex.intValue = if (myIndex == winnerIndex) 1 else 0
-                        finalWinnerState.value = state.winnerEndpointId
-                        break
-                    }
-                }
-            }
-
-            // 애니메이션 완료 후 Phase.FINISHED로 전환 (호스트만)
-            if (role == Role.HOST) {
-                delay(1000) // 1초 대기
-                viewModel.finishGame()
-            }
+        if (state?.phase == Phase.FINISHED && finalWinnerState.value == null) {
+            finalWinnerState.value = state.winnerEndpointId
         }
     }
 
@@ -209,7 +167,11 @@ fun GameRoomScreen(
                             currentUser != null && winnerMember != null &&
                             currentUser.displayName == winnerMember.displayName
                         }
-                        state.phase == Phase.RUNNING -> highlightIndex.intValue == 1 // 게임 중 애니메이션
+                        state.phase == Phase.RUNNING -> {
+                            // 순환형 토큰 패싱: 현재 사용자의 인덱스와 하이라이트 인덱스 비교
+                            val myIndex = spinOrderIds.indexOf("self")
+                            myIndex == currentHighlightIndex
+                        }
                         else -> false // 대기 상태
                     }
 
