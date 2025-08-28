@@ -478,6 +478,9 @@ fun SolsolApp() {
                     Log.d(TAG, "게임 완료! 승자: $winnerName")
                     // 게임 완료 후 홈으로 이동
                     currentScreen = "home"
+                },
+                onNavigateRemittance = {
+
                 }
             )
         }

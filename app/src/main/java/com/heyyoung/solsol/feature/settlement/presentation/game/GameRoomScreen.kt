@@ -1,5 +1,6 @@
 package com.heyyoung.solsol.feature.settlement.presentation.game
 
+import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
@@ -26,14 +27,19 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.heyyoung.solsol.feature.settlement.domain.game.*
+import com.heyyoung.solsol.feature.settlement.domain.model.Person
+import com.heyyoung.solsol.feature.settlement.presentation.SettlementEqualViewModel
 import kotlinx.coroutines.delay
+import java.math.BigDecimal
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GameRoomScreen(
     onNavigateBack: () -> Unit = {},
     onGameFinished: (String) -> Unit = {},
-    viewModel: GameViewModel = viewModel()
+    onNavigateRemittance: (Long) -> Unit = {}, // groupId 전달
+    viewModel: GameViewModel = viewModel(),
+    settlementViewModel: SettlementEqualViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
     val roomState by viewModel.roomState.collectAsState()
     val role by viewModel.role.collectAsState()
@@ -47,38 +53,50 @@ fun GameRoomScreen(
     val rotationAngle = remember { Animatable(0f) }
     val finalWinnerState = remember { mutableStateOf<String?>(null) }
 
+    val uiState by settlementViewModel.uiState.collectAsState()
+
+    // 정산 완료되면 Remittance 화면으로 이동
+    LaunchedEffect(uiState.isCompleted) {
+        if (uiState.isCompleted) {
+            uiState.createdSettlement?.groupId?.let { groupId ->
+                settlementViewModel.onSettlementCompleteNavigated()
+                onNavigateRemittance(groupId)
+            }
+        }
+    }
+
     LaunchedEffect(roomState?.phase, spinOrderIds, roomState?.winnerEndpointId, spinTickMs) {
         val state = roomState
         if (state != null && state.phase == Phase.RUNNING && 
             spinOrderIds.isNotEmpty() && 
             state.winnerEndpointId != null &&
             finalWinnerState.value == null) { // 이미 완료된 게임이 아닌 경우에만 실행
-            
+
             val myEndpointId = "self" // 내 endpointId
             val totalMembers = spinOrderIds.size
             val myIndex = spinOrderIds.indexOf(myEndpointId)
             val winnerIndex = spinOrderIds.indexOf(state.winnerEndpointId)
-            
+
             // 전체 애니메이션: 빠르게 시작 -> 점점 느려짐 -> 당첨자에서 멈춤
             val totalSteps = 80 // 총 80단계
-            
+
             for (step in 0 until totalSteps) {
                 // 순서대로 돌아가며 불빛 표시
                 val currentMemberIndex = step % totalMembers
                 val shouldLightUp = currentMemberIndex == myIndex
-                
+
                 highlightIndex.intValue = if (shouldLightUp) 1 else 0
-                
+
                 // 시간이 지날수록 점점 느려짐 (exponential easing)
                 val progress = step.toFloat() / totalSteps
                 val baseDelay = 80L // 시작 속도 (빠름)
                 val maxDelay = 800L // 끝 속도 (느림)
-                
+
                 // 지수적으로 느려짐
                 val currentDelay = (baseDelay + (maxDelay - baseDelay) * progress * progress * progress).toLong()
-                
+
                 delay(currentDelay)
-                
+
                 // 마지막 몇 단계에서 당첨자에게 멈춰야 함
                 if (step > totalSteps - 10) {
                     if (currentMemberIndex == winnerIndex) {
@@ -89,7 +107,7 @@ fun GameRoomScreen(
                     }
                 }
             }
-            
+
             // 애니메이션 완료 후 Phase.FINISHED로 전환 (호스트만)
             if (role == Role.HOST) {
                 delay(1000) // 1초 대기
@@ -148,6 +166,13 @@ fun GameRoomScreen(
                 ) {
                     Column {
                         Text(
+                            "정산 금액: ${"%,d".format(state.settlementAmount)}원",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF1C1C1E)
+                        )
+
+                        Text(
                             text = currentUser?.displayName ?: "나",
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
@@ -173,21 +198,21 @@ fun GameRoomScreen(
                     // 현재 사용자가 당첨자인지 확인 - 이름으로 매칭
                     val currentUser = state.members.find { it.isSelf }
                     val winner = state.members.find { it.endpointId == state.winnerEndpointId }
-                    val isWinner = state.phase == Phase.FINISHED && currentUser != null && 
+                    val isWinner = state.phase == Phase.FINISHED && currentUser != null &&
                                  winner != null && currentUser.displayName == winner.displayName
-                    
+
                     val isLightOn = when {
                         state.phase == Phase.FINISHED -> {
                             // 게임 종료 시: 이름으로 매칭 확인
                             val finalWinner = finalWinnerState.value ?: state.winnerEndpointId
                             val winnerMember = state.members.find { it.endpointId == finalWinner }
-                            currentUser != null && winnerMember != null && 
+                            currentUser != null && winnerMember != null &&
                             currentUser.displayName == winnerMember.displayName
                         }
                         state.phase == Phase.RUNNING -> highlightIndex.intValue == 1 // 게임 중 애니메이션
                         else -> false // 대기 상태
                     }
-                    
+
                     CenterLightDisplay(
                         isLightOn = isLightOn,
                         isFinished = state.phase == Phase.FINISHED,
@@ -224,7 +249,7 @@ fun GameRoomScreen(
                             }
                         }
                     }
-                    
+
                     Phase.INSTRUCTION -> {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -240,7 +265,7 @@ fun GameRoomScreen(
                             )
                         }
                     }
-                    
+
                     Phase.RUNNING -> {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -267,14 +292,14 @@ fun GameRoomScreen(
                             }
                         }
                     }
-                    
+
                     Phase.FINISHED -> {
                         // 현재 사용자가 당첨자인지 확인 - 이름으로 매칭
                         val currentUser = state.members.find { it.isSelf }
                         val winner = state.members.find { it.endpointId == state.winnerEndpointId }
-                        val isWinner = currentUser != null && winner != null && 
+                        val isWinner = currentUser != null && winner != null &&
                                      currentUser.displayName == winner.displayName
-                        
+
                         if (isWinner) {
                             // 당첨자용 UI
                             Card(
@@ -306,13 +331,41 @@ fun GameRoomScreen(
                                     )
                                 }
                             }
-                            
+
                             Spacer(modifier = Modifier.height(20.dp))
-                            
+
                             Button(
                                 onClick = {
-                                    viewModel.leaveRoom()
-                                    onNavigateBack()
+                                    // ✅ 방장 ID 가져오기
+                                    val hostMember = state.members.find { it.isHost }
+                                    val hostId = hostMember?.userId ?: "1"
+                                    Log.d("호스트: %s", hostId)
+
+                                    val member = state.members.find { it.isSelf }
+                                    val meId = member?.userId ?: "1"
+                                    Log.d("나: %s", meId)
+
+                                    // 🎯 당첨자만 정산 그룹에 추가
+                                    val winner = state.members.find { it.endpointId == state.winnerEndpointId }
+                                    winner?.let { winnerMember ->
+                                        val participants = listOf(
+                                            Person(
+                                                id = meId,
+                                                name = winnerMember.displayName,
+                                                isMe = winnerMember.isSelf,
+                                                amount = BigDecimal.valueOf(state.settlementAmount?.toDouble() ?: 0.0),
+                                                department = "학생회",
+                                                studentId = ""
+                                            )
+                                        )
+
+                                        settlementViewModel.createSettlement(
+                                            organizerId = hostId ?: "에러",
+                                            groupName = state.title,
+                                            totalAmount = state.settlementAmount?.toDouble() ?: 0.0,
+                                            participants = participants
+                                        )
+                                    }
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -361,9 +414,9 @@ fun GameRoomScreen(
                                     )
                                 }
                             }
-                            
+
                             Spacer(modifier = Modifier.height(16.dp))
-                            
+
                             Button(
                                 onClick = {
                                     viewModel.leaveRoom()
@@ -491,7 +544,7 @@ private fun MemberCard(
                             else -> Color(0xFF1C1C1E)
                         }
                     )
-                    
+
                     if (member.isHost) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
@@ -499,7 +552,7 @@ private fun MemberCard(
                             fontSize = 12.sp
                         )
                     }
-                    
+
                     if (member.isSelf) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
@@ -591,7 +644,7 @@ private fun HostControls(
                         Text("번호 배정", fontSize = 14.sp, color = Color.White)
                     }
                 }
-                
+
                 Button(
                     onClick = onSendInstruction,
                     modifier = Modifier.weight(1f),
@@ -602,7 +655,7 @@ private fun HostControls(
                 ) {
                     Text("게임 설명", fontSize = 14.sp, color = Color.White)
                 }
-                
+
                 Button(
                     onClick = onStartGame,
                     modifier = Modifier.weight(1f),
@@ -641,7 +694,7 @@ private fun CenterLightDisplay(
                     shape = CircleShape
                 )
         )
-        
+
         // 불빛 원 (조건부 표시)
         if (isLightOn || isFinished) {
             Box(
@@ -661,7 +714,7 @@ private fun CenterLightDisplay(
                     )
             )
         }
-        
+
         // 중앙 아이콘/텍스트
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
@@ -714,27 +767,27 @@ private fun InstructionDialog(
                     text = "👥",
                     fontSize = 36.sp
                 )
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 Text(
                     text = "🎯 룰렛 게임 방법",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF1C1C1E)
                 )
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 Text(
                     text = "곧 룰렛이 돌아갑니다!\n한 명이 당첨되어 전체 정산을 담당하게 됩니다.",
                     fontSize = 16.sp,
                     color = Color(0xFF666666),
                     lineHeight = 24.sp
                 )
-                
+
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 if (countdown > 0) {
                     Box(
                         modifier = Modifier
@@ -752,10 +805,10 @@ private fun InstructionDialog(
                             color = Color(0xFF8B5FBF)
                         )
                     }
-                    
+
                     Spacer(modifier = Modifier.height(16.dp))
                 }
-                
+
                 Button(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
