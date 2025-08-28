@@ -294,6 +294,13 @@ fun GameRoomScreen(
                     }
 
                     Phase.FINISHED -> {
+                        Log.d("GameDebug", "=== 전체 멤버 리스트 ===")
+                        state.members.forEachIndexed { index, member ->
+                            Log.d("GameDebug", "멤버[$index]: endpointId=${member.endpointId}, displayName=${member.displayName}, userId=${member.userId}, isSelf=${member.isSelf}, isHost=${member.isHost}")
+                        }
+                        Log.d("GameDebug", "winnerEndpointId: ${state.winnerEndpointId}")
+                        Log.d("GameDebug", "========================")
+
                         // 현재 사용자가 당첨자인지 확인 - 이름으로 매칭
                         val currentUser = state.members.find { it.isSelf }
                         val winner = state.members.find { it.endpointId == state.winnerEndpointId }
@@ -365,7 +372,7 @@ fun GameRoomScreen(
                                             )
                                         )
 
-                                        settlementViewModel.createSettlement(
+                                        settlementViewModel.createSettlementGame(
                                             organizerId = hostId ?: "에러",
                                             groupName = state.title,
                                             totalAmount = state.settlementAmount?.toDouble() ?: 0.0,

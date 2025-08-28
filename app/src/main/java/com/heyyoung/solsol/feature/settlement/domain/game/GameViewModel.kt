@@ -263,33 +263,29 @@ class GameViewModel @Inject constructor(
 
     private suspend fun mergeSelf(remoteState: RoomState): RoomState {
         val myName = nearby.localEndpointName ?: "Me"
-        
-        // 모든 멤버를 업데이트하여 자신만 isSelf = true로 설정
+        val myUserId = tokenManager.getCurrentUserInfo()?.userId
+
         val updatedMembers = remoteState.members.map { member ->
-            if (member.displayName == myName && member.endpointId != "self") {
-                // 내 이름과 같은 멤버를 찾았지만 endpointId가 "self"가 아닌 경우 (참가자)
-                member.copy(isSelf = true)
-            } else if (member.endpointId == "self") {
-                // 호스트인 경우 - 내 이름으로 업데이트
-                member.copy(displayName = myName, isSelf = true)
-            } else {
-                // 다른 멤버들은 isSelf = false
-                member.copy(isSelf = false)
+            when {
+                // 참가자: userId 같고 endpointId != self → isSelf
+                member.userId == myUserId -> {
+                    member.copy(isSelf = true)
+                }
+                // 나머지 멤버는 전부 false
+                else -> member.copy(isSelf = false)
             }
         }
-        
-        // 자신이 목록에 없다면 추가
+
+        // 혹시 자기 자신이 아예 없다면 새로 추가
         val hasSelf = updatedMembers.any { it.isSelf }
         return if (!hasSelf) {
-            // ✅ 여기서 userId 넣기
             val userInfo = tokenManager.getCurrentUserInfo()
-
             val newSelfMember = Member(
                 endpointId = "self",
                 displayName = myName,
                 isSelf = true,
                 isHost = false,
-                userId = userInfo?.userId ?: "unknown" // ✅
+                userId = userInfo?.userId ?: "unknown"
             )
             remoteState.copy(members = updatedMembers + newSelfMember)
         } else {

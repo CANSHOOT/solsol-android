@@ -46,6 +46,28 @@ class SettlementRepositoryImpl @Inject constructor(
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
+    override suspend fun createSettlementGame(organizerId: String, settlement: SettlementGroup): Result<SettlementGroup> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val request = CreateSettlementRequest(
+                    paymentId = settlement.paymentId,
+                    groupName = settlement.groupName,
+                    totalAmount = settlement.totalAmount,
+                    participantCount = settlement.participantCount,
+                    participantUserIds = settlement.participants.map { it.userId }
+                )
+
+                val response = apiService.createSettlementGame(organizerId,request)
+                val domain = response.toDomain()
+
+                Result.success(domain)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun getSettlementById(groupId: Long): Result<SettlementGroup> {
         return withContext(Dispatchers.IO) {
             try {
