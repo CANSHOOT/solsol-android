@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.heyyoung.solsol.feature.auth.presentation.LoginScreen
 import com.heyyoung.solsol.feature.home.presentation.HomeScreen
+import com.heyyoung.solsol.feature.settlement.presentation.MoneyTransferScreen
 import com.heyyoung.solsol.feature.settlement.presentation.SettlementEqualScreen
 import com.heyyoung.solsol.feature.settlement.presentation.SettlementManualScreen
 import com.heyyoung.solsol.feature.studentcouncil.StudentCouncilViewModel
@@ -147,6 +148,14 @@ fun SolsolApp() {
                 onNavigateToCouncil = {
                     Log.d(TAG, "학생회 화면으로 이동")
                     currentScreen = "council"
+                },
+                onNavigateToMoneyTransfer = {  // 이 부분 추가
+                    Log.d(TAG, "송금하기 화면으로 이동")
+                    currentScreen = "money_transfer"
+                },
+                onNavigateToCoupon = {
+                    Log.d(TAG, "쿠폰 화면으로 이동")
+                    currentScreen = "coupon"
                 }
             )
         }
@@ -337,6 +346,14 @@ fun SolsolApp() {
             StudentCouncilFeeStatusScreen(
                 onNavigateBack = { currentScreen = "council" },
                 feeStatusList = viewModel.feeStatus?.let { listOf(it) } ?: emptyList()
+            )
+        }
+
+        "money_transfer" -> {
+            MoneyTransferScreen(
+                onNavigateBack = {
+                    currentScreen = "home"
+                }
             )
         }
 
