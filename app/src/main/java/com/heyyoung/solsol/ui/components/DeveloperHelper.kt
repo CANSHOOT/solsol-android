@@ -51,7 +51,7 @@ fun DeveloperQuickTest(
             ) {
                 // 테스트 사용자 1
                 DevTestButton(
-                    text = "테스트1",
+                    text = "김경훈",
                     onClick = {
                         onFillTestData("solsol1@ssafy.co.kr", "20250001")
                     },
@@ -60,18 +60,39 @@ fun DeveloperQuickTest(
 
                 // 테스트 사용자 2
                 DevTestButton(
-                    text = "테스트2",
+                    text = "장규민",
                     onClick = {
-                        onFillTestData("solsol4@ssafy.co.kr", "20250004")
+                        onFillTestData("solsol2@ssafy.co.kr", "20250004")
                     },
                     modifier = Modifier.weight(1f)
                 )
 
                 // 테스트 사용자 3
                 DevTestButton(
-                    text = "데모",
+                    text = "홍정인",
                     onClick = {
-                        onFillTestData("demo@solsol.com", "20259999")
+                        onFillTestData("solsol3@ssafy.co.kr", "20259999")
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+                DevTestButton(
+                    text = "한강섭",
+                    onClick = {
+                        onFillTestData("solsol4@ssafy.co.kr", "20259999")
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+                DevTestButton(
+                    text = "학생회장",
+                    onClick = {
+                        onFillTestData("solsol5@ssafy.co.kr", "20259999")
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+                DevTestButton(
+                    text = "가맹점",
+                    onClick = {
+                        onFillTestData("solsol6@ssafy.co.kr", "20259999")
                     },
                     modifier = Modifier.weight(1f)
                 )

@@ -46,6 +46,7 @@ class NearbyViewModel @Inject constructor(
     val permissionMessage: StateFlow<String> = _permissionMessage.asStateFlow()
     
     private var isInitialized = false
+    private var onGameNavigationCallback: (() -> Unit)? = null
     
     /**
      * ViewModel 초기화
@@ -109,7 +110,18 @@ class NearbyViewModel @Inject constructor(
      * 바텀시트 표시/숨김
      */
     fun showBottomSheet() {
+        Log.d(TAG, "바텀시트 표시 요청 - 권한 확인 중...")
+        
+        // 권한 확인 먼저
+        if (!nearbyPermissionManager.areAllPermissionsGranted()) {
+            Log.w(TAG, "권한이 없음 - 권한 요청 다이얼로그 표시")
+            showPermissionRequest()
+            return
+        }
+        
+        // 권한이 있으면 바텀시트 표시
         _isBottomSheetVisible.value = true
+        Log.d(TAG, "바텀시트 표시됨")
     }
     
     fun hideBottomSheet() {
@@ -185,6 +197,37 @@ class NearbyViewModel @Inject constructor(
     fun hidePermissionDialog() {
         _showPermissionDialog.value = false
         Log.d(TAG, "권한 다이얼로그 숨김")
+    }
+    
+    /**
+     * 권한 체크 후 게임으로 네비게이션
+     */
+    fun checkPermissionsAndNavigateToGame(onNavigate: () -> Unit) {
+        Log.d(TAG, "게임 네비게이션을 위한 권한 체크")
+        onGameNavigationCallback = onNavigate
+        
+        if (nearbyPermissionManager.areAllPermissionsGranted()) {
+            Log.d(TAG, "권한이 있음 - 즉시 게임으로 이동")
+            onNavigate()
+            onGameNavigationCallback = null
+        } else {
+            Log.w(TAG, "권한이 없음 - 권한 요청")
+            showPermissionRequest()
+        }
+    }
+    
+    /**
+     * 권한 허용 후 게임으로 이동
+     */
+    fun onPermissionsGranted() {
+        Log.d(TAG, "권한이 허용됨")
+        hidePermissionDialog()
+        
+        onGameNavigationCallback?.let { callback ->
+            Log.d(TAG, "게임으로 이동")
+            callback()
+            onGameNavigationCallback = null
+        }
     }
     
     /**

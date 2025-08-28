@@ -103,6 +103,7 @@ fun SolsolApp() {
     var lastReceiptFields by remember { mutableStateOf<ReceiptFields?>(null) }
     val viewModel: StudentCouncilViewModel = hiltViewModel()
 
+
     // 앱 상태 로깅
     LaunchedEffect(currentScreen) {
         Log.i(TAG, "🔄 화면 전환: $currentScreen")
@@ -202,6 +203,10 @@ fun SolsolApp() {
                     Log.d(TAG, "정산 방식 선택됨: $method")
                     selectedSettlementMethod = method
                     currentScreen = "settlement_participants"
+                },
+                onNavigateToGame = {
+                    Log.d(TAG, "랜덤 게임으로 네비게이션")
+                    currentScreen = "game_home"
                 }
             )
         }
@@ -352,6 +357,67 @@ fun SolsolApp() {
         "money_transfer" -> {
             MoneyTransferScreen(
                 onNavigateBack = {
+                    currentScreen = "home"
+                }
+            )
+        }
+
+        "game_home" -> {
+            // 게임 홈 화면
+            com.heyyoung.solsol.feature.settlement.presentation.game.GameHomeScreen(
+                onNavigateBack = {
+                    Log.d(TAG, "게임 홈에서 정산 방식 선택으로 돌아가기")
+                    currentScreen = "settlement_method"
+                },
+                onNavigateToHost = {
+                    Log.d(TAG, "호스트 화면으로 이동")
+                    currentScreen = "game_host"
+                },
+                onNavigateToJoin = {
+                    Log.d(TAG, "참가 화면으로 이동")
+                    currentScreen = "game_join"
+                }
+            )
+        }
+
+        "game_host" -> {
+            // 게임 호스트 화면
+            com.heyyoung.solsol.feature.settlement.presentation.game.HostScreen(
+                onNavigateBack = {
+                    Log.d(TAG, "호스트 화면에서 게임 홈으로 돌아가기")
+                    currentScreen = "game_home"
+                },
+                onNavigateToRoom = {
+                    Log.d(TAG, "게임 룸으로 이동")
+                    currentScreen = "game_room"
+                }
+            )
+        }
+
+        "game_join" -> {
+            // 게임 참가 화면
+            com.heyyoung.solsol.feature.settlement.presentation.game.JoinScreen(
+                onNavigateBack = {
+                    Log.d(TAG, "참가 화면에서 게임 홈으로 돌아가기")
+                    currentScreen = "game_home"
+                },
+                onNavigateToRoom = {
+                    Log.d(TAG, "게임 룸으로 이동")
+                    currentScreen = "game_room"
+                }
+            )
+        }
+
+        "game_room" -> {
+            // 게임 룸 화면
+            com.heyyoung.solsol.feature.settlement.presentation.game.GameRoomScreen(
+                onNavigateBack = {
+                    Log.d(TAG, "게임 룸에서 게임 홈으로 돌아가기")
+                    currentScreen = "game_home"
+                },
+                onGameFinished = { winnerName ->
+                    Log.d(TAG, "게임 완료! 승자: $winnerName")
+                    // 게임 완료 후 홈으로 이동
                     currentScreen = "home"
                 }
             )

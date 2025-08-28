@@ -26,12 +26,13 @@ class LoginViewModel @Inject constructor(
     var uiState by mutableStateOf(LoginUiState())
         private set
 
-    fun login(email: String, studentNumber: String) {
+    fun login(email: String, studentNumber: String, onResult: (Boolean) -> Unit) {
         Log.d(TAG, "로그인 시작: $email")
 
         val v = validateInput(email, studentNumber)
         if (!v.isValid) {
             uiState = uiState.copy(isLoading = false, errorMessage = v.errorMessage)
+            onResult(false)
             return
         }
 
@@ -47,6 +48,7 @@ class LoginViewModel @Inject constructor(
                         errorMessage = null,
                         userInfo = result.data
                     )
+                    onResult(true)
                 }
                 is BackendApiResult.Error -> {
                     Log.e(TAG, "로그인 실패: ${result.message}")
@@ -55,17 +57,19 @@ class LoginViewModel @Inject constructor(
                         isLoginSuccess = false,
                         errorMessage = result.message
                     )
+                    onResult(false)
                 }
             }
         }
     }
 
-    fun register(email: String, studentNumber: String) {
+    fun register(email: String, studentNumber: String, onResult: (Boolean) -> Unit) {
         Log.d(TAG, "회원가입 시도(간단 버전)")
 
         val v = validateInput(email, studentNumber)
         if (!v.isValid) {
             uiState = uiState.copy(isLoading = false, errorMessage = v.errorMessage)
+            onResult(false)
             return
         }
 
@@ -91,6 +95,7 @@ class LoginViewModel @Inject constructor(
                         errorMessage = null,
                         userInfo = result.data
                     )
+                    onResult(true)
                 }
                 is BackendApiResult.Error -> {
                     Log.e(TAG, "회원가입 실패: ${result.message}")
@@ -99,6 +104,7 @@ class LoginViewModel @Inject constructor(
                         isLoginSuccess = false,
                         errorMessage = result.message
                     )
+                    onResult(false)
                 }
             }
         }
@@ -111,6 +117,8 @@ class LoginViewModel @Inject constructor(
     fun resetLoginState() {
         uiState = LoginUiState()
     }
+
+
 
     fun getCurrentLoginResult(): UserInfo? = uiState.userInfo
     fun isLoggedIn(): Boolean = uiState.isLoginSuccess && uiState.userInfo != null

@@ -19,6 +19,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.heyyoung.solsol.feature.settlement.presentation.viewmodel.NearbyViewModel
+import com.heyyoung.solsol.feature.settlement.presentation.components.NearbyPermissionDialog
 
 private const val TAG = "SettlementMethodScreen"
 
@@ -26,10 +29,16 @@ private const val TAG = "SettlementMethodScreen"
 @Composable
 fun SettlementMethodScreen(
     onNavigateBack: () -> Unit = {},
-    onMethodSelected: (String) -> Unit = {}
+    onMethodSelected: (String) -> Unit = {},
+    onNavigateToGame: () -> Unit = {},
+    nearbyViewModel: NearbyViewModel = hiltViewModel()
 ) {
     // 선택된 방식 상태 관리 (초기값을 명시적으로 null로 설정)
     var selectedMethod by remember { mutableStateOf<String?>(null) }
+    
+    // 권한 상태
+    val showPermissionDialog by nearbyViewModel.showPermissionDialog.collectAsState()
+    val permissionMessage by nearbyViewModel.permissionMessage.collectAsState()
 
     Log.d(TAG, "정산 방식 선택 화면 진입")
     Log.d(TAG, "현재 선택된 방식: $selectedMethod")
@@ -148,7 +157,16 @@ fun SettlementMethodScreen(
                     Log.d(TAG, "다음 버튼 클릭, 선택된 방식: $selectedMethod")
                     selectedMethod?.let { method ->
                         Log.d(TAG, "선택된 방식으로 진행: $method")
-                        onMethodSelected(method)
+                        if (method == "random") {
+                            Log.d(TAG, "랜덤 게임으로 네비게이션 - 권한 확인 중...")
+                            // 권한 체크 먼저
+                            nearbyViewModel.checkPermissionsAndNavigateToGame {
+                                // 권한이 있으면 게임으로 이동
+                                onNavigateToGame()
+                            }
+                        } else {
+                            onMethodSelected(method)
+                        }
                     } ?: Log.w(TAG, "선택된 방식이 없음")
                 },
                 enabled = selectedMethod != null,
@@ -177,6 +195,21 @@ fun SettlementMethodScreen(
             Spacer(modifier = Modifier.height(40.dp))
         }
     }
+    
+    // 권한 다이얼로그
+    NearbyPermissionDialog(
+        isVisible = showPermissionDialog,
+        onDismiss = { nearbyViewModel.hidePermissionDialog() },
+        onRequestPermissions = { 
+            // 권한 요청 처리
+            nearbyViewModel.onPermissionsGranted()
+        },
+        onOpenSettings = { 
+            // 설정 앱 열기
+            nearbyViewModel.hidePermissionDialog()
+        },
+        permissionMessage = permissionMessage
+    )
 }
 
 @Composable

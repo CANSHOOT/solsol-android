@@ -28,13 +28,12 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var studentNumber by remember { mutableStateOf("") }
 
-    // 로그인 성공 감지
-    LaunchedEffect(uiState.isLoginSuccess) {
-        if (uiState.isLoginSuccess) {
-            Log.i(TAG, "로그인 성공! 홈으로 이동")
-            onLoginSuccess()
-        }
+    // 화면 진입 시 로그인 상태 초기화
+    LaunchedEffect(Unit) {
+        Log.d(TAG, "LoginScreen 진입 - 로그인 상태 초기화")
+        viewModel.resetLoginState()
     }
+
 
     // 에러 메시지 로깅
     uiState.errorMessage?.let { error ->
@@ -60,11 +59,21 @@ fun LoginScreen(
             },
             onLoginClick = {
                 Log.d(TAG, "로그인 시도: $email")
-                viewModel.login(email, studentNumber)
+                viewModel.login(email, studentNumber) { success ->
+                    if (success) {
+                        Log.i(TAG, "로그인 성공! 홈으로 이동")
+                        onLoginSuccess()
+                    }
+                }
             },
             onRegisterClick = {
                 Log.d(TAG, "회원가입 시도: $email")
-                viewModel.register(email, studentNumber)
+                viewModel.register(email, studentNumber) { success ->
+                    if (success) {
+                        Log.i(TAG, "회원가입 성공! 홈으로 이동")
+                        onLoginSuccess()
+                    }
+                }
             },
             isLoading = uiState.isLoading
         )

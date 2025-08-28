@@ -1,47 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.heyyoung.solsol">
 
-    <!-- 기존 권한들 -->
+    <!-- 네트워크 -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-    <!-- QR/NFC 결제용 권한 -->
+    <!-- 카메라 / NFC (결제 및 OCR) -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.NFC" />
 
-    <!-- OCR 영수증 스캔용 추가 권한 -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+    <!-- 갤러리/스토리지 접근 -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    
-    <!-- Nearby Connections API 권한들 -->
+
+    <!-- Nearby Connections API 관련 -->
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    
-    <!-- API 31+ (Android 12) Bluetooth 권한 -->
-    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" 
-        android:minSdkVersion="31" />
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" 
-        android:minSdkVersion="31" />
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" 
-        android:minSdkVersion="31" />
-    
-    <!-- API 32+ (Android 13) WiFi 권한 -->
-    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" 
-        android:minSdkVersion="32" />
 
-    <!-- 카메라 기능 선언 -->
+    <!-- Android 12+ (API 31~) 필수 Bluetooth 권한 -->
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation" />
+
+    <!-- Android 13+ (API 33~) WiFi 근거리 스캔 권한 -->
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES"
+        android:usesPermissionFlags="neverForLocation" />
+
+    <!-- 카메라 하드웨어 선언 -->
     <uses-feature
         android:name="android.hardware.camera"
         android:required="true" />
     <uses-feature
         android:name="android.hardware.camera.autofocus"
         android:required="false" />
-
 
     <application
         android:name=".SolsolApplication"
@@ -56,12 +56,12 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
 
-        <!-- ML Kit 모델 자동 다운로드 설정 -->
+        <!-- ML Kit: OCR 모델 자동 다운로드 -->
         <meta-data
             android:name="com.google.mlkit.vision.DEPENDENCIES"
             android:value="ocr,ocr_korean" />
 
-        <!-- 파일 제공자 (이미지 저장/공유용) -->
+        <!-- FileProvider (이미지 저장/공유) -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
