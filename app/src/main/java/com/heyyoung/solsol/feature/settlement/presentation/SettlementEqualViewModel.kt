@@ -46,7 +46,7 @@ class SettlementEqualViewModel @Inject constructor(
             try {
                 // participants에서 "나"를 제외한 실제 참여자들만 추출
                 val participantUserIds = participants
-                    .filter { !it.isMe }
+//                    .filter { !it.isMe }
                     .map { it.id }
                 
                 Log.d(TAG, "참여자 ID 목록: $participantUserIds")

@@ -298,9 +298,15 @@ fun GameRoomScreen(
                         val currentUser = state.members.find { it.isSelf }
                         val winner = state.members.find { it.endpointId == state.winnerEndpointId }
                         val isWinner = currentUser != null && winner != null &&
-                                     currentUser.displayName == winner.displayName
+                                     currentUser.userId == winner.userId
 
-                        if (isWinner) {
+                        val tets = currentUser.toString()
+                        val tets2 = winner.toString()
+                        Log.d("test", "현재유저: $tets");
+                        Log.d("test", "현재유저: $tets2");
+                        Log.d("test", "결과(내가 당첨?): $isWinner");
+
+                        if (isWinner && !(currentUser?.isHost == true)) {
                             // 당첨자용 UI
                             Card(
                                 modifier = Modifier
@@ -339,18 +345,18 @@ fun GameRoomScreen(
                                     // ✅ 방장 ID 가져오기
                                     val hostMember = state.members.find { it.isHost }
                                     val hostId = hostMember?.userId ?: "1"
-                                    Log.d("호스트: %s", hostId)
-
-                                    val member = state.members.find { it.isSelf }
-                                    val meId = member?.userId ?: "1"
-                                    Log.d("나: %s", meId)
+                                    val test = hostMember.toString()
+                                    Log.d("GameRoomScreen", "호스트: $test")
 
                                     // 🎯 당첨자만 정산 그룹에 추가
                                     val winner = state.members.find { it.endpointId == state.winnerEndpointId }
+                                    val test2 = winner.toString()
+                                    Log.d("GameRoomScreen", "위너: $test2")
+
                                     winner?.let { winnerMember ->
                                         val participants = listOf(
                                             Person(
-                                                id = meId,
+                                                id = winnerMember.userId,
                                                 name = winnerMember.displayName,
                                                 isMe = winnerMember.isSelf,
                                                 amount = BigDecimal.valueOf(state.settlementAmount?.toDouble() ?: 0.0),
@@ -366,6 +372,8 @@ fun GameRoomScreen(
                                             participants = participants
                                         )
                                     }
+                                    viewModel.leaveRoom()
+                                    onNavigateBack()
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -383,7 +391,64 @@ fun GameRoomScreen(
                                     color = Color.White
                                 )
                             }
-                        } else {
+                        }
+                        else if (isWinner && currentUser?.isHost == true) {
+                            // 당첨자용 UI
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .shadow(12.dp, RoundedCornerShape(20.dp)),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color(0xFFFFF8E1)
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(24.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(text = "🎊", fontSize = 32.sp)
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text(
+                                        text = "축하합니다!",
+                                        fontSize = 24.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFF59E0B)
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "당신이 당첨되었습니다!\n전체 정산을 담당해주세요.",
+                                        fontSize = 16.sp,
+                                        color = Color(0xFFF59E0B),
+                                        lineHeight = 24.sp
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            Button(
+                                onClick = {
+                                    viewModel.leaveRoom()
+                                    onNavigateBack()
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp)
+                                    .shadow(8.dp, RoundedCornerShape(28.dp)),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFFFC107)
+                                ),
+                                shape = RoundedCornerShape(28.dp)
+                            ) {
+                                Text(
+                                    text = "닫기",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
+                        else {
                             // 일반 참가자용 UI - 당첨자 이름 표시
                             val winner = state.members.find { it.endpointId == state.winnerEndpointId }
                             Card(
