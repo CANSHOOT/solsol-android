@@ -29,7 +29,6 @@ import java.math.BigDecimal
 
 private const val TAG = "SettlementEqualScreen"
 
-@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettlementEqualScreen(

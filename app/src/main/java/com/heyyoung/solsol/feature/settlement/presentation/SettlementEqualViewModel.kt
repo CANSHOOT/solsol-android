@@ -29,7 +29,6 @@ class SettlementEqualViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(SettlementEqualUiState())
     val uiState: StateFlow<SettlementEqualUiState> = _uiState.asStateFlow()
 
-    @RequiresApi(Build.VERSION_CODES.O)
     fun createSettlement(
         organizerId: String,
         groupName: String,
