@@ -142,11 +142,11 @@ fun MoneyTransferScreen(
                                 amount = request.amount,
                                 status = request.status,
                                 onClick = {
-                                    if (request.status == MoneyTransferStatus.PENDING) {
-                                        // 진행중인 건만 이동
+                                    if (request.status == MoneyTransferStatus.PENDING && request.side == TransferSide.RECEIVED) {
+                                        // 받은 요청(내가 보내야 할 돈) + 진행중일 때만 이동
                                         onNavigateToRemittance(request.groupId, request.name, request.amount)
                                     } else {
-                                        Log.d(TAG, "완료 항목 클릭 무시: ${request.name}")
+                                        Log.d(TAG, "클릭 무시: ${request.name}, side=${request.side}, status=${request.status}")
                                     }
                                 }
                             )
