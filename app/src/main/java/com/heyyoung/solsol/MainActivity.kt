@@ -474,13 +474,12 @@ fun SolsolApp() {
                     Log.d(TAG, "게임 룸에서 게임 홈으로 돌아가기")
                     currentScreen = "game_home"
                 },
-                onGameFinished = { winnerName ->
-                    Log.d(TAG, "게임 완료! 승자: $winnerName")
+                onGameFinished = {
                     // 게임 완료 후 홈으로 이동
                     currentScreen = "home"
                 },
                 onNavigateRemittance = {
-
+                    currentScreen = "money_transfer"
                 }
             )
         }

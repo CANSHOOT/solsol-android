@@ -91,7 +91,8 @@ class SettlementEqualViewModel @Inject constructor(
         organizerId: String,
         groupName: String,
         totalAmount: Double,
-        participants: List<Person>
+        participants: List<Person>,
+        onResult: (Long?) -> Unit
     ) {
         Log.d(TAG, "정산 요청 시작: $groupName, ${totalAmount}원, ${participants.size}명")
 
@@ -121,7 +122,10 @@ class SettlementEqualViewModel @Inject constructor(
                         Log.d(TAG, "🔄 참여자들을 그룹에 참여시키는 중...")
 
                         // 생성 성공 후 모든 참여자를 그룹에 참여시킴
-                        settlementGroup.groupId?.let { joinParticipantsToGroup(it, participants, settlementGroup) }
+                        settlementGroup.groupId?.let {
+                            joinParticipantsToGroup(it, participants, settlementGroup)
+                            onResult(it)
+                        }
                     },
                     onFailure = { error ->
                         Log.e(TAG, "❌ 정산 생성 실패: ${error.message}")
@@ -129,6 +133,7 @@ class SettlementEqualViewModel @Inject constructor(
                             isCreating = false,
                             error = error.message ?: "정산 요청에 실패했습니다"
                         )
+                        onResult(null)
                     }
                 )
             } catch (e: Exception) {
@@ -137,6 +142,7 @@ class SettlementEqualViewModel @Inject constructor(
                     isCreating = false,
                     error = "정산 요청 중 오류가 발생했습니다"
                 )
+                onResult(null)
             }
         }
     }

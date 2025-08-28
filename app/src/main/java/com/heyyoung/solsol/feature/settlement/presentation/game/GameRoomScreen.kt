@@ -36,7 +36,7 @@ import java.math.BigDecimal
 @Composable
 fun GameRoomScreen(
     onNavigateBack: () -> Unit = {},
-    onGameFinished: (String) -> Unit = {},
+    onGameFinished: () -> Unit = {},
     onNavigateRemittance: (Long) -> Unit = {}, // groupId 전달
     viewModel: GameViewModel = viewModel(),
     settlementViewModel: SettlementEqualViewModel = androidx.hilt.navigation.compose.hiltViewModel()
@@ -373,14 +373,18 @@ fun GameRoomScreen(
                                         )
 
                                         settlementViewModel.createSettlementGame(
-                                            organizerId = hostId ?: "에러",
+                                            organizerId = hostId,
                                             groupName = state.title,
                                             totalAmount = state.settlementAmount?.toDouble() ?: 0.0,
                                             participants = participants
-                                        )
+                                        ) { groupId ->
+                                            if (groupId != null) {
+                                                Log.d("UI", "생성된 그룹 ID: $groupId")
+                                                onNavigateRemittance(groupId) // ✅ 여기서 안전하게 호출 가능
+                                            }
+                                        }
                                     }
                                     viewModel.leaveRoom()
-                                    onNavigateBack()
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -436,7 +440,7 @@ fun GameRoomScreen(
                             Button(
                                 onClick = {
                                     viewModel.leaveRoom()
-                                    onNavigateBack()
+                                    onGameFinished()
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -492,7 +496,7 @@ fun GameRoomScreen(
                             Button(
                                 onClick = {
                                     viewModel.leaveRoom()
-                                    onNavigateBack()
+                                    onGameFinished()
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -716,27 +720,17 @@ private fun HostControls(
                         Text("번호 배정", fontSize = 14.sp, color = Color.White)
                     }
                 }
-
-                Button(
-                    onClick = onSendInstruction,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFF59E0B)
-                    ),
-                    shape = RoundedCornerShape(20.dp)
-                ) {
-                    Text("게임 설명", fontSize = 14.sp, color = Color.White)
-                }
-
-                Button(
-                    onClick = onStartGame,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF8B5FBF)
-                    ),
-                    shape = RoundedCornerShape(20.dp)
-                ) {
-                    Text("게임 시작", fontSize = 14.sp, color = Color.White)
+                if (!hasUnassignedNumbers) {
+                    Button(
+                        onClick = onStartGame,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF8B5FBF)
+                        ),
+                        shape = RoundedCornerShape(20.dp)
+                    ) {
+                        Text("게임 시작", fontSize = 14.sp, color = Color.White)
+                    }
                 }
             }
         }
