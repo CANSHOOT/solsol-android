@@ -1,5 +1,6 @@
 package com.heyyoung.solsol.feature.home
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.heyyoung.solsol.core.network.BackendAuthRepository
@@ -15,6 +16,10 @@ class HomeViewModel @Inject constructor(
     private val repo: BackendAuthRepository
 ) : ViewModel() {
 
+    companion object {
+        private const val TAG = "HomeViewModel"
+    }
+
     private val _studentName = MutableStateFlow<String?>(null)
     val studentName: StateFlow<String?> = _studentName
 
@@ -23,6 +28,7 @@ class HomeViewModel @Inject constructor(
 
     val isLoading = MutableStateFlow(false)
     val error = MutableStateFlow<String?>(null)
+
 
     fun loadProfile() {
         viewModelScope.launch {
@@ -38,6 +44,25 @@ class HomeViewModel @Inject constructor(
                 }
             }
             isLoading.value = false
+        }
+    }
+
+    /**
+     * 간단한 로그아웃 처리
+     */
+    fun logout(onLogoutComplete: () -> Unit) {
+        Log.d(TAG, "로그아웃 시작")
+
+        viewModelScope.launch {
+            repo.logout() // 토큰 삭제
+            
+            // 로컬 상태 초기화
+            _studentName.value = null
+            _studentNumber.value = null
+            error.value = null
+            
+            Log.i(TAG, "로그아웃 완료")
+            onLogoutComplete() // 로그인 화면으로 이동
         }
     }
 }

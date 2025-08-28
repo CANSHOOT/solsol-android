@@ -79,6 +79,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun SolsolApp() {
     val TAG = "SolsolApp"
+    
 
     // 현재 어떤 화면을 보여줄지 결정하는 상태
     var currentScreen by remember { mutableStateOf("login") }
@@ -98,6 +99,7 @@ fun SolsolApp() {
     var lastOcrText by remember { mutableStateOf<String?>(null) }
     var lastReceiptFields by remember { mutableStateOf<ReceiptFields?>(null) }
     val viewModel: StudentCouncilViewModel = hiltViewModel()
+
 
     // 앱 상태 로깅
     LaunchedEffect(currentScreen) {

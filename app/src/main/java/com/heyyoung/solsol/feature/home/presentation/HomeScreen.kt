@@ -57,7 +57,7 @@ fun HomeScreen(
     // 피그마 색상 적용한 홈 화면 레이아웃
     HomeScreenLayout(
         modifier = modifier,
-        onLogout = onLogout
+        onLogout = { viewModel.logout(onLogout) }
     ) {
         // 학생 정보 카드
         StudentCard(
