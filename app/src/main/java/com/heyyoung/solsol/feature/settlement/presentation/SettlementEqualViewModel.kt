@@ -29,7 +29,6 @@ class SettlementEqualViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(SettlementEqualUiState())
     val uiState: StateFlow<SettlementEqualUiState> = _uiState.asStateFlow()
 
-    @RequiresApi(Build.VERSION_CODES.O)
     fun createSettlement(
         organizerId: String,
         groupName: String,
@@ -108,7 +107,8 @@ class SettlementEqualViewModel @Inject constructor(
                 
                 val joinResult = joinSettlementUseCase(
                     groupId = groupId,
-                    userId = participant.id // String으로 바로 전달
+                    userId = participant.id, // String으로 바로 전달
+                    amount = participant.amount
                 )
                 
                 joinResult.fold(

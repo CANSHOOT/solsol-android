@@ -1,5 +1,7 @@
 package com.heyyoung.solsol.feature.settlement.domain.model
 
+import java.math.BigDecimal
+
 /**
  * UI에서 사용하던 Person 모델과 도메인 User 모델 간의 변환
  */
@@ -10,7 +12,8 @@ data class Person(
     val name: String,
     val department: String,
     val studentId: String,
-    val isMe: Boolean = false
+    val isMe: Boolean = false,
+    val amount: BigDecimal = BigDecimal.ZERO // 기본값 0
 )
 
 // User -> Person 변환

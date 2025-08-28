@@ -3,6 +3,7 @@ package com.heyyoung.solsol.feature.settlement.domain.usecase
 import com.heyyoung.solsol.feature.settlement.domain.model.SettlementParticipant
 import com.heyyoung.solsol.feature.settlement.domain.model.SettlementStatus
 import com.heyyoung.solsol.feature.settlement.domain.repository.SettlementRepository
+import java.math.BigDecimal
 import javax.inject.Inject
 
 class JoinSettlementUseCase @Inject constructor(
@@ -10,7 +11,8 @@ class JoinSettlementUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(
         groupId: Long,
-        userId: String
+        userId: String,
+        amount: BigDecimal
     ): Result<SettlementParticipant> {
         // 정산 그룹 존재 여부 및 상태 확인
         val settlementResult = settlementRepository.getSettlementById(groupId)
@@ -34,6 +36,6 @@ class JoinSettlementUseCase @Inject constructor(
             return Result.failure(IllegalArgumentException("이미 참여한 정산입니다"))
         }
         
-        return settlementRepository.joinSettlement(groupId, userId)
+        return settlementRepository.joinSettlement(groupId, userId, amount);
     }
 }

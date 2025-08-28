@@ -1,6 +1,8 @@
 package com.heyyoung.solsol.feature.settlement.presentation
 
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import com.heyyoung.solsol.feature.settlement.domain.model.Person
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.math.BigDecimal
 
 private const val TAG = "SettlementEqualScreen"
 
@@ -209,12 +212,13 @@ fun SettlementEqualScreen(
                     
                     val organizerId = participants.find { it.isMe }?.id ?: "me"
                     Log.d(TAG, "🚀 정산 API 요청 시작: $groupNameText, ${totalAmount}원, ${participants.size}명")
-                    
+                    val updatedParticipants = participants.map { it.copy(amount = BigDecimal.valueOf(perPersonAmount.toLong())) }
+
                     viewModel.createSettlement(
                         organizerId = organizerId,
                         groupName = groupNameText.trim(),
                         totalAmount = totalAmount.toDouble(),
-                        participants = participants
+                        participants = updatedParticipants
                     )
                 },
                 enabled = totalAmount > 0 && participants.isNotEmpty() && groupNameText.isNotBlank() && !uiState.isCreating,

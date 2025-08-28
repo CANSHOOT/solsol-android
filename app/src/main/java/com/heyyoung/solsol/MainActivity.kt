@@ -1,11 +1,13 @@
 package com.heyyoung.solsol
 
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -19,7 +21,9 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.heyyoung.solsol.feature.auth.presentation.LoginScreen
 import com.heyyoung.solsol.feature.home.presentation.HomeScreen
+import com.heyyoung.solsol.feature.settlement.presentation.MoneyTransferScreen
 import com.heyyoung.solsol.feature.settlement.presentation.SettlementEqualScreen
+import com.heyyoung.solsol.feature.settlement.presentation.SettlementManualScreen
 import com.heyyoung.solsol.feature.studentcouncil.StudentCouncilViewModel
 import com.heyyoung.solsol.feature.studentcouncil.presentation.OcrCameraScreen
 import com.heyyoung.solsol.feature.studentcouncil.presentation.ReceiptFields
@@ -79,7 +83,6 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun SolsolApp() {
     val TAG = "SolsolApp"
-    
 
     // 현재 어떤 화면을 보여줄지 결정하는 상태
     var currentScreen by remember { mutableStateOf("login") }
@@ -146,6 +149,14 @@ fun SolsolApp() {
                 onNavigateToCouncil = {
                     Log.d(TAG, "학생회 화면으로 이동")
                     currentScreen = "council"
+                },
+                onNavigateToMoneyTransfer = {  // 이 부분 추가
+                    Log.d(TAG, "송금하기 화면으로 이동")
+                    currentScreen = "money_transfer"
+                },
+                onNavigateToCoupon = {
+                    Log.d(TAG, "쿠폰 화면으로 이동")
+                    currentScreen = "coupon"
                 }
             )
         }
@@ -268,28 +279,22 @@ fun SolsolApp() {
         }
 
         "settlement_manual" -> {
-            // 직접 입력하기 화면
-            com.heyyoung.solsol.feature.settlement.presentation.SettlementManualScreen(
+            SettlementManualScreen(
                 participants = settlementParticipants,
                 onNavigateBack = {
                     Log.d(TAG, "직접 입력하기에서 참여자 선택으로 돌아가기")
                     currentScreen = "settlement_participants"
                 },
-                onRequestSettlement = { totalAmount, settlementMap ->
-                    Log.d(TAG, "직접 입력하기 정산 요청 완료!")
-                    Log.d(TAG, "총액: ${totalAmount}원, 입력된 사람: ${settlementMap.size}명")
-                    settlementMap.forEach { (person, amount) ->
-                        Log.d(TAG, "  ${person.name}: ${amount}원")
-                    }
-                    // 해커톤용: 정산 완료 후 홈으로 이동
-                    currentScreen = "home"
-                    // 정산 상태 초기화
-                    selectedSettlementMethod = null
-                    settlementParticipants = emptyList()
+                onNavigateToComplete = { settlementGroup, participants, totalAmount ->
+                    Log.d(TAG, "✅ 수동 정산 성공 - 완료 화면으로 이동")
+                    completedSettlement = settlementGroup
+                    settlementParticipants = participants
+                    settlementTotalAmount = totalAmount
+                    settlementAmountPerPerson = 0 // 수동 입력이라 0으로 처리
+                    currentScreen = "settlement_complete"
                 }
             )
         }
-
 
         "settlement_complete" -> {
             // 정산 완료 화면
@@ -346,6 +351,14 @@ fun SolsolApp() {
             StudentCouncilFeeStatusScreen(
                 onNavigateBack = { currentScreen = "council" },
                 feeStatusList = viewModel.feeStatus?.let { listOf(it) } ?: emptyList()
+            )
+        }
+
+        "money_transfer" -> {
+            MoneyTransferScreen(
+                onNavigateBack = {
+                    currentScreen = "home"
+                }
             )
         }
 

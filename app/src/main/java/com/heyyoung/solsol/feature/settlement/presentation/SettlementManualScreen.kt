@@ -13,6 +13,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -22,6 +24,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.heyyoung.solsol.feature.settlement.domain.model.SettlementGroup
+import com.heyyoung.solsol.feature.settlement.presentation.SettlementEqualViewModel
+import java.math.BigDecimal
 
 private const val TAG = "SettlementManualScreen"
 
@@ -30,8 +35,16 @@ private const val TAG = "SettlementManualScreen"
 fun SettlementManualScreen(
     participants: List<Person>,
     onNavigateBack: () -> Unit = {},
-    onRequestSettlement: (Int, Map<Person, Int>) -> Unit = { _, _ -> }
+    onNavigateToComplete: (
+        settlementGroup: SettlementGroup,
+        participants: List<Person>,
+        totalAmount: Int
+    ) -> Unit = { _, _, _ -> },
+    viewModel: SettlementEqualViewModel = hiltViewModel() // ✅ Equal과 같은 VM 재사용
 ) {
+    // ViewModel 상태
+    val uiState by viewModel.uiState.collectAsState()
+
     // 각 참여자별 입력 금액 상태 관리
     var participantAmounts by remember {
         mutableStateOf(
@@ -39,13 +52,27 @@ fun SettlementManualScreen(
         )
     }
 
-    // 이합 계산
+    // 총액 계산
     val totalAmount = participantAmounts.values.sumOf { amountText ->
         amountText.toIntOrNull() ?: 0
     }
 
     Log.d(TAG, "직접 입력하기 화면 진입 - 참여자: ${participants.size}명")
     Log.d(TAG, "현재 입력 상태: $participantAmounts")
+
+    // ✅ 정산 완료되면 완료화면으로 이동
+    LaunchedEffect(uiState.isCompleted) {
+        if (uiState.isCompleted) {
+            uiState.createdSettlement?.let { settlement ->
+                viewModel.onSettlementCompleteNavigated()
+                onNavigateToComplete(
+                    settlement,
+                    participants,
+                    totalAmount
+                )
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -96,19 +123,17 @@ fun SettlementManualScreen(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(participants) { person ->
+                    items(participants.filter { !it.isMe }) { person ->   // 👈 '나' 제외
                         PersonAmountInputCard(
                             person = person,
                             amount = participantAmounts[person] ?: "",
                             onAmountChange = { newAmount ->
-                                // 숫자만 입력 허용
                                 val filteredAmount = newAmount.filter { it.isDigit() }
-                                if (filteredAmount.length <= 8) { // 최대 8자리까지만
+                                if (filteredAmount.length <= 8) {
                                     participantAmounts = participantAmounts.toMutableMap().apply {
                                         this[person] = filteredAmount
                                     }
                                     Log.d(TAG, "✅ ${person.name} 금액 입력: ${filteredAmount}원")
-                                    Log.d(TAG, "현재 전체 상태: $participantAmounts")
                                 }
                             }
                         )
@@ -118,25 +143,31 @@ fun SettlementManualScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 이합 표시
+            // 총합 표시
             TotalAmountDisplay(totalAmount = totalAmount)
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 정산 요청하기 버튼
+            // 정산 요청 버튼
             Button(
                 onClick = {
-                    val settlementMap = participantAmounts.mapValues { (_, amountText) ->
-                        amountText.toIntOrNull() ?: 0
-                    }.filterValues { it > 0 }
+                    val organizerId = participants.find { it.isMe }?.id ?: "me"
 
-                    Log.d(TAG, "정산 요청 - 이액: ${totalAmount}원")
-                    settlementMap.forEach { (person, amount) ->
-                        Log.d(TAG, "  ${person.name}: ${amount}원")
+                    // Person 리스트에 금액 반영
+                    val updatedParticipants = participants.map { person ->
+                        val inputAmount = participantAmounts[person]?.toIntOrNull() ?: 0
+                        person.copy(amount = BigDecimal.valueOf(inputAmount.toLong()))
                     }
-                    onRequestSettlement(totalAmount, settlementMap)
+
+                    Log.d(TAG, "🚀 수동 정산 API 요청 시작: 총액=${totalAmount}원")
+                    viewModel.createSettlement(
+                        organizerId = organizerId,
+                        groupName = "직접 입력 정산",
+                        totalAmount = totalAmount.toDouble(),
+                        participants = updatedParticipants
+                    )
                 },
-                enabled = totalAmount > 0 && participantAmounts.values.any { it.isNotBlank() },
+                enabled = totalAmount > 0 && !uiState.isCreating,
                 modifier = Modifier
                     .shadow(
                         elevation = 8.dp,
@@ -151,12 +182,20 @@ fun SettlementManualScreen(
                 ),
                 shape = RoundedCornerShape(28.dp)
             ) {
-                Text(
-                    text = "정산 요청하기",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+                if (uiState.isCreating) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = "정산 요청하기",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(40.dp))
@@ -170,15 +209,9 @@ private fun PersonAmountInputCard(
     amount: String,
     onAmountChange: (String) -> Unit
 ) {
-    Log.d(TAG, "🎨 카드 렌더링: ${person.name}, 현재값: '$amount'")
-
     Card(
         modifier = Modifier
-            .shadow(
-                elevation = 4.dp,
-                spotColor = Color(0x1A000000),
-                ambientColor = Color(0x1A000000)
-            )
+            .shadow(4.dp)
             .border(
                 width = 2.dp,
                 color = if (amount.isNotEmpty()) Color(0xFF8B5FBF) else Color(0xCCE2E8F0),
@@ -197,7 +230,6 @@ private fun PersonAmountInputCard(
                 .padding(horizontal = 20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 이름 표시
             Text(
                 text = if (person.isMe) "${person.name} (나)" else person.name,
                 fontSize = 16.sp,
@@ -208,40 +240,20 @@ private fun PersonAmountInputCard(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // ₩ 아이콘
-            Text(
-                text = "₩",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF999999)
-            )
+            Text("₩", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF999999))
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // 🔥 수정된 금액 입력 필드 - 문제 해결!
             OutlinedTextField(
-                value = formatDisplayAmount(amount), // 🎯 새로운 함수 사용
+                value = formatDisplayAmount(amount),
                 onValueChange = { newValue ->
-                    Log.d(TAG, "📝 입력 감지: '$newValue' (${person.name})")
-
-                    // 콤마와 공백 제거하고 숫자만 추출
-                    val numberOnly = newValue.replace(",", "").replace(" ", "").filter { it.isDigit() }
-
-                    Log.d(TAG, "🔢 필터된 숫자: '$numberOnly'")
+                    val numberOnly = newValue.replace(",", "").filter { it.isDigit() }
                     onAmountChange(numberOnly)
                 },
-                placeholder = {
-                    Text(
-                        "0",
-                        color = Color(0xFFCCCCCC),
-                        textAlign = TextAlign.End
-                    )
-                },
+                placeholder = { Text("0", color = Color(0xFFCCCCCC), textAlign = TextAlign.End) },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedTextColor = Color(0xFF1C1C1E),
-                    unfocusedTextColor = Color(0xFF1C1C1E)
+                    unfocusedBorderColor = Color.Transparent
                 ),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 textStyle = androidx.compose.ui.text.TextStyle(
@@ -255,48 +267,24 @@ private fun PersonAmountInputCard(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // "원" 텍스트
-            Text(
-                text = "원",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF999999)
-            )
+            Text("원", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF999999))
         }
     }
 }
 
-// 🎯 새로운 함수 - 화면 표시용 금액 포맷팅
+// 금액 포맷팅
 private fun formatDisplayAmount(amount: String): String {
-    return when {
-        amount.isEmpty() -> ""
-        amount.length <= 3 -> amount
-        else -> {
-            try {
-                val number = amount.toLongOrNull() ?: 0L
-                String.format("%,d", number)
-            } catch (e: Exception) {
-                Log.w(TAG, "포맷팅 오류: $amount", e)
-                amount // 오류 시 원본 반환
-            }
-        }
+    return if (amount.isEmpty()) "" else {
+        val number = amount.toLongOrNull() ?: 0L
+        String.format("%,d", number)
     }
 }
 
 @Composable
 private fun TotalAmountDisplay(totalAmount: Int) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // 구분선
-        Divider(
-            color = Color(0xFFE0E0E0),
-            thickness = 1.dp,
-            modifier = Modifier.width(342.dp)
-        )
-
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Divider(color = Color(0xFFE0E0E0), thickness = 1.dp, modifier = Modifier.width(342.dp))
         Spacer(modifier = Modifier.height(16.dp))
-
         Text(
             text = "총 입력 금액: ${String.format("%,d", totalAmount)}원",
             fontSize = 18.sp,

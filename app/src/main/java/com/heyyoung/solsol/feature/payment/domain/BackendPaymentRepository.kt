@@ -28,7 +28,7 @@ class BackendPaymentRepository @Inject constructor(
      *
      * 1. QR 데이터를 백엔드에 전송
      * 2. 상품 정보, 가격, 할인율 등 조회
-     * 3. 결제 정보 반환
+     * 3. 결제 정보 + paymentId 반환
      */
     suspend fun getPaymentPreview(qrData: String): BackendApiResult<PaymentPreviewResponse> {
         Log.d(TAG, "결제 정보 조회 시작")
@@ -45,13 +45,17 @@ class BackendPaymentRepository @Inject constructor(
 
             Log.d(TAG, "토큰 확인: Bearer $accessToken")
 
+            // QR 데이터에서 tempId 추출
+            val tempId = extractTempIdFromQrData(qrData)
+            
             // API 호출
-            val response = backendApiService.getPaymentPreview("1", "Bearer $accessToken")
+            val response = backendApiService.getPaymentPreview(tempId, "Bearer $accessToken")
 
             if (response.isSuccessful && response.body() != null) {
                 val paymentInfo = response.body()!!
                 Log.i(TAG, "결제 정보 조회 성공: ${paymentInfo.orderItems.size}개 상품")
                 Log.d(TAG, "할인율: ${paymentInfo.discountRate}%, 학과: ${paymentInfo.department}")
+                Log.d(TAG, "PaymentId: ${paymentInfo.paymentId}")
                 
                 BackendApiResult.Success(paymentInfo)
             } else {
@@ -69,13 +73,13 @@ class BackendPaymentRepository @Inject constructor(
     /**
      * 실제 결제 처리 (서버에서 쿠폰 당첨 결과 응답)
      *
-     * 1. QR 데이터에서 tempId 추출
-     * 2. 결제 금액을 서버에 전송
+     * 1. 미리보기에서 받은 paymentId 사용
+     * 2. 결제 금액과 쿠폰ID를 서버에 전송
      * 3. 쿠폰 당첨 결과 함께 응답
      */
-    suspend fun processPayment(qrData: String, finalAmount: Int): BackendApiResult<CouponResult> {
+    suspend fun processPayment(paymentId: Long, finalAmount: Int, discountCouponId: Long?): BackendApiResult<CouponResult> {
         Log.d(TAG, "결제 처리 시작")
-        Log.d(TAG, "QR 데이터: $qrData, 결제 금액: ${finalAmount}원")
+        Log.d(TAG, "PaymentId: $paymentId, 결제 금액: ${finalAmount}원, 쿠폰ID: $discountCouponId")
 
         return try {
             // 토큰 가져오기
@@ -86,19 +90,19 @@ class BackendPaymentRepository @Inject constructor(
                 return BackendApiResult.Error("로그인이 필요합니다")
             }
 
-            // QR 데이터에서 tempId 추출 (임시로 간단한 파싱)
-            val tempId = extractTempIdFromQrData(qrData)
-            
             // 결제 처리 API 호출
             val response = backendApiService.processPayment(
-                tempId = tempId,
-                request = CreatePaymentRequest(amount = java.math.BigDecimal(finalAmount)),
+                paymentId = paymentId,
+                request = CreatePaymentRequest(
+                    amount = java.math.BigDecimal(finalAmount),
+                    discountCouponId = discountCouponId ?: 0L  // 쿠폰 사용하지 않을 때는 0 전송
+                ),
                 authorization = "Bearer $accessToken"
             )
 
             if (response.isSuccessful && response.body() != null) {
                 val paymentResult = response.body()!!
-                Log.i(TAG, "결제 처리 성공: ${paymentResult.paymentId}")
+                Log.i(TAG, "결제 처리 성공")
                 Log.d(TAG, "쿠폰 당첨 결과 - winning: ${paymentResult.winning}, amount: ${paymentResult.amount}원")
                 
                 // 서버 응답을 CouponResult로 변환
@@ -132,6 +136,43 @@ class BackendPaymentRepository @Inject constructor(
         } catch (e: Exception) {
             Log.w(TAG, "QR 데이터에서 tempId 추출 실패: $qrData, 기본값 1 사용")
             1L
+        }
+    }
+
+    /**
+     * 쿠폰 목록 조회
+     *
+     * 사용자가 보유한 쿠폰 목록을 조회합니다.
+     */
+    suspend fun getCoupons(): BackendApiResult<List<CouponItem>> {
+        Log.d(TAG, "쿠폰 목록 조회 시작")
+
+        return try {
+            // 토큰 가져오기
+            val accessToken = tokenManager.getAccessToken()?.first()
+            
+            if (accessToken.isNullOrEmpty()) {
+                Log.e(TAG, "액세스 토큰이 없습니다")
+                return BackendApiResult.Error("로그인이 필요합니다")
+            }
+
+            // 쿠폰 목록 조회 API 호출
+            val response = backendApiService.getCoupons("Bearer $accessToken")
+
+            if (response.isSuccessful && response.body() != null) {
+                val couponsResponse = response.body()!!
+                Log.i(TAG, "쿠폰 목록 조회 성공: ${couponsResponse.coupons.size}개 쿠폰")
+                
+                BackendApiResult.Success(couponsResponse.coupons)
+            } else {
+                val errorMessage = parseErrorMessage(response.code(), response.message())
+                Log.e(TAG, "쿠폰 목록 조회 실패: $errorMessage")
+                BackendApiResult.Error(errorMessage)
+            }
+
+        } catch (e: Exception) {
+            Log.e(TAG, "쿠폰 목록 조회 중 예외: ${e.message}", e)
+            BackendApiResult.Error("네트워크 연결을 확인해주세요")
         }
     }
 

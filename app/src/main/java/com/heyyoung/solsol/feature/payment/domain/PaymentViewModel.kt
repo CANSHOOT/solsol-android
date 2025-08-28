@@ -93,10 +93,11 @@ class PaymentViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 // 실제 결제 API 호출 (서버에서 쿠폰 당첨 결과 응답)
-                val finalAmount =
-                    currentPaymentInfo.total.toInt() - currentPaymentInfo.discount.toInt()
+                val finalAmount = calculateFinalAmount()
+                val paymentId = currentPaymentInfo.paymentId
+                val discountCouponId = uiState.selectedCoupon?.discountCouponId
 
-                when (val result = repository.processPayment(currentQrData, finalAmount)) {
+                when (val result = repository.processPayment(paymentId, finalAmount, discountCouponId)) {
                     is BackendApiResult.Success -> {
                         val couponResult = result.data
 
@@ -106,10 +107,26 @@ class PaymentViewModel @Inject constructor(
                             "서버 쿠폰 당첨 결과 - 당첨: ${couponResult.winning}, 금액: ${couponResult.amount}원"
                         )
 
+                        // 결제 완료 정보 생성
+                        val paymentResult = PaymentResult(
+                            originalAmount = currentPaymentInfo.total.toInt(),
+                            discountAmount = currentPaymentInfo.discount.toInt(),
+                            couponDiscount = uiState.selectedCoupon?.amount ?: 0,
+                            finalAmount = finalAmount,
+                            usedCoupon = uiState.selectedCoupon,
+                            couponResult = couponResult
+                        )
+
+                        Log.d(TAG, "결제 결과 - 원금: ${paymentResult.originalAmount}원, " +
+                                  "제휴할인: ${paymentResult.discountAmount}원, " +
+                                  "쿠폰할인: ${paymentResult.couponDiscount}원, " +
+                                  "최종금액: ${paymentResult.finalAmount}원")
+
                         uiState = uiState.copy(
                             isProcessingPayment = false,
                             isPaymentComplete = true,
                             couponResult = couponResult,
+                            paymentResult = paymentResult,
                             errorMessage = null
                         )
                     }
@@ -154,6 +171,24 @@ class PaymentViewModel @Inject constructor(
      */
     fun isPaymentComplete(): Boolean = uiState.isPaymentComplete
 
+    /**
+     * 쿠폰 선택
+     */
+    fun selectCoupon(coupon: DiscountCoupon?) {
+        Log.d(TAG, "쿠폰 선택: ${coupon?.let { "${it.amount}원 쿠폰 (ID: ${it.discountCouponId})" } ?: "쿠폰 미선택"}")
+        uiState = uiState.copy(selectedCoupon = coupon)
+    }
+
+    /**
+     * 최종 결제 금액 계산 (쿠폰 적용)
+     */
+    fun calculateFinalAmount(): Int {
+        val paymentInfo = uiState.paymentInfo ?: return 0
+        val baseAmount = paymentInfo.total.toInt() - paymentInfo.discount.toInt() // 기본 할인 적용된 금액
+        val couponDiscount = uiState.selectedCoupon?.amount ?: 0
+        return maxOf(0, baseAmount - couponDiscount) // 음수 방지
+    }
+
 
 }
 
@@ -165,7 +200,9 @@ data class PaymentUiState(
     val isProcessingPayment: Boolean = false,                // 결제 처리 중
     val isPaymentComplete: Boolean = false,                  // 결제 완료
     val paymentInfo: PaymentPreviewResponse? = null,         // 결제 정보
+    val selectedCoupon: DiscountCoupon? = null,              // 선택된 쿠폰
     val couponResult: CouponResult? = null,                  // 쿠폰 당첨 결과
+    val paymentResult: PaymentResult? = null,                // 결제 완료 결과
     val errorMessage: String? = null                         // 에러 메시지
 )
 
@@ -175,4 +212,16 @@ data class PaymentUiState(
 data class CouponResult(
     val winning: Boolean,                                    // 쿠폰 당첨 여부
     val amount: Int                                          // 당첨 금액 (0이면 미당첨)
+)
+
+/**
+ * 결제 완료 결과 (쿠폰 할인 포함)
+ */
+data class PaymentResult(
+    val originalAmount: Int,          // 원래 금액
+    val discountAmount: Int,          // 제휴 할인
+    val couponDiscount: Int,          // 쿠폰 할인
+    val finalAmount: Int,             // 최종 결제 금액
+    val usedCoupon: DiscountCoupon?,  // 사용된 쿠폰
+    val couponResult: CouponResult    // 결제 후 받은 쿠폰
 )
