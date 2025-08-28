@@ -352,6 +352,14 @@ fun SolsolApp() {
             )
         }
 
+        "money_transfer" -> {
+            MoneyTransferScreen(
+                onNavigateBack = {
+                    currentScreen = "home"
+                }
+            )
+        }
+
         else -> {
             // 예상치 못한 화면 상태
             Log.e(TAG, "❌ 알 수 없는 화면 상태: $currentScreen")

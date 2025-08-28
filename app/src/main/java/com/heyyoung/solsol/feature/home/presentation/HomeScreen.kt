@@ -96,6 +96,7 @@ fun HomeScreen(
             },
             onMoneyTransferClick = {
                 Log.d(TAG, "송금하기 메뉴 클릭")
+                onNavigateToMoneyTransfer()
             },
             onStudentCouncilClick = {
                 Log.d(TAG, "학생회 메뉴 클릭")

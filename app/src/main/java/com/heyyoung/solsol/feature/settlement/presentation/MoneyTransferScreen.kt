@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 
 private const val TAG = "MoneyTransferScreen"
 enum class TransferSide { SENT, RECEIVED }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MoneyTransferScreen(
@@ -31,6 +32,9 @@ fun MoneyTransferScreen(
     // 데모 데이터
     val receivedRequests = remember { getReceivedRequests() }
     val sentRequests = remember { getSentRequests() }
+
+    // ① 탭 상태 (보낸요청 / 받은요청)
+    var selectedSide by remember { mutableStateOf(TransferSide.SENT) }
 
     Log.d(TAG, "송금하기 화면 진입")
 
@@ -57,15 +61,34 @@ fun MoneyTransferScreen(
             )
         )
 
+        // ② 탭 UI (앱바 바로 아래에 추가)
+        val tabs = listOf("보낸요청", "받은요청")
+        val selectedIndex = if (selectedSide == TransferSide.SENT) 0 else 1
+        TabRow(
+            selectedTabIndex = selectedIndex,
+            containerColor = Color.White
+        ) {
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedIndex == index,
+                    onClick = {
+                        selectedSide = if (index == 0) TransferSide.SENT else TransferSide.RECEIVED
+                    },
+                    text = { Text(title) }
+                )
+            }
+        }
+
+        // 선택된 탭의 리스트만 보여주기
+        val currentList = if (selectedSide == TransferSide.SENT) sentRequests else receivedRequests
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            item {
-                Spacer(modifier = Modifier.height(12.dp))
-            }
+            item { Spacer(modifier = Modifier.height(12.dp)) }
 
             // 페이지 제목
             item {
@@ -77,51 +100,31 @@ fun MoneyTransferScreen(
                 )
             }
 
-            // 받은 요청 섹션
-            if (receivedRequests.isNotEmpty()) {
-                item {
-                    Text(
-                        text = "받은 요청 (내가 보내야 할 돈)",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF666666),
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
-
-                items(receivedRequests) { request ->
-                    MoneyTransferCard(
-                        name = request.name,
-                        amount = request.amount,
-                        status = request.status
-                    )
-                }
-            }
-
-            // 보낸 요청 섹션
-            if (sentRequests.isNotEmpty()) {
-                item {
-                    Text(
-                        text = "보낸 요청 (내가 받아야 할 돈)",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF666666),
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
-
-                items(sentRequests) { request ->
-                    MoneyTransferCard(
-                        name = request.name,
-                        amount = request.amount,
-                        status = request.status
-                    )
-                }
-            }
-
+            // 섹션 타이틀 (선택된 탭에 맞춰 표시)
             item {
-                Spacer(modifier = Modifier.height(20.dp))
+                val title = if (selectedSide == TransferSide.SENT)
+                    "보낸 요청 (내가 받아야 할 돈)"
+                else
+                    "받은 요청 (내가 보내야 할 돈)"
+                Text(
+                    text = title,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF666666),
+                    modifier = Modifier.padding(top = 8.dp)
+                )
             }
+
+            // 리스트
+            items(currentList) { request ->
+                MoneyTransferCard(
+                    name = request.name,
+                    amount = request.amount,
+                    status = request.status
+                )
+            }
+
+            item { Spacer(modifier = Modifier.height(20.dp)) }
         }
     }
 }
@@ -156,9 +159,7 @@ private fun MoneyTransferCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 // 프로필 이미지
                 Box(
                     modifier = Modifier
@@ -212,9 +213,7 @@ private fun StatusButton(status: MoneyTransferStatus) {
     }
 
     Button(
-        onClick = {
-            Log.d(TAG, "상태 버튼 클릭: $status")
-        },
+        onClick = { Log.d(TAG, "상태 버튼 클릭: $status") },
         modifier = Modifier
             .height(28.dp)
             .width(60.dp),
@@ -222,28 +221,23 @@ private fun StatusButton(status: MoneyTransferStatus) {
         shape = RoundedCornerShape(14.dp),
         contentPadding = PaddingValues(4.dp)
     ) {
-        Text(
-            text = text,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Medium,
-            color = textColor
-        )
+        Text(text = text, fontSize = 11.sp, fontWeight = FontWeight.Medium, color = textColor)
     }
 }
 
-// 데모 데이터
+// 데모 데이터 (side 값을 올바르게 지정)
 private fun getReceivedRequests(): List<MoneyTransferItem> = listOf(
     MoneyTransferItem(
         name = "김신한",
         amount = 29002L,
         status = MoneyTransferStatus.PENDING,
-        TransferSide.SENT
+        side = TransferSide.RECEIVED
     ),
     MoneyTransferItem(
         name = "이지헌",
         amount = 8500L,
         status = MoneyTransferStatus.COMPLETED,
-        TransferSide.RECEIVED
+        side = TransferSide.RECEIVED
     )
 )
 
@@ -252,13 +246,13 @@ private fun getSentRequests(): List<MoneyTransferItem> = listOf(
         name = "박민수",
         amount = 15000L,
         status = MoneyTransferStatus.PENDING,
-        TransferSide.SENT
+        side = TransferSide.SENT
     ),
     MoneyTransferItem(
         name = "최영희",
         amount = 12500L,
         status = MoneyTransferStatus.COMPLETED,
-        TransferSide.RECEIVED
+        side = TransferSide.SENT
     )
 )
 
