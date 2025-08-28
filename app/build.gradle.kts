@@ -152,6 +152,7 @@ dependencies {
     // FCM
     implementation(platform("com.google.firebase:firebase-bom:34.1.0"))
     implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-messaging")
 
     // Testing
     testImplementation(libs.junit)

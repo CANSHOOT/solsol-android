@@ -6,17 +6,24 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.messaging.FirebaseMessaging
 import com.heyyoung.solsol.core.auth.UserInfo
 import com.heyyoung.solsol.core.network.BackendAuthRepository
 import com.heyyoung.solsol.core.network.BackendApiResult
+import com.heyyoung.solsol.core.network.BackendApiService
 import com.heyyoung.solsol.core.network.SignupData
+import com.heyyoung.solsol.core.network.UpdateFcmTokenRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import okhttp3.ResponseBody
+import retrofit2.Response
 import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val repository: BackendAuthRepository
+    private val repository: BackendAuthRepository,
+    private val backendApiService: BackendApiService
 ) : ViewModel() {
 
     companion object {
@@ -48,6 +55,7 @@ class LoginViewModel @Inject constructor(
                         errorMessage = null,
                         userInfo = result.data
                     )
+                    sendFcmTokenToServer()
                     onResult(true)
                 }
                 is BackendApiResult.Error -> {
@@ -134,6 +142,30 @@ class LoginViewModel @Inject constructor(
 
         return ValidationResult(true, null)
     }
+
+    private fun sendFcmTokenToServer() {
+        viewModelScope.launch {
+            try {
+                // 1) FCM 토큰을 코루틴으로 안전하게 가져오기
+                val token = FirebaseMessaging.getInstance().token.await()
+                Log.d(TAG, "FCM 토큰 획득: $token")
+
+                // 2) 서버 전송 (ResponseBody로 받아서 파싱 에러 방지)
+                val res: Response<ResponseBody> =
+                    backendApiService.updateFcmToken(UpdateFcmTokenRequest(token))
+
+                if (res.isSuccessful) {
+                    // 본문은 문자열이라 굳이 안 읽어도 됨 (읽고 싶으면 res.body()?.string())
+                    Log.d(TAG, "서버에 FCM 토큰 전송 성공")
+                } else {
+                    Log.e(TAG, "서버 FCM 토큰 전송 실패: code=${res.code()} body=${res.errorBody()?.string()}")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "FCM 토큰 획득/전송 실패: ${e.message}")
+            }
+        }
+    }
+
 }
 
 data class LoginUiState(
