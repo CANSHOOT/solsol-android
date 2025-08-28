@@ -38,9 +38,25 @@ interface BackendApiService {
         @Body request: RefreshTokenRequest
     ): Response<AuthResponse>
 
+    /**
+     * FCM 토큰 업데이트
+     * POST /users/fcm-token
+     */
+    @POST("users/fcm-token")
+    suspend fun updateFcmToken(
+        @Body request: UpdateFcmTokenRequest
+    ): Response<okhttp3.ResponseBody>
+
     @GET("users/{userId}")
     suspend fun getUser(@Path("userId") userId: String): Response<UserDto>
 
+
+    // 정산 초대 푸시 전송
+    @POST("dutchpay/{groupId}/invite")
+    suspend fun notifyDutchPayInvite(
+        @Path("groupId") groupId: Long,
+        @Body request: DutchPayInviteRequest
+    ): Response<okhttp3.ResponseBody>
 
     // ================= 학생회/정산 =======================
 
@@ -82,6 +98,10 @@ interface BackendApiService {
 }
 
 // ========== Request 데이터 클래스들 ==========
+
+data class UpdateFcmTokenRequest(
+    val fcmToken: String
+)
 
 /**
  * 회원가입 요청
@@ -242,4 +262,13 @@ data class UserDto(
     val accountNo: String,
     val accountBalance: Long,
     val councilOfficer: Boolean
+)
+
+
+data class DutchPayInviteRequest(
+    val recipientUserIds: List<String>, // 초대 대상자들(이메일)
+    val groupName: String,              // 정산 제목
+    val amountPerPerson: Int,           // 1인 금액 (표시용)
+    val organizerId: String,            // 보낸 사람 ID(이메일)
+    val organizerName: String           // 보낸 사람 이름
 )

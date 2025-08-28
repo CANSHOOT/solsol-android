@@ -1,5 +1,7 @@
 package com.heyyoung.solsol
 
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -19,8 +21,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.google.firebase.messaging.FirebaseMessaging
 import com.heyyoung.solsol.feature.auth.presentation.LoginScreen
 import com.heyyoung.solsol.feature.home.presentation.HomeScreen
+import com.heyyoung.solsol.feature.remittance.presentation.RemittanceScreen
 import com.heyyoung.solsol.feature.settlement.presentation.MoneyTransferScreen
 import com.heyyoung.solsol.feature.settlement.presentation.SettlementEqualScreen
 import com.heyyoung.solsol.feature.settlement.presentation.SettlementManualScreen
@@ -38,9 +42,32 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     private val TAG = "MainActivity"
+    private var startDestination by mutableStateOf("login")
+    private var initialPayAmount by mutableStateOf<String?>(null)
+    private var initialPayeeName by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        handleNotificationIntent(intent)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1001)
+            }
+        }
+
+        // FCM 토큰 테스트
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                Log.w("FCM", "토큰 가져오기 실패", task.exception)
+                return@addOnCompleteListener
+            }
+
+            val token = task.result
+            Log.d("FCM", "FCM 토큰: $token")
+        }
         enableEdgeToEdge()
 
         Log.i(TAG, "쏠쏠해영 앱 시작")
@@ -52,7 +79,11 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    SolsolApp()
+                    SolsolApp(
+                        initialScreen = startDestination,
+                        payeeName = initialPayeeName,
+                        payAmount = initialPayAmount
+                    )
                 }
             }
         }
@@ -78,14 +109,38 @@ class MainActivity : ComponentActivity() {
         Log.i(TAG, "쏠쏠해영 앱 종료")
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleNotificationIntent(intent) 
+    }
+
+    private fun handleNotificationIntent(intent: Intent) {
+        when (intent.getStringExtra("notification_action")) {
+            "PAY_NOW" -> {
+                initialPayAmount = intent.getStringExtra("pay_amount")
+                initialPayeeName  = intent.getStringExtra("payee_name")
+                startDestination  = "remittance"
+                Log.d(TAG, "PAY_NOW 인텐트 수신: name=$initialPayeeName, amount=$initialPayAmount")
+            }
+            "OPEN_SETTLEMENT" -> {
+                startDestination = "settlement_method"
+            }
+        }
+    }
+
+
 }
 
 @Composable
-fun SolsolApp() {
+fun SolsolApp(initialScreen: String = "login",
+              payeeName: String? = null,
+              payAmount: String? = null) {
     val TAG = "SolsolApp"
 
     // 현재 어떤 화면을 보여줄지 결정하는 상태
-    var currentScreen by remember { mutableStateOf("login") }
+    //var currentScreen by remember { mutableStateOf("login") }
+    var currentScreen by remember(initialScreen) { mutableStateOf(initialScreen) }
     var currentUserEmail by remember { mutableStateOf("") }
     var scannedQRData by remember { mutableStateOf<String?>(null) }
 
@@ -356,11 +411,19 @@ fun SolsolApp() {
 
         "money_transfer" -> {
             MoneyTransferScreen(
-                onNavigateBack = {
-                    currentScreen = "home"
-                }
+                onNavigateBack = { currentScreen = "home" }
             )
         }
+
+        "remittance" -> {
+            RemittanceScreen(
+                receiverName = payeeName ?: "상대방",
+                amount = payAmount ?: "0",
+                onNavigateBack = { currentScreen = "home" },
+                onRemittanceComplete = { currentScreen = "home" }
+            )
+        }
+
 
         "game_home" -> {
             // 게임 홈 화면
