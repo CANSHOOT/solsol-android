@@ -126,7 +126,7 @@ fun RemittanceScreen(
 
             // 수수료 안내
             Text(
-                text = "해외 학록 및 송금 수수료 무료",
+                text = "헤이영 학생 간 송금 수수료 무료",
                 fontSize = 12.sp,
                 color = Color(0xFF666666),
                 textAlign = TextAlign.Center

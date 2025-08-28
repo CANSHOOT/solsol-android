@@ -35,7 +35,7 @@ fun SettlementMethodScreen(
 ) {
     // 선택된 방식 상태 관리 (초기값을 명시적으로 null로 설정)
     var selectedMethod by remember { mutableStateOf<String?>(null) }
-    
+
     // 권한 상태
     val showPermissionDialog by nearbyViewModel.showPermissionDialog.collectAsState()
     val permissionMessage by nearbyViewModel.permissionMessage.collectAsState()
@@ -48,56 +48,78 @@ fun SettlementMethodScreen(
             .fillMaxSize()
             .background(Color.White)
     ) {
-        // 상단 앱바
+        // 상단 앱바 - 더 깔끔하게
         CenterAlignedTopAppBar(
-            title = { Text("정산하기") },
+            title = {
+                Text(
+                    "정산하기",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF2D3748) // solsol_dark_text
+                )
+            },
             navigationIcon = {
                 IconButton(onClick = {
                     Log.d(TAG, "뒤로가기 클릭")
                     onNavigateBack()
                 }) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "뒤로")
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "뒤로",
+                        tint = Color(0xFF2D3748) // solsol_dark_text
+                    )
                 }
             },
             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                 containerColor = Color.White,
-                titleContentColor = Color(0xFF1C1C1E),
-                navigationIconContentColor = Color(0xFF1C1C1E)
+                titleContentColor = Color(0xFF2D3748), // solsol_dark_text
+                navigationIconContentColor = Color(0xFF2D3748) // solsol_dark_text
             )
         )
 
-        // 메인 컨텐츠
+        // 메인 컨텐츠 - 더 여유로운 레이아웃
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(60.dp))
+            Spacer(modifier = Modifier.height(40.dp)) // 60dp에서 40dp로 조정
 
-            // 안내 텍스트
-            Text(
-                text = "정산 방식을 선택해주세요",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1C1C1E)
-            )
+            // 안내 텍스트 - 더 트렌디하게
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "정산 방식을 선택해주세요",
+                    fontSize = 22.sp, // 20sp에서 22sp로 증가
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF2D3748) // solsol_dark_text
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "가장 편한 방법으로 정산해보세요",
+                    fontSize = 15.sp,
+                    color = Color(0xFF718096), // solsol_gray_text
+                    fontWeight = FontWeight.Medium
+                )
+            }
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(48.dp)) // 40dp에서 48dp로 증가
 
-            // 똑같이 나누기
+            // 똑같이 나누기 - 개선된 카드 디자인
             SettlementOptionCard(
                 title = "똑같이 나누기",
                 description = "총 금액을 인원수로 나누어",
                 isSelected = selectedMethod == "equal",
                 onClick = {
-                    Log.d(TAG, "🟦 똑같이 나누기 클릭됨")
+                    Log.d(TAG, "똑같이 나누기 클릭됨")
                     selectedMethod = "equal"
                     Log.d(TAG, "상태 변경됨: $selectedMethod")
                 }
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp)) // 16dp에서 20dp로 증가
 
             // 직접 입력하기 - 문제가 있던 부분
             SettlementOptionCard(
@@ -105,21 +127,21 @@ fun SettlementMethodScreen(
                 description = "사람별로 다른 금액 입력",
                 isSelected = selectedMethod == "manual",
                 onClick = {
-                    Log.d(TAG, "🟨 직접 입력하기 클릭됨")
+                    Log.d(TAG, "직접 입력하기 클릭됨")
                     selectedMethod = "manual"
                     Log.d(TAG, "상태 변경됨: $selectedMethod")
                 }
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp)) // 16dp에서 20dp로 증가
 
-            // 랜덤 게임으로 정하기
+            // 랜덤 게임으로 정하기 - 더 재미있게
             SettlementOptionCard(
                 title = "랜덤 게임으로 정하기",
-                description = "누가 쏠지 제비뽑기로 뽑아보세요!",
+                description = "누가 적지 제비뽑기로 뽑아보세요!",
                 isSelected = selectedMethod == "random",
                 onClick = {
-                    Log.d(TAG, "🟩 랜덤 게임으로 정하기 클릭됨")
+                    Log.d(TAG, "랜덤 게임으로 정하기 클릭됨")
                     selectedMethod = "random"
                     Log.d(TAG, "상태 변경됨: $selectedMethod")
                 }
@@ -127,31 +149,62 @@ fun SettlementMethodScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // 현재 선택 상태 디버그 표시 (개발용)
+            // 현재 선택 상태 디버그 표시 (개발용) - 더 깔끔하게
             if (selectedMethod != null) {
-                Card(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFFF0F9FF)
-                    )
+                        .background(
+                            color = Color(0xFF8B5FBF).copy(alpha = 0.08f), // solsol_purple with very low transparency
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .border(
+                            width = 1.dp,
+                            color = Color(0xFF8B5FBF).copy(alpha = 0.2f),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .padding(16.dp)
                 ) {
-                    Text(
-                        text = "✅ 선택됨: ${when(selectedMethod) {
-                            "equal" -> "똑같이 나누기"
-                            "manual" -> "직접 입력하기"
-                            "random" -> "랜덤 게임"
-                            else -> "알 수 없음"
-                        }}",
-                        modifier = Modifier.padding(12.dp),
-                        color = Color(0xFF1E40AF),
-                        fontSize = 14.sp
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .background(
+                                    color = Color(0xFF8B5FBF).copy(alpha = 0.2f),
+                                    shape = RoundedCornerShape(10.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .background(
+                                        color = Color(0xFF8B5FBF), // solsol_purple
+                                        shape = RoundedCornerShape(3.dp)
+                                    )
+                            )
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "선택됨: ${when(selectedMethod) {
+                                "equal" -> "똑같이 나누기"
+                                "manual" -> "직접 입력하기"
+                                "random" -> "랜덤 게임"
+                                else -> "알 수 없음"
+                            }}",
+                            color = Color(0xFF8B5FBF), // solsol_purple
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
             }
 
-            // 다음 버튼
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // 다음 버튼 - 더 트렌디한 디자인
             Button(
                 onClick = {
                     Log.d(TAG, "다음 버튼 클릭, 선택된 방식: $selectedMethod")
@@ -172,39 +225,39 @@ fun SettlementMethodScreen(
                 enabled = selectedMethod != null,
                 modifier = Modifier
                     .shadow(
-                        elevation = 8.dp,
-                        spotColor = Color(0x26000000),
-                        ambientColor = Color(0x26000000)
+                        elevation = 16.dp, // 8dp에서 16dp로 증가
+                        spotColor = Color(0x308B5FBF),
+                        ambientColor = Color(0x308B5FBF)
                     )
-                    .width(342.dp)
+                    .fillMaxWidth(0.9f) // 342.dp 대신 비율로
                     .height(56.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF8B5FBF),
-                    disabledContainerColor = Color(0x4D8B5FBF)
+                    containerColor = Color(0xFF8B5FBF), // solsol_purple
+                    disabledContainerColor = Color(0xFF8B5FBF).copy(alpha = 0.4f) // solsol_purple with transparency
                 ),
-                shape = RoundedCornerShape(28.dp)
+                shape = RoundedCornerShape(16.dp) // 28dp에서 16dp로 조정 (더 모던한 느낌)
             ) {
                 Text(
                     text = if (selectedMethod != null) "다음" else "방식을 선택하세요",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = Color(0xFFFFFFFF) // solsol_white
                 )
             }
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(32.dp)) // 40dp에서 32dp로 조정
         }
     }
-    
+
     // 권한 다이얼로그
     NearbyPermissionDialog(
         isVisible = showPermissionDialog,
         onDismiss = { nearbyViewModel.hidePermissionDialog() },
-        onRequestPermissions = { 
+        onRequestPermissions = {
             // 권한 요청 처리
             nearbyViewModel.onPermissionsGranted()
         },
-        onOpenSettings = { 
+        onOpenSettings = {
             // 설정 앱 열기
             nearbyViewModel.hidePermissionDialog()
         },
@@ -221,38 +274,69 @@ private fun SettlementOptionCard(
 ) {
     Log.d(TAG, "카드 렌더링: $title, 선택됨: $isSelected")
 
-    Card(
+    Box(
         modifier = Modifier
             .shadow(
-                elevation = if (isSelected) 6.dp else 4.dp,
-                spotColor = Color(0x1A000000),
-                ambientColor = Color(0x1A000000)
+                elevation = if (isSelected) 16.dp else 8.dp, // 그림자 강화
+                spotColor = if (isSelected) Color(0x2A8B5FBF) else Color(0x1A000000),
+                ambientColor = if (isSelected) Color(0x2A8B5FBF) else Color(0x1A000000)
+            )
+            .fillMaxWidth()
+            .height(120.dp) // 110dp에서 120dp로 증가
+            .background(
+                color = if (isSelected)
+                    Color(0xFF8B5FBF).copy(alpha = 0.05f) // solsol_purple with very low transparency
+                else
+                    Color(0xFFFFFFFF), // solsol_card_white
+                shape = RoundedCornerShape(20.dp) // 16dp에서 20dp로 증가
             )
             .border(
                 width = if (isSelected) 2.dp else 1.dp,
-                color = if (isSelected) Color(0xFF8B5FBF) else Color(0xCCE2E8F0),
-                shape = RoundedCornerShape(16.dp)
+                color = if (isSelected)
+                    Color(0xFF8B5FBF) // solsol_purple
+                else
+                    Color(0xFFE2E8F0), // solsol_light_gray
+                shape = RoundedCornerShape(20.dp)
             )
-            .width(330.dp)
-            .height(110.dp)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null // 리플 효과 제거
             ) {
                 Log.d(TAG, "카드 클릭됨: $title")
                 onClick()
-            },
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) Color(0xFFF8F4FD) else Color.White
-        ),
-        shape = RoundedCornerShape(16.dp)
+            }
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(20.dp),
+                .padding(24.dp), // 20dp에서 24dp로 증가
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // 왼쪽 색상 표시기
+            Box(
+                modifier = Modifier
+                    .size(48.dp) // 색상 표시기 추가
+                    .background(
+                        color = if (isSelected)
+                            Color(0xFF8B5FBF).copy(alpha = 0.15f)
+                        else
+                            Color(0xFF8B5FBF).copy(alpha = 0.08f),
+                        shape = RoundedCornerShape(12.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(if (isSelected) 16.dp else 12.dp)
+                        .background(
+                            color = if (isSelected) Color(0xFF8B5FBF) else Color(0xFF718096),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                )
+            }
+
+            Spacer(Modifier.width(16.dp))
+
             // 메인 텍스트
             Column(
                 modifier = Modifier.weight(1f),
@@ -262,26 +346,37 @@ private fun SettlementOptionCard(
                     text = title,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (isSelected) Color(0xFF8B5FBF) else Color(0xFF1C1C1E)
+                    color = if (isSelected) Color(0xFF8B5FBF) else Color(0xFF2D3748) // solsol_purple or solsol_dark_text
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp)) // 8dp에서 6dp로 조정
 
                 Text(
                     text = description,
                     fontSize = 14.sp,
-                    color = if (isSelected) Color(0xFF8B5FBF) else Color(0xFF666666)
+                    fontWeight = FontWeight.Medium,
+                    color = if (isSelected) Color(0xFF8B5FBF).copy(alpha = 0.8f) else Color(0xFF718096) // solsol_purple with transparency or solsol_gray_text
                 )
             }
 
-            // 선택 표시 아이콘
+            // 선택 표시 아이콘 - 더 트렌디하게
             if (isSelected) {
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = "선택됨",
-                    tint = Color(0xFF8B5FBF),
-                    modifier = Modifier.size(24.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .background(
+                            color = Color(0xFF8B5FBF), // solsol_purple
+                            shape = RoundedCornerShape(16.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = "선택됨",
+                        tint = Color(0xFFFFFFFF), // solsol_white
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
     }
