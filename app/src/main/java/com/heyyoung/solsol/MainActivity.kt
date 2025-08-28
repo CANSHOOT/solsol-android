@@ -24,8 +24,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.firebase.messaging.FirebaseMessaging
 import com.heyyoung.solsol.feature.auth.presentation.LoginScreen
 import com.heyyoung.solsol.feature.home.presentation.HomeScreen
+import com.heyyoung.solsol.feature.remittance.presentation.RemittanceMainScreen
 import com.heyyoung.solsol.feature.remittance.presentation.RemittanceScreen
-import com.heyyoung.solsol.feature.remittance.presentation.RemittanceSubScreen
 import com.heyyoung.solsol.feature.remittance.presentation.RemittanceSuccessScreen
 import com.heyyoung.solsol.feature.settlement.presentation.MoneyTransferScreen
 import com.heyyoung.solsol.feature.settlement.presentation.SettlementEqualScreen
@@ -402,7 +402,7 @@ fun SolsolApp(initialScreen: String = "login",
                     remittanceGroupId = groupId
                     remittanceReceiverName = receiverName
                     remittanceAmount = amount
-                    currentScreen = "remittance_sub"
+                    currentScreen = "remittance_main"
                 }
             )
         }
@@ -463,8 +463,8 @@ fun SolsolApp(initialScreen: String = "login",
 
 
         // ✅ 송금 실행 화면
-        "remittance_sub" -> {
-            RemittanceSubScreen(
+        "remittance_main" -> {
+            RemittanceMainScreen(
                 groupId = remittanceGroupId,
                 receiverName = remittanceReceiverName ?: "",
                 receiverInfo = "", // 필요 시 이메일/계좌 등 표시
