@@ -365,6 +365,8 @@ fun SolsolApp() {
         // ✅ 송금 성공 화면
         "remittance_success" -> {
             RemittanceSuccessScreen(
+                receiverName = remittanceReceiverName ?: "",
+                amount = String.format("%,d", remittanceAmount ?: 0),
                 onComplete = { currentScreen = "home" }
             )
         }
