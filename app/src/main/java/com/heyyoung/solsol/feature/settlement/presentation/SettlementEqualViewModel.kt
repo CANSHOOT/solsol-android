@@ -48,7 +48,7 @@ class SettlementEqualViewModel @Inject constructor(
             try {
                 // participants에서 "나"를 제외한 실제 참여자들만 추출
                 val participantUserIds = participants
-//                    .filter { !it.isMe }
+                    .filter { !it.isMe }
                     .map { it.id }
                 
                 Log.d(TAG, "참여자 ID 목록: $participantUserIds")
@@ -67,7 +67,10 @@ class SettlementEqualViewModel @Inject constructor(
                         Log.d(TAG, "🔄 참여자들을 그룹에 참여시키는 중...")
                         
                         // 생성 성공 후 모든 참여자를 그룹에 참여시킴
-                        settlementGroup.groupId?.let { joinParticipantsToGroup(it, participants, settlementGroup) }
+                        settlementGroup.groupId?.let {
+                            val filtered = participants.filter { !it.isMe } // 자기 자신 제거
+                            joinParticipantsToGroup(it, filtered, settlementGroup)
+                        }
                     },
                     onFailure = { error ->
                         Log.e(TAG, "❌ 정산 생성 실패: ${error.message}")
