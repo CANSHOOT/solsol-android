@@ -104,6 +104,7 @@ fun HomeScreen(
             },
             onCouponsClick = {
                 Log.d(TAG, "쿠폰 메뉴 클릭")
+                onNavigateToCoupon()
             }
         )
 
