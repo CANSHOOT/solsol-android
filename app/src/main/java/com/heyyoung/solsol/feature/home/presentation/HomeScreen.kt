@@ -32,6 +32,7 @@ import com.heyyoung.solsol.ui.components.modifiers.solsolGradientBackground
 @Composable
 fun HomeScreen(
     onNavigateToQrScan: () -> Unit = {},
+    onNavigateToPaymentHistory: () -> Unit = {},
     onNavigateToSettlement: () -> Unit = {},
     onNavigateToCouncil: () -> Unit = {},
     onNavigateToMoneyTransfer: () -> Unit = {},
@@ -88,7 +89,7 @@ fun HomeScreen(
             },
             onSettlementClick = {
                 Log.d(TAG, "내역조회 메뉴 클릭")
-                onNavigateToSettlement()
+                onNavigateToPaymentHistory()
             },
             onSettlementManagementClick = {
                 Log.d(TAG, "정산요청 메뉴 클릭")

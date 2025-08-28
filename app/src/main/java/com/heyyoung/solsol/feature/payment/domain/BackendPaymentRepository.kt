@@ -79,7 +79,7 @@ class BackendPaymentRepository @Inject constructor(
      */
     suspend fun processPayment(paymentId: Long, finalAmount: Int, discountCouponId: Long?): BackendApiResult<CouponResult> {
         Log.d(TAG, "결제 처리 시작")
-        Log.d(TAG, "PaymentId: $paymentId, 결제 금액: ${finalAmount}원, 쿠폰ID: $discountCouponId")
+        Log.d(TAG, "PaymentId: $paymentId, 결제 금액: ${finalAmount}원, 쿠폰ID: ${discountCouponId ?: -1}")
 
         return try {
             // 토큰 가져오기
@@ -95,7 +95,7 @@ class BackendPaymentRepository @Inject constructor(
                 paymentId = paymentId,
                 request = CreatePaymentRequest(
                     amount = java.math.BigDecimal(finalAmount),
-                    discountCouponId = discountCouponId ?: 0L  // 쿠폰 사용하지 않을 때는 0 전송
+                    discountCouponId = discountCouponId ?: -1L  // 쿠폰 사용하지 않을 때는 -1 전송
                 ),
                 authorization = "Bearer $accessToken"
             )
@@ -136,6 +136,43 @@ class BackendPaymentRepository @Inject constructor(
         } catch (e: Exception) {
             Log.w(TAG, "QR 데이터에서 tempId 추출 실패: $qrData, 기본값 1 사용")
             1L
+        }
+    }
+
+    /**
+     * 결제 내역 조회
+     *
+     * 사용자의 완료된 결제 내역을 조회합니다.
+     */
+    suspend fun getPaymentHistory(): BackendApiResult<List<PaymentHistoryItem>> {
+        Log.d(TAG, "결제 내역 조회 시작")
+
+        return try {
+            // 토큰 가져오기
+            val accessToken = tokenManager.getAccessToken()?.first()
+            
+            if (accessToken.isNullOrEmpty()) {
+                Log.e(TAG, "액세스 토큰이 없습니다")
+                return BackendApiResult.Error("로그인이 필요합니다")
+            }
+
+            // 결제 내역 조회 API 호출
+            val response = backendApiService.getPaymentHistory("Bearer $accessToken")
+
+            if (response.isSuccessful && response.body() != null) {
+                val historyResponse = response.body()!!
+                Log.i(TAG, "결제 내역 조회 성공: ${historyResponse.payments.size}개 결제")
+                
+                BackendApiResult.Success(historyResponse.payments)
+            } else {
+                val errorMessage = parseErrorMessage(response.code(), response.message())
+                Log.e(TAG, "결제 내역 조회 실패: $errorMessage")
+                BackendApiResult.Error(errorMessage)
+            }
+
+        } catch (e: Exception) {
+            Log.e(TAG, "결제 내역 조회 중 예외: ${e.message}", e)
+            BackendApiResult.Error("네트워크 연결을 확인해주세요")
         }
     }
 

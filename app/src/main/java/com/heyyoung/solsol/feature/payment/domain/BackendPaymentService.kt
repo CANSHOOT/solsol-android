@@ -40,6 +40,17 @@ interface BackendPaymentService {
     ): Response<CreatePaymentResponse>
 
     /**
+     * 결제 내역 조회
+     * GET v1/payments
+     *
+     * 사용자의 완료된 결제 내역을 조회합니다.
+     */
+    @GET("payments")
+    suspend fun getPaymentHistory(
+        @Header("Authorization") authorization: String
+    ): Response<PaymentHistoryResponse>
+
+    /**
      * 쿠폰 목록 조회
      * GET v1/discounts
      *
@@ -108,6 +119,24 @@ data class CouponItem(
     val amount: Int,
     val createdDate: String,
     val endDate: String
+)
+
+/**
+ * 결제 내역 응답
+ */
+data class PaymentHistoryResponse(
+    val payments: List<PaymentHistoryItem>
+)
+
+/**
+ * 개별 결제 내역 항목
+ */
+data class PaymentHistoryItem(
+    val paymentId: Long,
+    val originalAmount: Int,
+    val discountAmount: Int,
+    val finalAmount: Int,
+    val date: String  // "yyyy-MM-ddTHH:mm:ss" 형식 (LocalDateTime)
 )
 
 /**
