@@ -108,7 +108,8 @@ class SettlementEqualViewModel @Inject constructor(
                 
                 val joinResult = joinSettlementUseCase(
                     groupId = groupId,
-                    userId = participant.id // String으로 바로 전달
+                    userId = participant.id, // String으로 바로 전달
+                    amount = participant.amount
                 )
                 
                 joinResult.fold(

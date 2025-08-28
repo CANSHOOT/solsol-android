@@ -126,14 +126,17 @@ fun SettlementManualScreen(
             // 정산 요청하기 버튼
             Button(
                 onClick = {
+                    // 입력값을 숫자로 변환한 맵
                     val settlementMap = participantAmounts.mapValues { (_, amountText) ->
                         amountText.toIntOrNull() ?: 0
                     }.filterValues { it > 0 }
 
-                    Log.d(TAG, "정산 요청 - 이액: ${totalAmount}원")
+                    Log.d(TAG, "정산 요청 - 총액: ${totalAmount}원")
                     settlementMap.forEach { (person, amount) ->
                         Log.d(TAG, "  ${person.name}: ${amount}원")
                     }
+
+                    // totalAmount, Map<Person, Int> 대신, 직접 Person 리스트를 넘겨도 됨
                     onRequestSettlement(totalAmount, settlementMap)
                 },
                 enabled = totalAmount > 0 && participantAmounts.values.any { it.isNotBlank() },

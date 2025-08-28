@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import com.heyyoung.solsol.feature.settlement.domain.model.SettlementGroup
 import com.heyyoung.solsol.feature.settlement.domain.model.SettlementStatus
+import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -32,7 +33,8 @@ data class SettlementGroupDto(
 )
 
 data class JoinSettlementRequest(
-    val joinMethod: String = "SEARCH"
+    val joinMethod: String = "SEARCH",
+    val settlementAmount: BigDecimal = BigDecimal.ZERO
 )
 
 
