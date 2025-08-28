@@ -77,7 +77,7 @@ class SettlementRepositoryImpl @Inject constructor(
     override suspend fun paySettlement(groupId: Long, accountNumber: String, transactionSummary: String): Result<PaymentResult> {
         return withContext(Dispatchers.IO) {
             try {
-                val request = SendPaymentRequest(accountNumber, transactionSummary)
+                val request = SendPaymentRequest(transactionSummary)
                 val response = apiService.sendPayment(groupId, request)
                 
                 val paymentResult = PaymentResult(

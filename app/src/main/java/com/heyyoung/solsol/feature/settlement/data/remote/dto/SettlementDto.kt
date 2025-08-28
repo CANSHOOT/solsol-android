@@ -39,7 +39,6 @@ data class JoinSettlementRequest(
 
 
 data class SendPaymentRequest(
-    val accountNumber: String,
     val transactionSummary: String
 )
 

@@ -29,7 +29,7 @@ enum class TransferSide { SENT, RECEIVED }
 @Composable
 fun MoneyTransferScreen(
     onNavigateBack: () -> Unit = {},
-    onNavigateToRemittance: (receiverName: String, amount: Long) -> Unit
+    onNavigateToRemittance: (groupId: Long, receiverName: String, amount: Long) -> Unit
 ) {
     val viewModel: MoneyTransferViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 
@@ -144,7 +144,7 @@ fun MoneyTransferScreen(
                                 onClick = {
                                     if (request.status == MoneyTransferStatus.PENDING) {
                                         // 진행중인 건만 이동
-                                        onNavigateToRemittance(request.name, request.amount)
+                                        onNavigateToRemittance(request.groupId, request.name, request.amount)
                                     } else {
                                         Log.d(TAG, "완료 항목 클릭 무시: ${request.name}")
                                     }
@@ -263,7 +263,8 @@ data class MoneyTransferItem(
     val name: String,
     val amount: Long,
     val status: MoneyTransferStatus,
-    val side: TransferSide
+    val side: TransferSide,
+    val groupId: Long
 )
 
 enum class MoneyTransferStatus {

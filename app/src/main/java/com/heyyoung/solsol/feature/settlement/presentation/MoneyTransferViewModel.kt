@@ -53,7 +53,8 @@ class MoneyTransferViewModel @Inject constructor(
                         amount = it.settlementAmount
                             .setScale(0, RoundingMode.HALF_UP).toLong(),
                         status = mapStatus(it.status),
-                        side = TransferSide.SENT
+                        side = TransferSide.SENT,
+                        groupId = it.groupId
                     )
                 }
 
@@ -64,7 +65,8 @@ class MoneyTransferViewModel @Inject constructor(
                         amount = it.settlementAmount
                             .setScale(0, RoundingMode.HALF_UP).toLong(),
                         status = mapStatus(it.status),
-                        side = TransferSide.RECEIVED
+                        side = TransferSide.RECEIVED,
+                        groupId = it.groupId
                     )
                 }
 

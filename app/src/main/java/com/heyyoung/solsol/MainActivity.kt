@@ -109,6 +109,9 @@ fun SolsolApp() {
     var remittanceReceiverName by remember { mutableStateOf<String?>(null) }
     var remittanceAmount by remember { mutableStateOf<Long?>(null) }
 
+    // 이체용 상태
+    var remittanceGroupId by remember { mutableStateOf<Long?>(null) }
+
     // 앱 상태 로깅
     LaunchedEffect(currentScreen) {
         Log.i(TAG, "🔄 화면 전환: $currentScreen")
@@ -339,8 +342,9 @@ fun SolsolApp() {
         "money_transfer" -> {
             MoneyTransferScreen(
                 onNavigateBack = { currentScreen = "home" },
-                onNavigateToRemittance = { receiverName, amount ->
+                onNavigateToRemittance = { groupId, receiverName, amount ->
                     // 선택값 저장 후 송금 화면으로 이동
+                    remittanceGroupId = groupId
                     remittanceReceiverName = receiverName
                     remittanceAmount = amount
                     currentScreen = "remittance"
@@ -351,6 +355,7 @@ fun SolsolApp() {
         // ✅ 송금 실행 화면
         "remittance" -> {
             RemittanceScreen(
+                groupId = remittanceGroupId,
                 receiverName = remittanceReceiverName ?: "",
                 receiverInfo = "", // 필요 시 이메일/계좌 등 표시
                 amount = String.format("%,d", remittanceAmount ?: 0),
@@ -367,7 +372,14 @@ fun SolsolApp() {
             RemittanceSuccessScreen(
                 receiverName = remittanceReceiverName ?: "",
                 amount = String.format("%,d", remittanceAmount ?: 0),
-                onComplete = { currentScreen = "home" }
+                onComplete = {
+                    // 홈으로 이동
+                    currentScreen = "home"
+                    // ✅ 상태 초기화
+                    remittanceGroupId = null
+                    remittanceReceiverName = null
+                    remittanceAmount = null
+                }
             )
         }
 
