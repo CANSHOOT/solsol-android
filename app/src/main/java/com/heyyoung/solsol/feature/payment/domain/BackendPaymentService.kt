@@ -85,7 +85,8 @@ data class DiscountCoupon(
     val discountCouponId: Long,
     val amount: Int,
     val createdDate: String,
-    val endDate: String
+    val endDate: String,
+    val couponType: String = "RANDOM"  // 쿠폰 타입 (백엔드에서 전송)
 )
 
 /**
@@ -118,7 +119,8 @@ data class CouponItem(
     val discountCouponId: Long,
     val amount: Int,
     val createdDate: String,
-    val endDate: String
+    val endDate: String,
+    val couponType: String = "RANDOM"  // 쿠폰 타입 (백엔드에서 전송)
 )
 
 /**
