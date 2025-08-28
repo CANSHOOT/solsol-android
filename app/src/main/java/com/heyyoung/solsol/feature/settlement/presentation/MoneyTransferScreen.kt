@@ -39,6 +39,11 @@ fun MoneyTransferScreen(
     val received by viewModel.received.collectAsState(initial = emptyList())
     val currentList = if (selectedSide == TransferSide.SENT) sent else received
 
+    // 화면 진입 시마다 refresh 실행
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
