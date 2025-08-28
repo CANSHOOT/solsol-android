@@ -25,7 +25,7 @@ import com.google.firebase.messaging.FirebaseMessaging
 import com.heyyoung.solsol.feature.auth.presentation.LoginScreen
 import com.heyyoung.solsol.feature.home.presentation.HomeScreen
 import com.heyyoung.solsol.feature.remittance.presentation.RemittanceScreen
-import com.heyyoung.solsol.feature.remittance.presentation.RemittanceScreen
+import com.heyyoung.solsol.feature.remittance.presentation.RemittanceSubScreen
 import com.heyyoung.solsol.feature.remittance.presentation.RemittanceSuccessScreen
 import com.heyyoung.solsol.feature.settlement.presentation.MoneyTransferScreen
 import com.heyyoung.solsol.feature.settlement.presentation.SettlementEqualScreen
@@ -402,25 +402,10 @@ fun SolsolApp(initialScreen: String = "login",
                     remittanceGroupId = groupId
                     remittanceReceiverName = receiverName
                     remittanceAmount = amount
-                    currentScreen = "remittance"
+                    currentScreen = "remittance_sub"
                 }
             )
         }
-
-//        // ✅ 송금 실행 화면
-//        "remittance" -> {
-//            RemittanceScreen(
-//                groupId = remittanceGroupId,
-//                receiverName = remittanceReceiverName ?: "",
-//                receiverInfo = "", // 필요 시 이메일/계좌 등 표시
-//                amount = String.format("%,d", remittanceAmount ?: 0),
-//                cardNumber = "**** **** **** 1234", // TODO: 실제 카드/계좌 연동
-//                onNavigateBack = { currentScreen = "money_transfer" },
-//                onRemittanceComplete = {
-//                    currentScreen = "remittance_success"
-//                }
-//            )
-//        }
 
         // ✅ 송금 성공 화면
         "remittance_success" -> {
@@ -476,14 +461,25 @@ fun SolsolApp(initialScreen: String = "login",
             )
         }
 
-//        "money_transfer" -> {
-//            MoneyTransferScreen(
-//                onNavigateBack = { currentScreen = "home" }
-//            )
-//        }
+
+        // ✅ 송금 실행 화면
+        "remittance_sub" -> {
+            RemittanceSubScreen(
+                groupId = remittanceGroupId,
+                receiverName = remittanceReceiverName ?: "",
+                receiverInfo = "", // 필요 시 이메일/계좌 등 표시
+                amount = String.format("%,d", remittanceAmount ?: 0),
+                cardNumber = "**** **** **** 1234", // TODO: 실제 카드/계좌 연동
+                onNavigateBack = { currentScreen = "money_transfer" },
+                onRemittanceComplete = {
+                    currentScreen = "remittance_success"
+                }
+            )
+        }
 
         "remittance" -> {
             RemittanceScreen(
+                groupId = remittanceGroupId,
                 receiverName = payeeName ?: "상대방",
                 amount = payAmount ?: "0",
                 onNavigateBack = { currentScreen = "home" },
