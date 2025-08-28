@@ -1,11 +1,13 @@
 package com.heyyoung.solsol
 
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -21,6 +23,7 @@ import com.heyyoung.solsol.feature.auth.presentation.LoginScreen
 import com.heyyoung.solsol.feature.home.presentation.HomeScreen
 import com.heyyoung.solsol.feature.settlement.presentation.MoneyTransferScreen
 import com.heyyoung.solsol.feature.settlement.presentation.SettlementEqualScreen
+import com.heyyoung.solsol.feature.settlement.presentation.SettlementManualScreen
 import com.heyyoung.solsol.feature.studentcouncil.StudentCouncilViewModel
 import com.heyyoung.solsol.feature.studentcouncil.presentation.OcrCameraScreen
 import com.heyyoung.solsol.feature.studentcouncil.presentation.ReceiptFields
@@ -271,28 +274,22 @@ fun SolsolApp() {
         }
 
         "settlement_manual" -> {
-            // 직접 입력하기 화면
-            com.heyyoung.solsol.feature.settlement.presentation.SettlementManualScreen(
+            SettlementManualScreen(
                 participants = settlementParticipants,
                 onNavigateBack = {
                     Log.d(TAG, "직접 입력하기에서 참여자 선택으로 돌아가기")
                     currentScreen = "settlement_participants"
                 },
-                onRequestSettlement = { totalAmount, settlementMap ->
-                    Log.d(TAG, "직접 입력하기 정산 요청 완료!")
-                    Log.d(TAG, "총액: ${totalAmount}원, 입력된 사람: ${settlementMap.size}명")
-                    settlementMap.forEach { (person, amount) ->
-                        Log.d(TAG, "  ${person.name}: ${amount}원")
-                    }
-                    // 해커톤용: 정산 완료 후 홈으로 이동
-                    currentScreen = "home"
-                    // 정산 상태 초기화
-                    selectedSettlementMethod = null
-                    settlementParticipants = emptyList()
+                onNavigateToComplete = { settlementGroup, participants, totalAmount ->
+                    Log.d(TAG, "✅ 수동 정산 성공 - 완료 화면으로 이동")
+                    completedSettlement = settlementGroup
+                    settlementParticipants = participants
+                    settlementTotalAmount = totalAmount
+                    settlementAmountPerPerson = 0 // 수동 입력이라 0으로 처리
+                    currentScreen = "settlement_complete"
                 }
             )
         }
-
 
         "settlement_complete" -> {
             // 정산 완료 화면

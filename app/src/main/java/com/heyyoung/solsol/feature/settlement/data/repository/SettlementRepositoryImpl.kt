@@ -16,6 +16,7 @@ import com.heyyoung.solsol.feature.settlement.domain.model.PaymentResult
 import com.heyyoung.solsol.feature.settlement.domain.repository.SettlementRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.math.BigDecimal
 import javax.inject.Inject
 
 class SettlementRepositoryImpl @Inject constructor(
@@ -59,10 +60,10 @@ class SettlementRepositoryImpl @Inject constructor(
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    override suspend fun joinSettlement(groupId: Long, userId: String): Result<SettlementParticipant> {
+    override suspend fun joinSettlement(groupId: Long, userId: String, amount: BigDecimal): Result<SettlementParticipant> {
         return withContext(Dispatchers.IO) {
             try {
-                val request = JoinSettlementRequest(joinMethod = "SEARCH") // 기본값 SEARCH 사용
+                val request = JoinSettlementRequest(joinMethod = "SEARCH", amount) // 기본값 SEARCH 사용
                 val response = apiService.joinSettlement(groupId, userId, request)
                 val domain = response.toDomain()
                 
