@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.heyyoung.solsol.R
 import com.heyyoung.solsol.feature.payment.domain.CouponItem
+import com.heyyoung.solsol.feature.payment.domain.CouponType
 import com.heyyoung.solsol.ui.components.modifiers.solsolGradientBackground
 import java.text.SimpleDateFormat
 import java.util.*
@@ -217,6 +218,9 @@ private fun CouponCard(coupon: CouponItem) {
     val daysUntilExpiry = calculateDaysUntilExpiry(coupon.endDate)
     val isExpiringSoon = daysUntilExpiry <= 7
     
+    // 쿠폰 타입 정보
+    val couponType = CouponType.fromString(coupon.couponType)
+    
     // 쿠폰 상태에 따른 그라데이션 색상
     val gradientColors = if (isExpiringSoon) {
         listOf(Color(0xFFFF8A80), Color(0xFFFF5722)) // 주황-빨강 그라데이션 
@@ -251,7 +255,7 @@ private fun CouponCard(coupon: CouponItem) {
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // 왼쪽 쿠폰 아이콘 영역 (더 크고 화려하게)
+                // 왼쪽 쿠폰 타입 아이콘 영역 (더 크고 화려하게)
                 Box(
                     modifier = Modifier
                         .size(70.dp)
@@ -261,11 +265,9 @@ private fun CouponCard(coupon: CouponItem) {
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Favorite,
-                        contentDescription = null,
-                        modifier = Modifier.size(36.dp),
-                        tint = Color.White
+                    Text(
+                        text = couponType.emoji,
+                        fontSize = 32.sp
                     )
                 }
 
@@ -283,10 +285,19 @@ private fun CouponCard(coupon: CouponItem) {
                     )
                     
                     Text(
-                        text = "할인 쿠폰",
+                        text = couponType.displayName,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color.White.copy(alpha = 0.9f)
+                    )
+
+                    Spacer(Modifier.height(4.dp))
+                    
+                    Text(
+                        text = couponType.description,
+                        fontSize = 11.sp,
+                        color = Color.White.copy(alpha = 0.7f),
+                        fontWeight = FontWeight.Normal
                     )
 
                     Spacer(Modifier.height(8.dp))
