@@ -423,6 +423,16 @@ fun SolsolApp() {
             )
         }
 
+        "coupon" -> {
+            // 쿠폰 화면
+            com.heyyoung.solsol.feature.coupon.presentation.CouponScreen(
+                onNavigateBack = {
+                    Log.d(TAG, "쿠폰 화면에서 홈으로 돌아가기")
+                    currentScreen = "home"
+                }
+            )
+        }
+
         else -> {
             // 예상치 못한 화면 상태
             Log.e(TAG, "❌ 알 수 없는 화면 상태: $currentScreen")
