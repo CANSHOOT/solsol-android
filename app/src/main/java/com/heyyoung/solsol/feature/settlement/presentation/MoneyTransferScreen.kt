@@ -12,11 +12,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -49,38 +52,132 @@ fun MoneyTransferScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFFFAFAFA),
+                        Color.White
+                    )
+                )
+            )
     ) {
+        // 상단 앱바 - 그라데이션 배경
         CenterAlignedTopAppBar(
-            title = { Text("송금하기") },
+            title = {
+                Text(
+                    "송금하기",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF2D3748) // solsol_dark_text
+                )
+            },
             navigationIcon = {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "뒤로")
+                IconButton(
+                    onClick = onNavigateBack,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            Color(0xFFF7FAFC),
+                            shape = CircleShape
+                        )
+                ) {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "뒤로",
+                        tint = Color(0xFF2D3748), // solsol_dark_text
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             },
             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                containerColor = Color.White,
-                titleContentColor = Color(0xFF1C1C1E),
-                navigationIconContentColor = Color(0xFF1C1C1E)
-            )
+                containerColor = Color.Transparent
+            ),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
         )
 
+        // 탭 디자인 - 더 모던하게
         val tabs = listOf("보낸요청", "받은요청")
         val selectedIndex = if (selectedSide == TransferSide.SENT) 0 else 1
-        TabRow(selectedTabIndex = selectedIndex, containerColor = Color.White) {
-            tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = selectedIndex == index,
-                    onClick = { selectedSide = if (index == 0) TransferSide.SENT else TransferSide.RECEIVED },
-                    text = { Text(title) }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 20.dp)
+                .background(
+                    Color(0xFFF7FAFC),
+                    shape = RoundedCornerShape(20.dp)
                 )
+                .padding(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(0.dp)
+        ) {
+            tabs.forEachIndexed { index, title ->
+                val isSelected = selectedIndex == index
+                Button(
+                    onClick = { selectedSide = if (index == 0) TransferSide.SENT else TransferSide.RECEIVED },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isSelected) {
+                            Color(0xFF8B5FBF) // solsol_purple
+                        } else Color.Transparent,
+                        contentColor = if (isSelected) {
+                            Color(0xFFFFFFFF) // solsol_white
+                        } else Color(0xFF718096) // solsol_gray_text
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = if (isSelected) {
+                        ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
+                    } else {
+                        ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                    }
+                ) {
+                    Text(
+                        text = title,
+                        fontSize = 15.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                    )
+                }
             }
         }
 
         when {
             loading -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .background(
+                                    brush = Brush.radialGradient(
+                                        colors = listOf(
+                                            Color(0xFF8B5FBF).copy(alpha = 0.1f),
+                                            Color(0xFFF093FB).copy(alpha = 0.05f)
+                                        )
+                                    ),
+                                    shape = CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                color = Color(0xFF8B5FBF), // solsol_purple
+                                strokeWidth = 4.dp,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                        Spacer(Modifier.height(20.dp))
+                        Text(
+                            text = "송금 내역을 불러오는 중...",
+                            fontSize = 16.sp,
+                            color = Color(0xFF718096), // solsol_gray_text
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
             error != null -> {
@@ -91,49 +188,174 @@ fun MoneyTransferScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Text("목록을 불러오지 못했습니다.\n$error", color = Color.Red)
-                    Spacer(Modifier.height(12.dp))
-                    Button(onClick = { viewModel.refresh() }) { Text("다시 시도") }
+                    // 에러 상태 아이콘
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .background(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(
+                                        Color(0xFFFF6B6B).copy(alpha = 0.1f),
+                                        Color(0xFFFF6B6B).copy(alpha = 0.05f)
+                                    )
+                                ),
+                                shape = RoundedCornerShape(25.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .background(
+                                    color = Color(0xFFFF6B6B),
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                        )
+                    }
+
+                    Spacer(Modifier.height(28.dp))
+                    Text(
+                        "목록을 불러오지 못했습니다.",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF2D3748) // solsol_dark_text
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        error!!,
+                        fontSize = 14.sp,
+                        color = Color(0xFF718096), // solsol_gray_text
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(32.dp))
+                    Button(
+                        onClick = { viewModel.refresh() },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF8B5FBF) // solsol_purple
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier
+                            .shadow(
+                                elevation = 12.dp,
+                                spotColor = Color(0x338B5FBF),
+                                ambientColor = Color(0x338B5FBF),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .height(48.dp)
+                            .widthIn(min = 120.dp)
+                    ) {
+                        Text(
+                            "다시 시도",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp
+                        )
+                    }
                 }
             }
             else -> {
                 if (currentList.isEmpty()) {
-                    // 비어있을 때 상태
+                    // 빈 상태 - 더 트렌디하게
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = if (selectedSide == TransferSide.SENT)
-                                "보낸 요청이 없습니다."
-                            else
-                                "받은 요청이 없습니다.",
-                            fontSize = 16.sp,
-                            color = Color(0xFF666666)
-                        )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            // 빈 상태 아이콘
+                            Box(
+                                modifier = Modifier
+                                    .size(120.dp)
+                                    .background(
+                                        brush = Brush.radialGradient(
+                                            colors = listOf(
+                                                Color(0xFF8B5FBF).copy(alpha = 0.12f),
+                                                Color(0xFFF093FB).copy(alpha = 0.06f)
+                                            )
+                                        ),
+                                        shape = RoundedCornerShape(30.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    if (selectedSide == TransferSide.SENT) Icons.Default.Send else Icons.Default.AccountBox,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(48.dp),
+                                    tint = Color(0xFF8B5FBF) // solsol_purple
+                                )
+                            }
+
+                            Spacer(Modifier.height(32.dp))
+                            Text(
+                                text = if (selectedSide == TransferSide.SENT)
+                                    "보낸 요청이 없습니다"
+                                else
+                                    "받은 요청이 없습니다",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF2D3748) // solsol_dark_text
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            Text(
+                                text = "정산 완료 후 송금 요청이 여기에 표시됩니다",
+                                fontSize = 15.sp,
+                                color = Color(0xFF718096), // solsol_gray_text
+                                lineHeight = 22.sp
+                            )
+                        }
                     }
                 } else {
                     // 실제 목록 렌더링
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(horizontal = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                            .padding(horizontal = 20.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        item { Spacer(Modifier.height(12.dp)) }
+                        item { Spacer(Modifier.height(4.dp)) }
 
                         item {
                             val title = if (selectedSide == TransferSide.SENT)
                                 "보낸 요청 (내가 받아야 할 돈)"
                             else
                                 "받은 요청 (내가 보내야 할 돈)"
-                            Text(
-                                text = title,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF666666),
-                                modifier = Modifier.padding(top = 8.dp)
-                            )
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(28.dp)
+                                        .background(
+                                            brush = Brush.radialGradient(
+                                                colors = listOf(
+                                                    Color(0xFF8B5FBF).copy(alpha = 0.15f),
+                                                    Color(0xFF8B5FBF).copy(alpha = 0.08f)
+                                                )
+                                            ),
+                                            shape = RoundedCornerShape(8.dp)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(10.dp)
+                                            .background(
+                                                color = Color(0xFF8B5FBF), // solsol_purple
+                                                shape = RoundedCornerShape(5.dp)
+                                            )
+                                    )
+                                }
+                                Spacer(Modifier.width(12.dp))
+                                Text(
+                                    text = title,
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF8B5FBF), // solsol_purple
+                                    modifier = Modifier.padding(top = 2.dp)
+                                )
+                            }
                         }
 
                         items(currentList) { request ->
@@ -142,17 +364,17 @@ fun MoneyTransferScreen(
                                 amount = request.amount,
                                 status = request.status,
                                 onClick = {
-                                    if (request.status == MoneyTransferStatus.PENDING) {
-                                        // 진행중인 건만 이동
+                                    if (request.status == MoneyTransferStatus.PENDING && request.side == TransferSide.RECEIVED) {
+                                        // 받은 요청(내가 보내야 할 돈) + 진행중일 때만 이동
                                         onNavigateToRemittance(request.groupId, request.name, request.amount)
                                     } else {
-                                        Log.d(TAG, "완료 항목 클릭 무시: ${request.name}")
+                                        Log.d(TAG, "클릭 무시: ${request.name}, side=${request.side}, status=${request.status}")
                                     }
                                 }
                             )
                         }
 
-                        item { Spacer(Modifier.height(20.dp)) }
+                        item { Spacer(Modifier.height(24.dp)) }
                     }
                 }
             }
@@ -170,68 +392,76 @@ private fun MoneyTransferCard(
     Card(
         modifier = Modifier
             .shadow(
-                elevation = 4.dp,
-                spotColor = Color(0x1A000000),
-                ambientColor = Color(0x1A000000)
-            )
-            .border(
-                width = 2.dp,
-                color = Color(0xB28B5FBF),
-                shape = RoundedCornerShape(12.dp)
+                elevation = 8.dp,
+                spotColor = Color(0x1A8B5FBF),
+                ambientColor = Color(0x1A8B5FBF),
+                shape = RoundedCornerShape(20.dp)
             )
             .fillMaxWidth()
-            .height(60.dp)
+            .height(88.dp)
             .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(12.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFFFFFFF) // solsol_card_white
+        ),
+        shape = RoundedCornerShape(20.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // 프로필 이미지
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 프로필 이미지 - 그라데이션 적용
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
-                        .background(Color(0xFFE0E0E0), CircleShape),
+                        .size(56.dp)
+                        .background(
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    Color(0xFF8B5FBF).copy(alpha = 0.15f),
+                                    Color(0xFFF093FB).copy(alpha = 0.08f)
+                                )
+                            ),
+                            shape = CircleShape
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = null,
-                        tint = Color(0xFF999999),
-                        modifier = Modifier.size(20.dp)
+                    Text(
+                        text = name.first().toString(),
+                        color = Color(0xFF8B5FBF), // solsol_purple
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(20.dp))
 
-                // 이름만 표시
+                // 이름
                 Text(
                     text = name,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF1C1C1E)
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF2D3748) // solsol_dark_text
                 )
             }
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // 금액
                 Text(
                     text = "${String.format("%,d", amount)}원",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1C1C1E)
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF2D3748) // solsol_dark_text
                 )
 
-                // 상태 버튼(표시용)
+                // 상태 버튼
                 StatusButton(status = status)
             }
         }
@@ -241,20 +471,44 @@ private fun MoneyTransferCard(
 @Composable
 private fun StatusButton(status: MoneyTransferStatus) {
     val (backgroundColor, textColor, text) = when (status) {
-        MoneyTransferStatus.PENDING -> Triple(Color(0xFFFFA500), Color.White, "진행중")
-        MoneyTransferStatus.COMPLETED -> Triple(Color(0xFF10B981), Color.White, "완료")
+        MoneyTransferStatus.PENDING -> Triple(
+            Color(0xFFFFB366).copy(alpha = 0.12f), // 연한 오렌지/복숭아색
+            Color(0xFF2D3748), // 어두운 텍스트로 가독성 확보
+            "진행중"
+        )
+        MoneyTransferStatus.COMPLETED -> Triple(
+            Color(0xFF68D391).copy(alpha = 0.12f), // 연한 초록색
+            Color(0xFF2D3748), // 어두운 텍스트로 가독성 확보
+            "완료"
+        )
     }
 
-    Button(
+    Surface(
         onClick = { Log.d(TAG, "상태 버튼 클릭: $status") },
         modifier = Modifier
-            .height(28.dp)
-            .width(60.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = backgroundColor),
-        shape = RoundedCornerShape(14.dp),
-        contentPadding = PaddingValues(4.dp)
+            .height(36.dp)
+            .width(72.dp)
+            .shadow(
+                elevation = 6.dp,
+                spotColor = backgroundColor.copy(alpha = 0.4f),
+                ambientColor = backgroundColor.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(18.dp)
+            ),
+        color = backgroundColor,
+        shape = RoundedCornerShape(18.dp),
+        contentColor = textColor
     ) {
-        Text(text = text, fontSize = 11.sp, fontWeight = FontWeight.Medium, color = textColor)
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Text(
+                text = text,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = textColor
+            )
+        }
     }
 }
 

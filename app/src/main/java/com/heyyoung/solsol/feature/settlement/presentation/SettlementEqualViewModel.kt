@@ -5,6 +5,8 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.heyyoung.solsol.core.network.BackendApiService
+import com.heyyoung.solsol.core.network.DutchPayInviteRequest
 import com.heyyoung.solsol.feature.settlement.domain.model.Person
 import com.heyyoung.solsol.feature.settlement.domain.model.SettlementGroup
 import com.heyyoung.solsol.feature.settlement.domain.usecase.CreateSettlementGameUseCase
@@ -20,6 +22,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SettlementEqualViewModel @Inject constructor(
     private val createSettlementUseCase: CreateSettlementUseCase,
+    private val backendApiService: BackendApiService,
     private val createSettlementGameUseCase: CreateSettlementGameUseCase,
     private val joinSettlementUseCase: JoinSettlementUseCase
 ) : ViewModel() {
@@ -48,7 +51,7 @@ class SettlementEqualViewModel @Inject constructor(
             try {
                 // participants에서 "나"를 제외한 실제 참여자들만 추출
                 val participantUserIds = participants
-//                    .filter { !it.isMe }
+                    .filter { !it.isMe }
                     .map { it.id }
                 
                 Log.d(TAG, "참여자 ID 목록: $participantUserIds")
@@ -60,14 +63,53 @@ class SettlementEqualViewModel @Inject constructor(
                     totalAmount = totalAmount,
                     participantUserIds = participantUserIds
                 )
-                
+
                 result.fold(
                     onSuccess = { settlementGroup ->
                         Log.d(TAG, "✅ 정산 생성 성공: groupId=${settlementGroup.groupId}")
+
+                        // 참가자 중 '나'가 아닌 사람들만 초대 대상
+                        val recipients = participants.filter { !it.isMe }.map { it.id }
+
+                        // 1인 금액은 서버 응답에 있으면 그걸 쓰고, 없으면 계산해서 사용
+                        val amountPerPerson = (settlementGroup.amountPerPerson ?: (totalAmount / participants.size)).toInt()
+
+                        // organizer 정보
+                        val organizerName = participants.firstOrNull { it.isMe }?.name ?: "정산장"
+
+//                        // ✅ 푸시 전송 트리거 호출 (서버가 실제 FCM 발송)
+//                        viewModelScope.launch {
+//                            try {
+//                                val gid = settlementGroup.groupId ?: -1L
+//                                if (gid > 0 && recipients.isNotEmpty()) {
+//                                    val req = DutchPayInviteRequest(
+//                                        recipientUserIds = recipients,
+//                                        groupName = groupName,
+//                                        amountPerPerson = amountPerPerson,
+//                                        organizerId = organizerId,
+//                                        organizerName = organizerName
+//                                    )
+//                                    val res = backendApiService.notifyDutchPayInvite(gid, req)
+//                                    if (res.isSuccessful) {
+//                                        Log.d(TAG, "📨 정산 초대 푸시 전송 성공 (groupId=$gid, 대상=${recipients.size}명)")
+//                                    } else {
+//                                        Log.e(TAG, "❌ 정산 초대 푸시 전송 실패 code=${res.code()} body=${res.errorBody()?.string()}")
+//                                    }
+//                                } else {
+//                                    Log.w(TAG, "⚠️ 푸시 전송 스킵: groupId 또는 recipients 비정상 (gid=$gid, recipients=${recipients.size})")
+//                                }
+//                            } catch (e: Exception) {
+//                                Log.e(TAG, "❌ 정산 초대 푸시 전송 예외: ${e.message}")
+//                            }
+//                        }
+
                         Log.d(TAG, "🔄 참여자들을 그룹에 참여시키는 중...")
                         
                         // 생성 성공 후 모든 참여자를 그룹에 참여시킴
-                        settlementGroup.groupId?.let { joinParticipantsToGroup(it, participants, settlementGroup) }
+                        settlementGroup.groupId?.let {
+                            val filtered = participants.filter { !it.isMe } // 자기 자신 제거
+                            joinParticipantsToGroup(it, filtered, settlementGroup)
+                        }
                     },
                     onFailure = { error ->
                         Log.e(TAG, "❌ 정산 생성 실패: ${error.message}")
@@ -147,7 +189,7 @@ class SettlementEqualViewModel @Inject constructor(
         }
     }
 
-    
+
     private suspend fun joinParticipantsToGroup(
         groupId: Long,
         participants: List<Person>,
@@ -226,6 +268,17 @@ class SettlementEqualViewModel @Inject constructor(
     fun onSettlementCompleteNavigated() {
         Log.d(TAG, "🧹 정산 완료 화면 진입 후 자동 상태 초기화")
         resetState()
+    }
+
+    private fun sendSettlementNotificationToParticipants(
+        participants: List<Person>,
+        groupName: String,
+        totalAmount: Int
+    ) {
+        participants.filter { !it.isMe }.forEach { participant ->
+            Log.d(TAG, "📱 ${participant.name}에게 정산 알림 전송")
+            // TODO: 실제 서버 API 호출로 대체
+        }
     }
 }
 
