@@ -47,7 +47,6 @@ class MainActivity : ComponentActivity() {
     private var startDestination by mutableStateOf("login")
     private var initialPayAmount by mutableStateOf<String?>(null)
     private var initialPayeeName by mutableStateOf<String?>(null)
-    private var initialGroupId by mutableStateOf<Long?>(0L)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -122,12 +121,8 @@ class MainActivity : ComponentActivity() {
     private fun handleNotificationIntent(intent: Intent) {
         when (intent.getStringExtra("notification_action")) {
             "PAY_NOW" -> {
-                val test = intent.extras.toString()
-                Log.d(TAG, "이벤트 수신: $test")
                 initialPayAmount = intent.getStringExtra("pay_amount")
                 initialPayeeName  = intent.getStringExtra("payee_name")
-                val groupIdStr = intent.getStringExtra("group_id")
-                initialGroupId = groupIdStr?.toLongOrNull() ?: 0L
                 startDestination  = "remittance"
                 Log.d(TAG, "PAY_NOW 인텐트 수신: name=$initialPayeeName, amount=$initialPayAmount")
             }

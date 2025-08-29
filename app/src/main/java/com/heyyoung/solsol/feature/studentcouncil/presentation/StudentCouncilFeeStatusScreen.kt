@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -16,9 +17,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -34,11 +40,9 @@ private const val TAG = "FeeStatusScreen"
 @Composable
 fun StudentCouncilFeeStatusScreen(
     onNavigateBack: () -> Unit = {},
-    // Main에서 넘겨주는 형태에 맞춤
     feeStatusList: List<FeeStatusResponse>,
     viewModel: StudentCouncilViewModel = hiltViewModel()
 ) {
-    // 화면 진입 시마다 refresh 실행
     LaunchedEffect(Unit) {
         viewModel.loadFeeStatus(councilId = 1, feeId = 10001L)
     }
@@ -55,10 +59,17 @@ fun StudentCouncilFeeStatusScreen(
             .background(Color.White)
     ) {
         CenterAlignedTopAppBar(
-            title = { Text("회비 현황", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+            title = {
+                Text(
+                    "회비 현황",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1C1C1E)
+                )
+            },
             navigationIcon = {
                 IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.Filled.ArrowBack, contentDescription = "뒤로")
+                    Icon(Icons.Filled.ArrowBack, contentDescription = "뒤로", tint = Color(0xFF1C1C1E))
                 }
             },
             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -71,18 +82,12 @@ fun StudentCouncilFeeStatusScreen(
         when {
             isLoading -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = Color(0xFF8B5FBF))
                 }
             }
-            errorMessage != null -> {
-                ErrorState(message = errorMessage ?: "알 수 없는 오류")
-            }
-            feeStatus == null -> {
-                EmptyState("데이터가 없습니다.")
-            }
-            else -> {
-                FeeStatusContent(feeStatus)
-            }
+            errorMessage != null -> ErrorState(errorMessage ?: "알 수 없는 오류")
+            feeStatus == null -> EmptyState("데이터가 없습니다.")
+            else -> FeeStatusContent(feeStatus)
         }
     }
 }
@@ -91,22 +96,29 @@ fun StudentCouncilFeeStatusScreen(
 private fun FeeStatusContent(fee: FeeStatusResponse) {
     val total = fee.totalStudents
     val paid = fee.paidCount
-    val ratio = if (total > 0) paid.toFloat() / total.toFloat() else 0f
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp),
+            .background(Color(0xFFF9FAFB))
+            .padding(horizontal = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(16.dp))
 
-        // 요약 카드
-        SummaryCard(totalCount = total, paidCount = paid, ratio = ratio)
+        Text(
+            text = "우리 과 회비 납부 현황",
+            fontSize = 14.sp,
+            color = Color(0xFF4A5568),
+            fontWeight = FontWeight.SemiBold
+        )
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(14.dp))
 
-        // 학생 리스트
+        SummaryCardNoBar(totalCount = total, paidCount = paid)
+
+        Spacer(Modifier.height(18.dp))
+
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -125,32 +137,64 @@ private fun FeeStatusContent(fee: FeeStatusResponse) {
     }
 }
 
+/** 하단 바(프로그레스바) 없이, 숫자만 크게/보라색으로 강조한 요약 카드 */
 @Composable
-private fun SummaryCard(totalCount: Int, paidCount: Int, ratio: Float) {
+private fun SummaryCardNoBar(totalCount: Int, paidCount: Int) {
+    val purple = Color(0xFF8B5FBF)
+
     Box(
         modifier = Modifier
-            .shadow(8.dp, spotColor = Color(0x1A000000), ambientColor = Color(0x1A000000))
-            .border(1.dp, Color(0xCC8B5FBF), RoundedCornerShape(12.dp))
+            .shadow(
+                elevation = 8.dp,
+                spotColor = Color(0x1A000000),
+                ambientColor = Color(0x1A000000),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .border(
+                width = 1.dp,
+                color = Color(0xCC8B5FBF),
+                shape = RoundedCornerShape(12.dp)
+            )
             .fillMaxWidth()
-            .height(130.dp)
-            .background(Color(0xFFF8F7FF), RoundedCornerShape(12.dp))
-            .padding(20.dp)
+            .height(100.dp)
+            .background(
+                color = Color(0xFFF8F7FF),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .padding(horizontal = 20.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
-            Text(
-                text = "총 ${String.format("%,d", totalCount)}명 중 ${String.format("%,d", paidCount)}명 납부 완료",
-                fontSize = 18.sp,
-                color = Color(0xFF1C1C1E),
-                fontWeight = FontWeight.SemiBold
-            )
-            Spacer(Modifier.height(12.dp))
-            LinearProgressIndicator(
-                progress = { ratio },
-                modifier = Modifier.fillMaxWidth(),
-                trackColor = Color(0xFFEDE7F6),
-                color = Color(0xFF8B5FBF)
-            )
+        // 한 줄에서 숫자만 스타일 다르게
+        val line = buildAnnotatedString {
+            append("총 ")
+            withStyle(
+                SpanStyle(
+                    color = purple,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 26.sp,
+                    letterSpacing = 0.26.sp
+                )
+            ) { append(String.format("%,d", totalCount)) }
+            append("명 중 ")
+            withStyle(
+                SpanStyle(
+                    color = purple,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 26.sp,
+                    letterSpacing = 0.26.sp
+                )
+            ) { append(String.format("%,d", paidCount)) }
+            append("명 납부 완료")
         }
+
+        Text(
+            text = line,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color(0xFF2D3748),
+            letterSpacing = 0.24.sp,
+            maxLines = 1
+        )
     }
 }
 
@@ -164,55 +208,93 @@ private fun StudentRow(
 ) {
     Box(
         modifier = Modifier
-            .shadow(4.dp, spotColor = Color(0x0D000000), ambientColor = Color(0x0D000000))
             .fillMaxWidth()
-            .background(Color.White, RoundedCornerShape(12.dp))
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .shadow(
+                elevation = 6.dp,
+                spotColor = Color(0x12000000),
+                ambientColor = Color(0x12000000),
+                shape = RoundedCornerShape(16.dp)
+            )
+            .background(Color.White, RoundedCornerShape(16.dp))
+            .padding(horizontal = 16.dp, vertical = 14.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(Modifier.weight(1f)) {
-                Text(name, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1C1C1E))
-                Text("$dept • $studentId", fontSize = 12.sp, color = Color(0xFF666666))
-                if (isPaid && !paidAt.isNullOrBlank()) {
-                    Spacer(Modifier.height(2.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                // 프로필 아이콘(요청 스타일)
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(Color(0xFF8B5FBF).copy(alpha = 0.10f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
                     Text(
-                        "납부일: ${formatIsoInstant(paidAt)}",
-                        fontSize = 11.sp,
-                        color = Color(0xFF8B5FBF)
+                        text = name.first().toString(),
+                        color = Color(0xFF8B5FBF),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
+
+                Spacer(Modifier.width(14.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        name,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1C1C1E),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text("$dept · $studentId", fontSize = 12.sp, color = Color(0xFF79808A))
+                    if (isPaid && !paidAt.isNullOrBlank()) {
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            "납부일: ${formatIsoInstant(paidAt)}",
+                            fontSize = 11.sp,
+                            color = Color(0xFF8B5FBF),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
             }
+
             FeeStatusPill(isPaid)
         }
     }
 }
 
+/** 완료/미완료 가로폭 동일(60.dp) */
 @Composable
 private fun FeeStatusPill(isPaid: Boolean) {
+    val purple = Color(0xFF8B5FBF)
+    val pillWidth = 60.dp
+    val pillHeight = 28.dp
+
     if (isPaid) {
         Box(
             modifier = Modifier
-                .width(45.dp)
-                .height(20.dp)
-                .background(Color(0xFF8B5FBF), RoundedCornerShape(10.dp)),
+                .height(pillHeight)
+                .width(pillWidth)
+                .background(purple, RoundedCornerShape(14.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Text("완료", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = Color.White)
+            Text("완료", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
         }
     } else {
         Box(
             modifier = Modifier
-                .width(60.dp)
-                .height(20.dp)
-                .border(1.dp, Color(0xFF8B5FBF), RoundedCornerShape(10.dp))
-                .background(Color.White, RoundedCornerShape(10.dp)),
+                .height(pillHeight)
+                .width(pillWidth)
+                .border(1.dp, purple, RoundedCornerShape(14.dp))
+                .background(Color.White, RoundedCornerShape(14.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Text("미완료", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = Color(0xFF8B5FBF))
+            Text("미완료", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = purple)
         }
     }
 }
