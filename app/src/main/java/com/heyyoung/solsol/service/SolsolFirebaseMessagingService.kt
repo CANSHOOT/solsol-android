@@ -29,6 +29,7 @@ class SolsolFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
         Log.d(TAG, "FCM 메시지 수신: ${remoteMessage.from}")
+        Log.d(TAG, "FCM 메시지 수신: ${remoteMessage.data}")
 
         // 1) data payload가 있으면 우선 처리
         if (remoteMessage.data.isNotEmpty()) {
@@ -54,6 +55,7 @@ class SolsolFirebaseMessagingService : FirebaseMessagingService() {
         when (type) {
             "DUTCH_PAY_INVITE" -> {
                 Log.d(TAG, "정산 초대 알림 수신: $groupName")
+                Log.d(TAG, "정산 초대 알림 수신 데이터: $data")
                 showNotification(
                     title = "새로운 정산 요청",
                     body = "$groupName 정산에 참여해 주세요",
@@ -87,6 +89,8 @@ class SolsolFirebaseMessagingService : FirebaseMessagingService() {
             putExtra("notification_action", actionType)   // 기본 이동 목적지
             putExtra("group_id",   data["groupId"])
             putExtra("group_name", data["groupName"])
+            putExtra("payee_name", data["payeeName"])
+            putExtra("pay_amount", data["amount"])
         }
         val contentPending = PendingIntent.getActivity(
             this, 0, contentIntent,
@@ -116,9 +120,11 @@ class SolsolFirebaseMessagingService : FirebaseMessagingService() {
         // 서버가 data에 넣어주는 키 예시: amount, fromUserName
         val payNowIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            Log.d("바로 송금하기 데이터","data: $data")
             putExtra("notification_action", "PAY_NOW")
-            putExtra("pay_amount", data["amount"])          // 예: "29002"
-            putExtra("payee_name", data["fromUserName"])    // 예: "A사용자"
+            putExtra("group_id",   data["groupId"])
+            putExtra("payee_name", data["groupName"])
+            putExtra("pay_amount", data["amount"])
         }
         val payNowPending = PendingIntent.getActivity(
             this, notificationId + 2, payNowIntent,

@@ -24,7 +24,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.firebase.messaging.FirebaseMessaging
 import com.heyyoung.solsol.feature.auth.presentation.LoginScreen
 import com.heyyoung.solsol.feature.home.presentation.HomeScreen
-import com.heyyoung.solsol.feature.remittance.presentation.RemittanceScreen
+import com.heyyoung.solsol.feature.remittance.presentation.RemittanceMainScreen
 import com.heyyoung.solsol.feature.remittance.presentation.RemittanceScreen
 import com.heyyoung.solsol.feature.remittance.presentation.RemittanceSuccessScreen
 import com.heyyoung.solsol.feature.settlement.presentation.MoneyTransferScreen
@@ -47,6 +47,7 @@ class MainActivity : ComponentActivity() {
     private var startDestination by mutableStateOf("login")
     private var initialPayAmount by mutableStateOf<String?>(null)
     private var initialPayeeName by mutableStateOf<String?>(null)
+    private var initialGroupId by mutableStateOf<Long?>(0L)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -84,7 +85,8 @@ class MainActivity : ComponentActivity() {
                     SolsolApp(
                         initialScreen = startDestination,
                         payeeName = initialPayeeName,
-                        payAmount = initialPayAmount
+                        payAmount = initialPayAmount,
+                        pushGroupId = initialGroupId
                     )
                 }
             }
@@ -122,6 +124,8 @@ class MainActivity : ComponentActivity() {
             "PAY_NOW" -> {
                 initialPayAmount = intent.getStringExtra("pay_amount")
                 initialPayeeName  = intent.getStringExtra("payee_name")
+                val groupIdStr  = intent.getStringExtra("group_id")
+                initialGroupId = groupIdStr?.toLongOrNull() ?: 0L
                 startDestination  = "remittance"
                 Log.d(TAG, "PAY_NOW 인텐트 수신: name=$initialPayeeName, amount=$initialPayAmount")
             }
@@ -137,7 +141,9 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun SolsolApp(initialScreen: String = "login",
               payeeName: String? = null,
-              payAmount: String? = null) {
+              payAmount: String? = null,
+              pushGroupId: Long? = 0
+              ) {
     val TAG = "SolsolApp"
 
     // 현재 어떤 화면을 보여줄지 결정하는 상태
@@ -402,25 +408,10 @@ fun SolsolApp(initialScreen: String = "login",
                     remittanceGroupId = groupId
                     remittanceReceiverName = receiverName
                     remittanceAmount = amount
-                    currentScreen = "remittance"
+                    currentScreen = "remittance_main"
                 }
             )
         }
-
-//        // ✅ 송금 실행 화면
-//        "remittance" -> {
-//            RemittanceScreen(
-//                groupId = remittanceGroupId,
-//                receiverName = remittanceReceiverName ?: "",
-//                receiverInfo = "", // 필요 시 이메일/계좌 등 표시
-//                amount = String.format("%,d", remittanceAmount ?: 0),
-//                cardNumber = "**** **** **** 1234", // TODO: 실제 카드/계좌 연동
-//                onNavigateBack = { currentScreen = "money_transfer" },
-//                onRemittanceComplete = {
-//                    currentScreen = "remittance_success"
-//                }
-//            )
-//        }
 
         // ✅ 송금 성공 화면
         "remittance_success" -> {
@@ -476,15 +467,25 @@ fun SolsolApp(initialScreen: String = "login",
             )
         }
 
-//        "money_transfer" -> {
-//            MoneyTransferScreen(
-//                onNavigateBack = { currentScreen = "home" }
-//            )
-//        }
+
+        // ✅ 송금 실행 화면
+        "remittance_main" -> {
+            RemittanceMainScreen(
+                groupId = remittanceGroupId,
+                receiverName = remittanceReceiverName ?: "",
+                receiverInfo = "", // 필요 시 이메일/계좌 등 표시
+                amount = String.format("%,d", remittanceAmount ?: 0),
+                cardNumber = "**** **** **** 1234", // TODO: 실제 카드/계좌 연동
+                onNavigateBack = { currentScreen = "money_transfer" },
+                onRemittanceComplete = {
+                    currentScreen = "remittance_success"
+                }
+            )
+        }
 
         "remittance" -> {
             RemittanceScreen(
-                groupId = remittanceGroupId,
+                groupId = pushGroupId ?: 0L,
                 receiverName = payeeName ?: "상대방",
                 amount = payAmount ?: "0",
                 onNavigateBack = { currentScreen = "home" },
