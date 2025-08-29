@@ -88,7 +88,8 @@ class SolsolFirebaseMessagingService : FirebaseMessagingService() {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             putExtra("notification_action", actionType)   // 기본 이동 목적지
             putExtra("group_id",   data["groupId"])
-            putExtra("payee_name", data["groupName"])
+            putExtra("group_name", data["groupName"])
+            putExtra("payee_name", data["payeeName"])
             putExtra("pay_amount", data["amount"])
         }
         val contentPending = PendingIntent.getActivity(

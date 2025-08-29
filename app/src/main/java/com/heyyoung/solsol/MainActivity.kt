@@ -126,7 +126,8 @@ class MainActivity : ComponentActivity() {
                 Log.d(TAG, "이벤트 수신: $test")
                 initialPayAmount = intent.getStringExtra("pay_amount")
                 initialPayeeName  = intent.getStringExtra("payee_name")
-                initialGroupId = intent.getLongExtra("group_id", 0L)
+                val groupIdStr = intent.getStringExtra("group_id")
+                initialGroupId = groupIdStr?.toLongOrNull() ?: 0L
                 startDestination  = "remittance"
                 Log.d(TAG, "PAY_NOW 인텐트 수신: name=$initialPayeeName, amount=$initialPayAmount")
             }
