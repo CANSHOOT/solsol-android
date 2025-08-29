@@ -22,7 +22,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SettlementEqualViewModel @Inject constructor(
     private val createSettlementUseCase: CreateSettlementUseCase,
-    private val backendApiService: BackendApiService
+    private val backendApiService: BackendApiService,
     private val createSettlementGameUseCase: CreateSettlementGameUseCase,
     private val joinSettlementUseCase: JoinSettlementUseCase
 ) : ViewModel() {

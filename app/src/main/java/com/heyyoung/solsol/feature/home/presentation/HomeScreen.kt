@@ -1,5 +1,3 @@
-// 📍 위치: app/src/main/java/com/heyyoung/solsol/feature/home/presentation/HomeScreen.kt
-
 package com.heyyoung.solsol.feature.home.presentation
 
 import android.util.Log
@@ -13,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -26,7 +25,6 @@ import com.heyyoung.solsol.feature.home.HomeViewModel
 import com.heyyoung.solsol.feature.home.presentation.components.MenuGrid
 import com.heyyoung.solsol.feature.home.presentation.components.PagerDots
 import com.heyyoung.solsol.feature.home.presentation.components.StudentCard
-import com.heyyoung.solsol.ui.components.modifiers.solsolGradientBackground
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,7 +55,7 @@ fun HomeScreen(
         Log.d(TAG, "홈 화면 진입")
     }
 
-    // 피그마 색상 적용한 홈 화면 레이아웃
+    // 깔끔한 그라데이션 배경
     HomeScreenLayout(
         modifier = modifier,
         onLogout = { viewModel.logout(onLogout) }
@@ -78,8 +76,8 @@ fun HomeScreen(
         )
 
         Spacer(modifier = Modifier.height(30.dp))
-        PagerDots(total = 3, selectedIndex = 0)   // ✅ 모양만
-        Spacer(Modifier.height(15.dp))
+        PagerDots(total = 3, selectedIndex = 0)
+        Spacer(Modifier.height(20.dp))
 
         // 바로가기 메뉴 그리드
         MenuGrid(
@@ -117,7 +115,7 @@ fun HomeScreen(
 }
 
 /**
- * 홈 화면 레이아웃 (피그마 그라디언트 배경)
+ * 홈 화면 레이아웃 (살짝 개선된 그라데이션)
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -129,17 +127,19 @@ private fun HomeScreenLayout(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .solsolGradientBackground(
-                startColor = colorResource(id = R.color.solsol_gradient_start),
-                endColor   = colorResource(id = R.color.solsol_gradient_end),
-                angleInDegrees = 70f,
-                alpha = 0.7f
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        colorResource(id = R.color.solsol_gradient_start),
+                        colorResource(id = R.color.solsol_gradient_end)
+                    )
+                )
             )
     ) {
         // 상단 앱바
         HomeTopAppBar(onLogout = onLogout)
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         // 메인 콘텐츠
         content()
@@ -159,7 +159,7 @@ private fun HomeTopAppBar(
     TopAppBar(
         title = {
             Text(
-                text = "쏠쏠대학교",
+                text = "solsolheyoung",
                 color = colorResource(id = R.color.solsol_white),
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp
@@ -196,7 +196,7 @@ private fun HomeTopAppBar(
 }
 
 /**
- * 하단 네비게이션
+ * 하단 네비게이션 (기존과 동일)
  */
 @Composable
 private fun HomeBottomNavigation() {
@@ -227,14 +227,6 @@ private fun HomeBottomNavigation() {
                 Log.d(TAG, "학사 탭 클릭")
             }
 
-//            BottomNavItem(
-//                icon = Icons.Default.Card,
-//                label = "혜택",
-//                selected = false
-//            ) {
-//                Log.d(TAG, "혜택 탭 클릭")
-//            }
-
             BottomNavItem(
                 icon = Icons.Default.Menu,
                 label = "전체메뉴",
@@ -247,7 +239,7 @@ private fun HomeBottomNavigation() {
 }
 
 /**
- * 하단 네비게이션 아이템
+ * 하단 네비게이션 아이템 (기존과 동일)
  */
 @Composable
 private fun BottomNavItem(

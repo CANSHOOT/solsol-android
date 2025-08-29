@@ -55,6 +55,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.heyyoung.solsol.R
 import com.heyyoung.solsol.feature.payment.domain.PaymentViewModel
 import com.heyyoung.solsol.feature.payment.domain.DiscountCoupon
 import com.heyyoung.solsol.feature.payment.domain.CouponType
@@ -261,7 +262,7 @@ fun PaymentScreen(
                 // 쿠폰 선택 영역
                 Log.d("PaymentScreen", "쿠폰 데이터 확인: ${paymentInfo.coupons}")
                 Log.d("PaymentScreen", "쿠폰 개수: ${paymentInfo.coupons?.size ?: 0}")
-                
+
                 // 실제 API 쿠폰 데이터 + 테스트 쿠폰 데이터
                 val apiCoupons = paymentInfo.coupons ?: emptyList()
                 val testCoupons = listOf(
@@ -280,7 +281,7 @@ fun PaymentScreen(
                         couponType = "ATTENDANCE"
                     )
                 )
-                
+
                 val availableCoupons = if (apiCoupons.isNotEmpty()) {
                     Log.d("PaymentScreen", "API 쿠폰 사용: ${apiCoupons.size}개")
                     apiCoupons
@@ -288,7 +289,7 @@ fun PaymentScreen(
                     Log.d("PaymentScreen", "테스트 쿠폰 사용: ${testCoupons.size}개")
                     testCoupons
                 }
-                
+
                 if (availableCoupons.isNotEmpty()) {
                     Log.d("PaymentScreen", "쿠폰 선택 UI 표시")
                     CouponSelector(
@@ -522,41 +523,60 @@ private fun CouponSelector(
     availableCoupons.forEach { coupon ->
         Log.d("CouponSelector", "쿠폰: ${coupon.amount}원 (ID: ${coupon.discountCouponId})")
     }
-    
+
     var expanded by remember { mutableStateOf(false) }
-    
+
+    // 쿠폰 타입별 색상 정의
+    fun getCouponTypeColor(couponType: String): Color {
+        return when (couponType.uppercase()) {
+            "RANDOM" -> Color(0xFF8B5FBF)      // solsol_purple
+            "ATTENDANCE" -> Color(0xFFF093FB)   // solsol_light_purple
+            "EVENT" -> Color(0xFF2D3748)        // solsol_dark_text
+            else -> Color(0xFF718096)           // solsol_gray_text
+        }
+    }
+
+    fun getCouponTypeName(couponType: String): String {
+        return when (couponType.uppercase()) {
+            "RANDOM" -> "랜덤 쿠폰"
+            "ATTENDANCE" -> "출석 쿠폰"
+            "EVENT" -> "이벤트 쿠폰"
+            else -> "일반 쿠폰"
+        }
+    }
+
     Column(
         modifier = Modifier.width(342.dp)
     ) {
-        // 쿠폰 선택 라벨
+        // 제목 - 이모지 제거
         Text(
-            text = "💳 할인 쿠폰 선택",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color(0xFF1C1C1E),
-            modifier = Modifier.padding(bottom = 8.dp)
+            text = "할인 쿠폰 적용",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF2D3748), // solsol_dark_text
+            modifier = Modifier.padding(bottom = 12.dp)
         )
-        
-        // 드롭다운 박스
+
+        // 메인 드롭다운 박스
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .shadow(
-                    elevation = 2.dp,
-                    spotColor = Color(0x1A000000),
-                    ambientColor = Color(0x1A000000)
-                )
-                .border(
-                    width = 1.dp,
-                    color = Color(0x338B5FBF),
-                    shape = RoundedCornerShape(8.dp)
+                    elevation = 8.dp,
+                    spotColor = Color(0x1A8B5FBF),
+                    ambientColor = Color(0x1A8B5FBF)
                 )
                 .background(
-                    color = Color.White,
-                    shape = RoundedCornerShape(8.dp)
+                    color = if (selectedCoupon != null) Color(0xFFF093FB).copy(alpha = 0.08f) else Color(0xFFFFFFFF),
+                    shape = RoundedCornerShape(16.dp)
+                )
+                .border(
+                    width = if (selectedCoupon != null) 2.dp else 1.dp,
+                    color = if (selectedCoupon != null) Color(0xFF8B5FBF) else Color(0xFFE2E8F0),
+                    shape = RoundedCornerShape(16.dp)
                 )
                 .clickable { expanded = true }
-                .padding(12.dp)
+                .padding(16.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -566,137 +586,233 @@ private fun CouponSelector(
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = Color(0xFF7D6BB0)
+                    Image(
+                        painter = painterResource(id = R.drawable.coupon),
+                        contentDescription = "쿠폰 아이콘",
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(10.dp)),
+                        contentScale = ContentScale.Fit
                     )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = selectedCoupon?.let { 
-                            "${String.format("%,d", it.amount)}원 할인 쿠폰"
-                        } ?: "쿠폰을 선택해주세요",
-                        fontSize = 14.sp,
-                        color = if (selectedCoupon != null) Color(0xFF1C1C1E) else Color(0xFF999999)
-                    )
+
+                    Spacer(Modifier.width(12.dp))
+
+                    Column {
+                        Text(
+                            text = selectedCoupon?.let {
+                                "${String.format("%,d", it.amount)}원 할인 쿠폰"
+                            } ?: "쿠폰을 선택해주세요",
+                            fontSize = 14.sp,
+                            fontWeight = if (selectedCoupon != null) FontWeight.SemiBold else FontWeight.Normal,
+                            color = if (selectedCoupon != null) Color(0xFF2D3748) else Color(0xFF718096)
+                        )
+
+                        selectedCoupon?.let { coupon ->
+                            Text(
+                                text = getCouponTypeName(coupon.couponType),
+                                fontSize = 12.sp,
+                                color = getCouponTypeColor(coupon.couponType),
+                                modifier = Modifier.padding(top = 2.dp)
+                            )
+                        }
+                    }
                 }
+
                 Icon(
                     imageVector = Icons.Default.ArrowDropDown,
                     contentDescription = null,
-                    tint = Color(0xFF7D6BB0)
+                    tint = Color(0xFF8B5FBF),
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }
-        
-        // 드롭다운 메뉴 (최대 높이 제한)
+
+        // 드롭다운 메뉴
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = 200.dp)  // 최대 높이를 200dp로 제한
+                .heightIn(max = 240.dp)
+                .shadow(
+                    elevation = 12.dp,
+                    spotColor = Color(0x1A8B5FBF),
+                    ambientColor = Color(0x1A8B5FBF)
+                )
+                .background(
+                    color = Color(0xFFFFFFFF),
+                    shape = RoundedCornerShape(12.dp)
+                )
         ) {
             // "쿠폰 사용 안함" 옵션
             DropdownMenuItem(
-                text = { 
-                    Text(
-                        "쿠폰 사용 안함",
-                        fontSize = 14.sp,
-                        color = Color(0xFF666666)
-                    )
+                text = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.coupon),
+                            contentDescription = "쿠폰 아이콘",
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(10.dp)),
+                            contentScale = ContentScale.Fit
+                        )
+
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            "쿠폰 사용 안함",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF718096)
+                        )
+                    }
                 },
                 onClick = {
                     onCouponSelected(null)
                     expanded = false
                 },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = Color(0xFF999999)
-                    )
-                }
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
             )
-            
+
             // 사용 가능한 쿠폰들
             availableCoupons.forEach { coupon ->
-                val couponType = CouponType.fromString(coupon.couponType)
-                
+                val couponTypeColor = getCouponTypeColor(coupon.couponType)
+                val couponTypeName = getCouponTypeName(coupon.couponType)
+
                 DropdownMenuItem(
-                    text = { 
-                        Column {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    text = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            // 쿠폰 타입별 색상 박스
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .background(
+                                        color = couponTypeColor.copy(alpha = 0.12f),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    text = couponType.emoji,
-                                    fontSize = 12.sp
-                                )
-                                Text(
-                                    "${String.format("%,d", coupon.amount)}원 할인",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color(0xFF1C1C1E)
+                                Box(
+                                    modifier = Modifier
+                                        .size(10.dp)
+                                        .background(
+                                            color = couponTypeColor,
+                                            shape = RoundedCornerShape(5.dp)
+                                        )
                                 )
                             }
-                            Spacer(Modifier.height(2.dp))
-                            Text(
-                                couponType.displayName,
-                                fontSize = 11.sp,
-                                color = Color(0xFF7D6BB0),
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                "만료일: ${formatCouponDate(coupon.endDate)}",
-                                fontSize = 12.sp,
-                                color = Color(0xFF666666)
-                            )
+                            Spacer(Modifier.width(12.dp))
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        "${String.format("%,d", coupon.amount)}원",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF2D3748)
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(
+                                        "할인",
+                                        fontSize = 12.sp,
+                                        color = couponTypeColor,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+
+                                Text(
+                                    couponTypeName,
+                                    fontSize = 11.sp,
+                                    color = couponTypeColor,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.padding(top = 1.dp)
+                                )
+
+                                Text(
+                                    "만료일: ${formatCouponDate(coupon.endDate)}",
+                                    fontSize = 10.sp,
+                                    color = Color(0xFF718096).copy(alpha = 0.8f),
+                                    modifier = Modifier.padding(top = 1.dp)
+                                )
+                            }
                         }
                     },
                     onClick = {
                         onCouponSelected(coupon)
                         expanded = false
                     },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = Color(0xFF7D6BB0)
-                        )
-                    }
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
                 )
             }
         }
-        
+
         // 선택된 쿠폰 정보 표시
         selectedCoupon?.let { coupon ->
-            val couponType = CouponType.fromString(coupon.couponType)
-            Spacer(Modifier.height(8.dp))
-            
-            Column(
-                modifier = Modifier.padding(horizontal = 4.dp)
+            val couponTypeColor = getCouponTypeColor(coupon.couponType)
+            Spacer(Modifier.height(12.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        color = couponTypeColor.copy(alpha = 0.05f),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = couponTypeColor.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .padding(12.dp)
             ) {
-                Text(
-                    text = "${couponType.emoji} ${String.format("%,d", coupon.amount)}원 추가 할인이 적용됩니다",
-                    fontSize = 12.sp,
-                    color = Color(0xFF7D6BB0),
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = couponType.description,
-                    fontSize = 10.sp,
-                    color = Color(0xFF999999),
-                    modifier = Modifier.padding(top = 2.dp)
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // 작은 색상 표시기
+                    Box(
+                        modifier = Modifier
+                            .size(20.dp)
+                            .background(
+                                color = couponTypeColor.copy(alpha = 0.2f),
+                                shape = RoundedCornerShape(10.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(
+                                    color = couponTypeColor,
+                                    shape = RoundedCornerShape(3.dp)
+                                )
+                        )
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = "${String.format("%,d", coupon.amount)}원 추가 할인이 적용됩니다",
+                            fontSize = 13.sp,
+                            color = couponTypeColor,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = "${getCouponTypeName(coupon.couponType)} • 만료일: ${formatCouponDate(coupon.endDate)}",
+                            fontSize = 11.sp,
+                            color = Color(0xFF718096),
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
+                }
             }
         }
     }
 }
-
 private fun formatCouponDate(dateString: String): String {
     return try {
         val inputFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
