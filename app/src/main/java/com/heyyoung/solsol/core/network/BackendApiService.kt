@@ -139,14 +139,10 @@ data class CouncilExpenditureRequest(
 )
 
 data class CouncilFeeTransferCommand(
-    val councilId: Long,
-    val fromUserId: String,
-    val toUserId: String,
-    val feeId: Long,
-    val amount: Long,
+    val feeId: Long,                        // 어떤 학기의 회비인지
     val withdrawalAccountNo: String,
-    val depositTransactionSummary: String? = null,
-    val withdrawalTransactionSummary: String? = null
+    val depositTransactionSummary: String,
+    val withdrawalTransactionSummary: String
 )
 
 // ========== Response DTOs ==========

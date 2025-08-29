@@ -43,7 +43,8 @@ fun StudentCouncilMainScreen(
                 onNavigateBack = onNavigateBack,
                 onNavigateToExpenseHistory = { navController.navigate("expense_history") },
                 onNavigateToExpenseRegister = { navController.navigate("ocr_camera") },
-                onNavigateToFeeStatus = { navController.navigate("fee_status") }
+                onNavigateToFeeStatus = { navController.navigate("fee_status") },
+                onNavigateToPayment = { navController.navigate("fee_payment") }
             )
         }
 
@@ -85,6 +86,23 @@ fun StudentCouncilMainScreen(
                     viewModel.addExpenditure(req)
                     navController.navigate("expense_history") {
                         popUpTo("home")
+                    }
+                }
+            )
+        }
+        
+        // 회비 납부 화면
+        composable("fee_payment") {
+            StudentCouncilFeePaymentScreen(
+                councilName = viewModel.summary?.header?.councilName ?: "학생회",
+                semester = viewModel.summary?.feeBadge?.semester ?: "2025-1학기",
+                feeId = 10001L, // 실제로는 현재 학기의 회비 ID를 전달해야 함
+                onNavigateBack = { navController.popBackStack() },
+                onPaymentComplete = {
+                    // 납부 완료 후 홈으로 이동하며 데이터 새로고침
+                    viewModel.loadDeptSummary()
+                    navController.navigate("home") {
+                        popUpTo("home") { inclusive = true }
                     }
                 }
             )
