@@ -64,6 +64,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.activity.compose.BackHandler
 import com.heyyoung.solsol.R
 import com.heyyoung.solsol.feature.payment.domain.PaymentViewModel
 import com.heyyoung.solsol.feature.payment.domain.DiscountCoupon
@@ -156,6 +157,11 @@ fun PaymentScreen(
                 onError("지문 인식을 사용할 수 없습니다")
             }
         }
+    }
+
+    // 하드웨어/제스처 뒤로가기 버튼 처리 (결제 처리 중이거나 결제 완료 화면 표시 중일 때는 비활성화)
+    BackHandler(enabled = !uiState.isProcessingPayment && !uiState.isPaymentComplete) {
+        onNavigateBack()
     }
 
     // QR 데이터가 있을 때 결제 정보 로드

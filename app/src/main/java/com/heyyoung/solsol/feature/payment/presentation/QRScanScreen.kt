@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.activity.compose.BackHandler
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.heyyoung.solsol.R
 import com.heyyoung.solsol.core.util.CameraPermissionUtil
@@ -46,6 +47,11 @@ fun QRScanScreen(
     var showPermissionDialog by remember { mutableStateOf(false) }
 
     Log.d(TAG, "QR 스캔 화면 진입")
+
+    // 하드웨어/제스처 뒤로가기 버튼 처리
+    BackHandler {
+        onNavigateBack()
+    }
 
     // 카메라 권한 요청
     CameraPermissionUtil.RequestCameraPermission(

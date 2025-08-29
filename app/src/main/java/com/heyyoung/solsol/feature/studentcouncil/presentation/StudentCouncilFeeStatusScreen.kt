@@ -28,6 +28,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.activity.compose.BackHandler
 import com.heyyoung.solsol.core.network.FeeStatusResponse
 import com.heyyoung.solsol.feature.studentcouncil.StudentCouncilViewModel
 import java.time.Instant
@@ -45,6 +46,11 @@ fun StudentCouncilFeeStatusScreen(
 ) {
     LaunchedEffect(Unit) {
         viewModel.loadFeeStatus(councilId = 1, feeId = 10001L)
+    }
+
+    // 하드웨어/제스처 뒤로가기 버튼 처리
+    BackHandler {
+        onNavigateBack()
     }
 
     val isLoading by remember { androidx.compose.runtime.derivedStateOf { viewModel.isLoading } }
