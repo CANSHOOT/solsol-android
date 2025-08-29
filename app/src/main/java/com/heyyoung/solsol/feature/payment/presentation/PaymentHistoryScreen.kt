@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.activity.compose.BackHandler
 import com.heyyoung.solsol.feature.payment.domain.PaymentHistoryItem
 import com.heyyoung.solsol.feature.payment.domain.PaymentHistoryViewModel
 import java.text.SimpleDateFormat
@@ -36,6 +37,11 @@ fun PaymentHistoryScreen(
 ) {
     val TAG = "PaymentHistoryScreen"
     val uiState = viewModel.uiState
+
+    // 하드웨어/제스처 뒤로가기 버튼 처리
+    BackHandler {
+        onNavigateBack()
+    }
 
     Column(
         modifier = Modifier

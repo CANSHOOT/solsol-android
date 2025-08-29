@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.BackHandler
 import com.heyyoung.solsol.core.network.DeptHomeSummaryResponse
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,6 +41,12 @@ fun StudentCouncilScreen(
     val textSub = Color(0xFF718096)
 
     Log.d("1123","a"+summary.toString())
+
+    // 하드웨어/제스처 뒤로가기 버튼 처리
+    BackHandler {
+        onNavigateBack()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()

@@ -58,6 +58,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.activity.compose.BackHandler
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -140,6 +141,11 @@ fun RemittanceMainScreen(
                 onError("지문 인식을 사용할 수 없습니다")
             }
         }
+    }
+
+    // 하드웨어/제스처 뒤로가기 버튼 처리 (송금 처리 중일 때는 비활성화)
+    BackHandler(enabled = !loading) {
+        onNavigateBack()
     }
 
     if (showSuccessScreen) {
