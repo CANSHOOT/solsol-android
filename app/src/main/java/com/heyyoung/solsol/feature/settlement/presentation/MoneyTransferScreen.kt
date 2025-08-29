@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.BackHandler
 
 private const val TAG = "MoneyTransferScreen"
 enum class TransferSide { SENT, RECEIVED }
@@ -47,6 +48,11 @@ fun MoneyTransferScreen(
     // 화면 진입 시마다 refresh 실행
     LaunchedEffect(Unit) {
         viewModel.refresh()
+    }
+
+    // 하드웨어/제스처 뒤로가기 버튼 처리
+    BackHandler {
+        onNavigateBack()
     }
 
     Column(

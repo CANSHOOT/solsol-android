@@ -1,9 +1,7 @@
 package com.heyyoung.solsol.feature.settlement.presentation
 
-import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresApi
-import com.heyyoung.solsol.feature.settlement.domain.model.Person
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -14,7 +12,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -25,6 +22,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.heyyoung.solsol.feature.settlement.domain.model.Person
 import java.math.BigDecimal
 
 private const val TAG = "SettlementEqualScreen"
@@ -40,7 +39,7 @@ fun SettlementEqualScreen(
 ) {
     // ViewModel 상태 관리
     val uiState by viewModel.uiState.collectAsState()
-    
+
     // 로컬 상태 관리
     var totalAmountText by remember { mutableStateOf("") }
     var groupNameText by remember { mutableStateOf("") }
@@ -74,6 +73,11 @@ fun SettlementEqualScreen(
 
     Log.d(TAG, "똑같이 나누기 화면 진입 - 참여자: ${participants.size}명, 총액: ${totalAmount}원")
     Log.d(TAG, "1인당: ${perPersonAmount}원, 나머지: ${remainder}원 (헤이영 제공)")
+
+    // 하드웨어/제스처 뒤로가기 버튼 처리 (정산 생성 중일 때는 비활성화)
+    BackHandler(enabled = !uiState.isCreating) {
+        onNavigateBack()
+    }
 
     Column(
         modifier = Modifier
@@ -119,9 +123,9 @@ fun SettlementEqualScreen(
             // 그룹명 입력
             OutlinedTextField(
                 value = groupNameText,
-                onValueChange = { 
+                onValueChange = {
                     if (it.length <= 20) { // 최대 20자까지만
-                        groupNameText = it 
+                        groupNameText = it
                     }
                 },
                 label = { Text("정산 그룹명") },
@@ -209,10 +213,14 @@ fun SettlementEqualScreen(
                         Log.w(TAG, "그룹명이 입력되지 않음")
                         return@Button
                     }
-                    
+
                     val organizerId = participants.find { it.isMe }?.id ?: "me"
-                    Log.d(TAG, "🚀 정산 API 요청 시작: $groupNameText, ${totalAmount}원, ${participants.size}명")
-                    val updatedParticipants = participants.map { it.copy(amount = BigDecimal.valueOf(perPersonAmount.toLong())) }
+                    Log.d(
+                        TAG,
+                        "🚀 정산 API 요청 시작: $groupNameText, ${totalAmount}원, ${participants.size}명"
+                    )
+                    val updatedParticipants =
+                        participants.map { it.copy(amount = BigDecimal.valueOf(perPersonAmount.toLong())) }
 
                     viewModel.createSettlement(
                         organizerId = organizerId,
@@ -315,7 +323,10 @@ private fun TotalAmountInputCard(
 
                 // 금액 입력
                 OutlinedTextField(
-                    value = if (amount.isEmpty()) "" else String.format("%,d", amount.toIntOrNull() ?: 0),
+                    value = if (amount.isEmpty()) "" else String.format(
+                        "%,d",
+                        amount.toIntOrNull() ?: 0
+                    ),
                     onValueChange = { newValue ->
                         // 콤마 제거하고 숫자만 추출
                         val numberOnly = newValue.replace(",", "").filter { it.isDigit() }

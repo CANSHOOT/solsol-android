@@ -24,6 +24,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.BackHandler
 import com.heyyoung.solsol.feature.settlement.domain.model.SettlementGroup
 import com.heyyoung.solsol.feature.settlement.presentation.SettlementEqualViewModel
 import java.math.BigDecimal
@@ -59,6 +60,11 @@ fun SettlementManualScreen(
 
     Log.d(TAG, "직접 입력하기 화면 진입 - 참여자: ${participants.size}명")
     Log.d(TAG, "현재 입력 상태: $participantAmounts")
+
+    // 하드웨어/제스처 뒤로가기 버튼 처리 (정산 생성 중일 때는 비활성화)
+    BackHandler(enabled = !uiState.isCreating) {
+        onNavigateBack()
+    }
 
     // ✅ 정산 완료되면 완료화면으로 이동
     LaunchedEffect(uiState.isCompleted) {

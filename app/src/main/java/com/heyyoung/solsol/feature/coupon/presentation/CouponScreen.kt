@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.activity.compose.BackHandler
 import com.heyyoung.solsol.R
 import com.heyyoung.solsol.feature.payment.domain.CouponItem
 import com.heyyoung.solsol.feature.payment.domain.CouponType
@@ -50,6 +51,11 @@ fun CouponScreen(
     LaunchedEffect(Unit) {
         Log.d(TAG, "쿠폰 화면 진입 - 쿠폰 목록 로드")
         viewModel.loadCoupons()
+    }
+
+    // 하드웨어/제스처 뒤로가기 버튼 처리
+    BackHandler {
+        onNavigateBack()
     }
 
     Column(

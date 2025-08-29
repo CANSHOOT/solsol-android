@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.BackHandler
 import com.heyyoung.solsol.feature.settlement.domain.model.toPerson
 import com.heyyoung.solsol.feature.settlement.presentation.components.NearbyBottomSheet
 import com.heyyoung.solsol.feature.settlement.presentation.viewmodel.NearbyViewModel
@@ -83,6 +84,11 @@ fun SettlementParticipantsScreen(
     }
 
     Log.d(TAG, "사람 추가 화면 진입 - 현재 참여자 ${participants.size}명")
+
+    // 하드웨어/제스처 뒤로가기 버튼 처리
+    BackHandler {
+        onNavigateBack()
+    }
 
     Column(
         modifier = Modifier

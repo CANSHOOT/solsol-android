@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.activity.compose.BackHandler
 import com.heyyoung.solsol.feature.settlement.presentation.viewmodel.NearbyViewModel
 import com.heyyoung.solsol.feature.settlement.presentation.components.NearbyPermissionDialog
 
@@ -42,6 +43,11 @@ fun SettlementMethodScreen(
 
     Log.d(TAG, "정산 방식 선택 화면 진입")
     Log.d(TAG, "현재 선택된 방식: $selectedMethod")
+
+    // 하드웨어/제스처 뒤로가기 버튼 처리
+    BackHandler {
+        onNavigateBack()
+    }
 
     Column(
         modifier = Modifier
