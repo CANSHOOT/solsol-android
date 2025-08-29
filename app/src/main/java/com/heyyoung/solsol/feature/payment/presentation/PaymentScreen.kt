@@ -17,11 +17,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -69,6 +72,7 @@ import com.heyyoung.solsol.R
 import com.heyyoung.solsol.feature.payment.domain.PaymentViewModel
 import com.heyyoung.solsol.feature.payment.domain.DiscountCoupon
 import com.heyyoung.solsol.feature.payment.domain.CouponType
+import com.heyyoung.solsol.ui.theme.OneShinhan
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,7 +90,7 @@ fun PaymentScreen(
     fun authenticateWithBiometric(onSuccess: () -> Unit, onError: (String) -> Unit) {
         Log.d(TAG, "지문 인식 시도 시작")
         val biometricManager = BiometricManager.from(context)
-        
+
         when (biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK)) {
             BiometricManager.BIOMETRIC_SUCCESS -> {
                 Log.d(TAG, "지문 센서 사용 가능")
@@ -267,178 +271,174 @@ fun PaymentScreen(
 
         // 결제 정보가 로드된 경우에만 표시
         uiState.paymentInfo?.let { paymentInfo ->
-            // 본문 (스크롤 가능)
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Spacer(Modifier.height(12.dp))
+            // 스크롤 가능한 컨텐츠와 고정 버튼을 분리
+            Box(modifier = Modifier.fillMaxSize()) {
+                // 스크롤 가능한 본문 영역
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 120.dp), // 하단 버튼 공간 확보
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(Modifier.height(12.dp))
 
-                // 주문 내역 제목
-                Box(Modifier.width(342.dp)) {
-                    Column {
-                        Text(
-                            text = "주문 내역",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1C1C1E)
-                        )
-                        Spacer(Modifier.height(8.dp))
-
-                        // 주문한 메뉴들 리스트
-                        paymentInfo.orderItems.forEach { orderItem ->
-                            OrderItemRow(
-                                name = orderItem.name,
-                                price = orderItem.price.toInt()
-                            )
-                            Spacer(Modifier.height(4.dp))
-                        }
-
-                        Spacer(Modifier.height(8.dp))
-
-                        // 구분선
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(1.dp)
-                                .background(Color(0xFFE5E5E5))
-                        )
-
-                        Spacer(Modifier.height(8.dp))
-
-                        // 총 금액
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                    // 주문 내역
+                    Box(Modifier.width(342.dp)) {
+                        Column(
+                            horizontalAlignment = Alignment.Start, // 왼쪽 정렬
+                            verticalArrangement = Arrangement.Top
                         ) {
-                            Text(
-                                text = "총 금액",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1C1C1E)
-                            )
-                            Text(
-                                text = String.format("%,d원", paymentInfo.total.toInt()),
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color(0xFF1C1C1E)
-                            )
+                            Spacer(Modifier.height(8.dp))
+
+                            // 주문한 메뉴들 리스트
+                            paymentInfo.orderItems.forEach { orderItem ->
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalAlignment = Alignment.Start
+                                ) {
+                                    Text(
+                                        text = orderItem.name,
+                                        fontSize = 14.sp,
+                                        color = Color(0xFF666666)
+                                    )
+                                    Spacer(Modifier.height(2.dp))
+                                    Text(
+                                        text = String.format("%,d원", orderItem.price.toInt()),
+                                        fontSize = 28.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF1C1C1E)
+                                    )
+                                }
+                                Spacer(Modifier.height(8.dp))
+                            }
+
+                            Spacer(Modifier.height(8.dp))
                         }
                     }
-                }
 
-                Spacer(Modifier.height(16.dp))
-
-                // ▽ 제휴 할인 박스
-                DiscountBox(
-                    title = "${paymentInfo.department} 제휴 할인",
-                    sub = "${paymentInfo.discountRate}% 할인 · 캠퍼스 카페",
-                    amount = paymentInfo.discount.toInt()
-                )
-
-                Spacer(Modifier.height(8.dp))
-
-                Box(Modifier.width(342.dp)) {
-                    Text(
-                        text = "✓ 자동으로 적용되었습니다",
-                        fontSize = 12.sp,
-                        color = Color(0xFF7D6BB0) // 약한 보라
-                    )
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                // 쿠폰 선택 영역
-                Log.d("PaymentScreen", "쿠폰 데이터 확인: ${paymentInfo.coupons}")
-                Log.d("PaymentScreen", "쿠폰 개수: ${paymentInfo.coupons?.size ?: 0}")
-
-                // 실제 API 쿠폰 데이터 + 테스트 쿠폰 데이터
-                val apiCoupons = paymentInfo.coupons ?: emptyList()
-                val testCoupons = listOf(
-                    DiscountCoupon(
-                        discountCouponId = 14L,
-                        amount = 500,
-                        createdDate = "2025-07-30",
-                        endDate = "2025-08-29",
-                        couponType = "RANDOM"
-                    ),
-                    DiscountCoupon(
-                        discountCouponId = 13L,
-                        amount = 500,
-                        createdDate = "2025-08-24",
-                        endDate = "2025-09-23",
-                        couponType = "ATTENDANCE"
-                    )
-                )
-
-                val availableCoupons = if (apiCoupons.isNotEmpty()) {
-                    Log.d("PaymentScreen", "API 쿠폰 사용: ${apiCoupons.size}개")
-                    apiCoupons
-                } else {
-                    Log.d("PaymentScreen", "테스트 쿠폰 사용: ${testCoupons.size}개")
-                    testCoupons
-                }
-
-                if (availableCoupons.isNotEmpty()) {
-                    Log.d("PaymentScreen", "쿠폰 선택 UI 표시")
-                    CouponSelector(
-                        availableCoupons = availableCoupons,
-                        selectedCoupon = uiState.selectedCoupon,
-                        onCouponSelected = { coupon ->
-                            viewModel.selectCoupon(coupon)
-                        }
-                    )
                     Spacer(Modifier.height(16.dp))
-                } else {
-                    Log.d("PaymentScreen", "사용 가능한 쿠폰이 없습니다")
-                }
 
-                Spacer(Modifier.height(16.dp))
+                    // ▽ 제휴 할인 박스
+                    DiscountBox(
+                        title = "${paymentInfo.department} 제휴 할인",
+                        sub = "${paymentInfo.discountRate}% 할인 · 캠퍼스 카페",
+                        amount = paymentInfo.discount.toInt()
+                    )
 
-                // ▽ 결제 카드 표시 영역 (임시 카드 들어갈 영역)
-                CardPreviewBox(
+                    Spacer(Modifier.height(8.dp))
 
-                )
+                    Box(Modifier.width(342.dp)) {
+                        Text(
+                            text = "✓ 자동으로 적용되었습니다",
+                            fontSize = 12.sp,
+                            color = Color(0xFF7D6BB0) // 약한 보라
+                        )
+                    }
 
-                Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(16.dp))
 
-                Text(
-                    text = "총 ${String.format("%,d", paymentInfo.discount.toInt() + (uiState.selectedCoupon?.amount ?: 0))}원 할인을 받았어요",
-                    fontSize = 12.sp,
-                    color = Color(0xFF7D6BB0)
-                )
+                    // 쿠폰 선택 영역
+                    Log.d("PaymentScreen", "쿠폰 데이터 확인: ${paymentInfo.coupons}")
+                    Log.d("PaymentScreen", "쿠폰 개수: ${paymentInfo.coupons?.size ?: 0}")
 
-                Spacer(Modifier.height(16.dp))
+                    // 실제 API 쿠폰 데이터 + 테스트 쿠폰 데이터
+                    val apiCoupons = paymentInfo.coupons ?: emptyList()
+                    val testCoupons = listOf(
+                        DiscountCoupon(
+                            discountCouponId = 14L,
+                            amount = 500,
+                            createdDate = "2025-07-30",
+                            endDate = "2025-08-29",
+                            couponType = "RANDOM"
+                        ),
+                        DiscountCoupon(
+                            discountCouponId = 13L,
+                            amount = 500,
+                            createdDate = "2025-08-24",
+                            endDate = "2025-09-23",
+                            couponType = "ATTENDANCE"
+                        )
+                    )
 
-                // ▽ 결제 버튼 (그림자 + 보라)
-                val finalPrice = viewModel.calculateFinalAmount()
-                PaymentCta(
-                    finalPrice = finalPrice,
-                    enabled = !uiState.isProcessingPayment,
-                    onClick = {
-                        authenticateWithBiometric(
-                            onSuccess = {
-                                viewModel.processPayment()
-                            },
-                            onError = { errorMessage ->
-                                Log.e(TAG, "지문 인증 실패: $errorMessage")
-                                // TODO: 에러 메시지를 UI에 표시할 수 있습니다
+                    val availableCoupons = if (apiCoupons.isNotEmpty()) {
+                        Log.d("PaymentScreen", "API 쿠폰 사용: ${apiCoupons.size}개")
+                        apiCoupons
+                    } else {
+                        Log.d("PaymentScreen", "테스트 쿠폰 사용: ${testCoupons.size}개")
+                        testCoupons
+                    }
+
+                    if (availableCoupons.isNotEmpty()) {
+                        Log.d("PaymentScreen", "쿠폰 선택 UI 표시")
+                        CouponSelector(
+                            availableCoupons = availableCoupons,
+                            selectedCoupon = uiState.selectedCoupon,
+                            onCouponSelected = { coupon ->
+                                viewModel.selectCoupon(coupon)
                             }
                         )
+                        Spacer(Modifier.height(16.dp))
+                    } else {
+                        Log.d("PaymentScreen", "사용 가능한 쿠폰이 없습니다")
                     }
-                )
 
-                if (uiState.isProcessingPayment) {
-                    Spacer(Modifier.height(10.dp))
-                    Text("결제 중…", fontSize = 12.sp, color = Color(0xFF7D6BB0))
+                    Spacer(Modifier.height(16.dp))
+
+                    // ▽ 결제 카드 표시 영역 (임시 카드 들어갈 영역)
+                    CardPreviewBox()
+
+                    Spacer(Modifier.height(12.dp))
+
+                    Text(
+                        text = "총 ${String.format("%,d", paymentInfo.discount.toInt() + (uiState.selectedCoupon?.amount ?: 0))}원 할인을 받았어요",
+                        fontSize = 12.sp,
+                        color = Color(0xFF7D6BB0)
+                    )
+
+                    // 추가 여백으로 스크롤 공간 확보
+                    Spacer(Modifier.height(60.dp))
                 }
 
-                // 결제 버튼이 화면에서 보이도록 충분한 공간 확보
-                Spacer(Modifier.height(40.dp))
+                // 하단 고정 결제 버튼 영역
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .background(
+                            Color.White.copy(alpha = 0.98f)
+                        )
+                        .padding(horizontal = 16.dp)
+                        .padding(
+                            top = 20.dp,
+                            bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 20.dp
+                        ),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    val finalPrice = viewModel.calculateFinalAmount()
+
+                    PaymentCta(
+                        finalPrice = finalPrice,
+                        enabled = !uiState.isProcessingPayment,
+                        onClick = {
+                            authenticateWithBiometric(
+                                onSuccess = {
+                                    viewModel.processPayment()
+                                },
+                                onError = { errorMessage ->
+                                    Log.e(TAG, "지문 인증 실패: $errorMessage")
+                                    // TODO: 에러 메시지를 UI에 표시할 수 있습니다
+                                }
+                            )
+                        }
+                    )
+
+                    if (uiState.isProcessingPayment) {
+                        Spacer(Modifier.height(10.dp))
+                        Text("결제 중…", fontSize = 12.sp, color = Color(0xFF7D6BB0))
+                    }
+                }
             }
         } ?: run {
             // 결제 정보가 없고 로딩도 아닌 경우
@@ -469,15 +469,15 @@ private fun OrderItemRow(
     ) {
         Text(
             text = name,
-            fontSize = 14.sp,
-            color = Color(0xFF1C1C1E),
+            fontSize = 22.sp,
+            color = Color(0xFF2D3748),
             modifier = Modifier.weight(1f)
         )
         Text(
             text = String.format("%,d원", price),
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color(0xFF1C1C1E)
+            fontSize = 30.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF718096)
         )
     }
 }
@@ -518,11 +518,11 @@ private fun DiscountBox(
                 color = Color(0xFF7D6BB0)
             )
             Spacer(Modifier.height(6.dp))
-            Text(sub, fontSize = 13.sp, color = Color(0xFF7D6BB0))
+            Text(sub, fontSize = 13.sp, color = Color(0xFF2D3748))
         }
         Text(
             text = "-${String.format("%,d", amount)}원",
-            fontSize = 20.sp,
+            fontSize = 22.sp,
             fontWeight = FontWeight.ExtraBold,
             color = Color(0xFF7D6BB0)
         )
@@ -533,13 +533,13 @@ private fun DiscountBox(
 @Composable
 private fun CardPreviewBox() {
     var isFlipped by remember { mutableStateOf(false) }
-    
+
     val rotation by animateFloatAsState(
         targetValue = if (isFlipped) 180f else 0f,
         animationSpec = tween(durationMillis = 800),
         label = "card_flip"
     )
-    
+
     Box(
         modifier = Modifier
             .shadow(
@@ -572,7 +572,7 @@ private fun CardPreviewBox() {
         ) {
             // rotation이 90도를 넘으면 뒤집힌 상태로 판단
             val showBack = rotation > 90f
-            
+
             if (showBack) {
                 // 뒤면 이미지 (180도 더 회전시켜서 올바른 방향으로 표시)
                 Image(
@@ -585,7 +585,7 @@ private fun CardPreviewBox() {
                         .graphicsLayer { rotationY = 180f },
                     contentScale = ContentScale.Crop
                 )
-                
+
                 // 뒤면 텍스트
                 Text(
                     text = "카드 뒤면",
@@ -593,10 +593,10 @@ private fun CardPreviewBox() {
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 12.dp)
                         .background(
-                            Color.Black.copy(alpha = 0.6f),
-                            RoundedCornerShape(4.dp)
+                            Color.Black.copy(alpha = 0.3f),
+                            RoundedCornerShape(10.dp)
                         )
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .padding(horizontal = 8.dp, vertical = 8.dp)
                         .graphicsLayer { rotationY = 180f },
                     fontSize = 12.sp,
                     color = Color.White
@@ -612,7 +612,7 @@ private fun CardPreviewBox() {
                         .clip(RoundedCornerShape(12.dp)),
                     contentScale = ContentScale.Crop
                 )
-                
+
                 // 앞면 텍스트
                 Text(
                     text = "신한 체크카드 (4426-60**)",
@@ -620,8 +620,8 @@ private fun CardPreviewBox() {
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 12.dp)
                         .background(
-                            Color.Black.copy(alpha = 0.6f),
-                            RoundedCornerShape(4.dp)
+                            Color.Black.copy(alpha = 0.3f),
+                            RoundedCornerShape(10.dp)
                         )
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                     fontSize = 12.sp,
@@ -644,24 +644,26 @@ private fun PaymentCta(
         enabled = enabled,
         modifier = Modifier
             .shadow(
-                elevation = 4.dp,
-                spotColor = Color(0x40000000),
-                ambientColor = Color(0x40000000)
+                elevation = 8.dp,
+                spotColor = Color(0x408B5FBF),
+                ambientColor = Color(0x408B5FBF),
+                shape = RoundedCornerShape(16.dp)
             )
             .width(342.dp)
             .height(56.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xE58B5FBF),
-            disabledContainerColor = Color(0xE58B5FBF).copy(alpha = 0.6f),
+            containerColor = Color(0xFF8B5FBF),
+            disabledContainerColor = Color(0xFF8B5FBF).copy(alpha = 0.6f),
             contentColor = Color.White
         ),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         contentPadding = PaddingValues(horizontal = 16.dp)
     ) {
         Text(
             text = "${String.format("%,d", finalPrice)}원 결제하기",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.ExtraBold
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            fontFamily = OneShinhan
         )
     }
 }
@@ -702,7 +704,6 @@ private fun CouponSelector(
     Column(
         modifier = Modifier.width(342.dp)
     ) {
-        // 제목 - 이모지 제거
         Text(
             text = "할인 쿠폰 적용",
             fontSize = 16.sp,
@@ -967,6 +968,7 @@ private fun CouponSelector(
         }
     }
 }
+
 private fun formatCouponDate(dateString: String): String {
     return try {
         val inputFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
