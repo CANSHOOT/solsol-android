@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.heyyoung.solsol.R
 
-// 글래스모피즘 학생증 카드 (세련되고 트렌디한 디자인)
+// 모바일 학생증 형태 (글래스모피즘 적용)
 @Composable
 fun StudentCard(
     studentName: String = "김신한",
@@ -43,7 +43,7 @@ fun StudentCard(
             .padding(horizontal = 20.dp),
         contentAlignment = Alignment.Center
     ) {
-        // 글래스모피즘 학생증 카드
+        // 글래스모피즘 카드
         GlassmorphismCard(
             modifier = Modifier
                 .width(350.dp)
@@ -55,12 +55,12 @@ fun StudentCard(
                     .padding(24.dp)
             ) {
                 // 헤더 텍스트
-                GlassCardHeader()
+                ModernCardHeader()
 
                 Spacer(modifier = Modifier.height(20.dp))
 
                 // 학생 정보 섹션
-                GlassStudentInfo(
+                ModernStudentInfo(
                     studentName = studentName,
                     studentNumber = studentNumber,
                     department = department,
@@ -70,7 +70,7 @@ fun StudentCard(
                 Spacer(modifier = Modifier.weight(1f))
 
                 // QR/BT 버튼 바
-                GlassCardButtons(
+                ModernCardButtons(
                     onQrClick = onQrClick,
                     onBtClick = onBtClick
                 )
@@ -92,58 +92,37 @@ private fun GlassmorphismCard(
             .shadow(
                 elevation = 20.dp,
                 shape = RoundedCornerShape(24.dp),
-                spotColor = Color.Black.copy(alpha = 0.1f),
-                ambientColor = Color.Black.copy(alpha = 0.05f)
+                spotColor = Color.White.copy(alpha = 0.3f),
+                ambientColor = Color.White.copy(alpha = 0.15f)
             )
             .background(
                 brush = Brush.linearGradient(
                     colors = listOf(
-                        Color.White.copy(alpha = 0.1f),
-                        Color.White.copy(alpha = 0.05f),
-                        Color.White.copy(alpha = 0.02f)
+                        Color.White.copy(alpha = 0.25f),
+                        Color.White.copy(alpha = 0.15f),
+                        Color.White.copy(alpha = 0.1f)
                     )
                 ),
                 shape = RoundedCornerShape(24.dp)
             )
             .clip(RoundedCornerShape(24.dp))
     ) {
-        // 글래스 테두리 효과
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            Color.White.copy(alpha = 0.2f),
-                            Color.Transparent,
-                            Color.White.copy(alpha = 0.1f)
-                        )
-                    ),
-                    shape = RoundedCornerShape(24.dp)
-                )
-                .padding(1.dp)
-                .background(
-                    Color.Transparent,
-                    shape = RoundedCornerShape(23.dp)
-                )
-        )
-
         content()
     }
 }
 
 @Composable
-private fun GlassCardHeader() {
+private fun ModernCardHeader() {
     Text(
         text = "모바일 학생증",
-        fontSize = 14.sp,
-        fontWeight = FontWeight.SemiBold,
+        fontSize = 13.sp,
+        fontWeight = FontWeight.Medium,
         color = Color.White.copy(alpha = 0.9f)
     )
 }
 
 @Composable
-private fun GlassStudentInfo(
+private fun ModernStudentInfo(
     studentName: String,
     studentNumber: String,
     department: String,
@@ -153,22 +132,22 @@ private fun GlassStudentInfo(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth()
     ) {
-        // 글래스 프로필 이미지
-        GlassProfileImage()
+        // 현대적인 프로필 이미지
+        ModernProfileImage()
 
         Spacer(modifier = Modifier.width(20.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = "$department / $grade",
-                fontSize = 13.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color.White.copy(alpha = 0.8f)
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = "$studentName ($studentNumber)",
-                fontSize = 22.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
@@ -177,21 +156,21 @@ private fun GlassStudentInfo(
 }
 
 @Composable
-private fun GlassProfileImage() {
+private fun ModernProfileImage() {
     Box(
         modifier = Modifier
             .size(80.dp)
             .shadow(
                 elevation = 12.dp,
                 shape = CircleShape,
-                spotColor = Color.White.copy(alpha = 0.3f),
-                ambientColor = Color.Black.copy(alpha = 0.1f)
+                spotColor = Color.White.copy(alpha = 0.4f),
+                ambientColor = Color.White.copy(alpha = 0.2f)
             )
             .background(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color.White.copy(alpha = 0.15f),
-                        Color.White.copy(alpha = 0.05f)
+                        Color.White.copy(alpha = 0.3f),
+                        Color.White.copy(alpha = 0.15f)
                     )
                 ),
                 shape = CircleShape
@@ -209,7 +188,7 @@ private fun GlassProfileImage() {
 }
 
 @Composable
-private fun GlassCardButtons(
+private fun ModernCardButtons(
     onQrClick: () -> Unit,
     onBtClick: () -> Unit
 ) {
@@ -224,15 +203,15 @@ private fun GlassCardButtons(
                 .shadow(
                     elevation = 8.dp,
                     shape = RoundedCornerShape(30.dp),
-                    spotColor = Color.White.copy(alpha = 0.2f),
-                    ambientColor = Color.Black.copy(alpha = 0.05f)
+                    spotColor = Color.White.copy(alpha = 0.3f),
+                    ambientColor = Color.White.copy(alpha = 0.15f)
                 )
                 .background(
                     brush = Brush.horizontalGradient(
                         colors = listOf(
-                            Color.White.copy(alpha = 0.08f),
-                            Color.White.copy(alpha = 0.12f),
-                            Color.White.copy(alpha = 0.08f)
+                            Color.White.copy(alpha = 0.2f),
+                            Color.White.copy(alpha = 0.15f),
+                            Color.White.copy(alpha = 0.2f)
                         )
                     ),
                     shape = RoundedCornerShape(30.dp)
@@ -241,12 +220,11 @@ private fun GlassCardButtons(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // QR 버튼
-            GlassActionButton(
+            ModernActionButton(
                 iconRes = R.drawable.qr1,
                 label = "QR",
                 onClick = onQrClick,
-                modifier = Modifier.weight(1f),
-                color = Color.White
+                modifier = Modifier.weight(1f)
             )
 
             // 구분선
@@ -258,24 +236,22 @@ private fun GlassCardButtons(
             )
 
             // BT 버튼
-            GlassActionButton(
+            ModernActionButton(
                 iconRes = R.drawable.bt1,
                 label = "BT",
                 onClick = onBtClick,
-                modifier = Modifier.weight(1f),
-                color = Color.White
+                modifier = Modifier.weight(1f)
             )
         }
     }
 }
 
 @Composable
-private fun GlassActionButton(
+private fun ModernActionButton(
     iconRes: Int,
     label: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    color: Color = Color.White
+    modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
@@ -285,7 +261,7 @@ private fun GlassActionButton(
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        Color.White.copy(alpha = 0.1f),
+                        Color.White.copy(alpha = 0.15f),
                         Color.White.copy(alpha = 0.05f)
                     )
                 ),
@@ -306,7 +282,7 @@ private fun GlassActionButton(
             Spacer(Modifier.width(8.dp))
             Text(
                 text = label,
-                color = color.copy(alpha = 0.9f),
+                color = Color.White,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -335,22 +311,22 @@ fun PagerDots(
                     .shadow(
                         elevation = if (i == selectedIndex) 6.dp else 2.dp,
                         shape = CircleShape,
-                        spotColor = Color.White.copy(alpha = 0.4f)
+                        spotColor = Color.White.copy(alpha = 0.5f)
                     )
                     .clip(CircleShape)
                     .background(
                         if (i == selectedIndex) {
                             Brush.radialGradient(
                                 colors = listOf(
-                                    activeColor.copy(alpha = 0.9f),
-                                    activeColor.copy(alpha = 0.6f)
+                                    activeColor,
+                                    activeColor.copy(alpha = 0.8f)
                                 )
                             )
                         } else {
                             Brush.radialGradient(
                                 colors = listOf(
-                                    inactiveColor.copy(alpha = 0.6f),
-                                    inactiveColor.copy(alpha = 0.3f)
+                                    inactiveColor,
+                                    inactiveColor.copy(alpha = 0.6f)
                                 )
                             )
                         }
