@@ -2,8 +2,10 @@ package com.heyyoung.solsol.feature.settlement.presentation.game
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -77,9 +79,11 @@ fun GameHomeScreen(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
         )
 
+        // 스크롤 가능한 컨텐츠
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState()) // 스크롤 기능 추가
                 .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -215,7 +219,8 @@ fun GameHomeScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            // 하단 여백 추가 (스크롤 시 여유 공간 확보)
+            Spacer(modifier = Modifier.height(40.dp))
         }
     }
 }
@@ -236,7 +241,7 @@ private fun GameModeCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(120.dp)
+            .defaultMinSize(minHeight = 120.dp) // 최소 높이 설정으로 변경
             .shadow(
                 elevation = 8.dp,
                 spotColor = Color(0x1A8B5FBF),
@@ -254,8 +259,8 @@ private fun GameModeCard(
     ) {
         Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
+                .fillMaxWidth()
+                .padding(24.dp), // 패딩 유지
             verticalAlignment = Alignment.CenterVertically
         ) {
             // 아이콘 영역
@@ -283,15 +288,19 @@ private fun GameModeCard(
 
             Spacer(modifier = Modifier.width(20.dp))
 
-            // 텍스트 영역
+            // 텍스트 영역 - 유동적 크기 조정
             Column(
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .wrapContentHeight() // 텍스트 높이에 맞게 조정
             ) {
                 Text(
                     text = title,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = textMain
+                    color = textMain,
+                    maxLines = 2, // 최대 2줄까지 허용
+                    lineHeight = 26.sp // 줄 간격 추가
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -300,7 +309,8 @@ private fun GameModeCard(
                     text = description,
                     fontSize = 15.sp,
                     color = textSub,
-                    lineHeight = 22.sp
+                    lineHeight = 22.sp,
+                    maxLines = 3 // 최대 3줄까지 허용
                 )
             }
         }
@@ -314,7 +324,6 @@ private fun GameRuleItem(
 ) {
     val purple = Color(0xFF8B5FBF)
     val textMain = Color(0xFF2D3748)
-    val textSub = Color(0xFF718096)
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -350,7 +359,9 @@ private fun GameRuleItem(
             color = textMain,
             lineHeight = 24.sp,
             fontWeight = FontWeight.Medium,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier
+                .weight(1f)
+                .wrapContentHeight() // 텍스트 높이에 맞게 조정
         )
     }
 }

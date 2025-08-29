@@ -25,6 +25,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.firebase.messaging.FirebaseMessaging
 import com.heyyoung.solsol.feature.auth.presentation.LoginScreen
 import com.heyyoung.solsol.feature.home.presentation.HomeScreen
+import com.heyyoung.solsol.feature.payment.presentation.PaymentScreen
+import com.heyyoung.solsol.feature.payment.presentation.QRScanScreen
+import com.heyyoung.solsol.feature.payment.presentation.components.CafeMenuScreen
+import com.heyyoung.solsol.feature.payment.presentation.components.MenuItem
 import com.heyyoung.solsol.feature.remittance.presentation.RemittanceMainScreen
 import com.heyyoung.solsol.feature.remittance.presentation.RemittanceScreen
 import com.heyyoung.solsol.feature.remittance.presentation.RemittanceSuccessScreen
@@ -174,6 +178,9 @@ fun SolsolApp(initialScreen: String = "login",
     // 이체용 상태
     var remittanceGroupId by remember { mutableStateOf<Long?>(null) }
 
+    // 카페 결제
+    var selectedMenuItem by remember { mutableStateOf<MenuItem?>(null) }
+
     // 앱 상태 로깅
     LaunchedEffect(currentScreen) {
         Log.i(TAG, "🔄 화면 전환: $currentScreen")
@@ -236,32 +243,25 @@ fun SolsolApp(initialScreen: String = "login",
         }
 
         "qr" -> {
-            // QR 스캔 화면
-            com.heyyoung.solsol.feature.payment.presentation.QRScanScreen(
+            QRScanScreen(
                 onNavigateBack = {
                     currentScreen = "home"
                 },
                 onQRScanned = { qrData ->
                     Log.d(TAG, "QR 스캔 완료: $qrData")
                     scannedQRData = qrData
-                    currentScreen = "payment" // ← 결제 화면으로 이동
+                    currentScreen = "cafe_menu"  // 바로 결제가 아닌 카페 메뉴로 이동
                 }
             )
         }
 
         "payment" -> {
-            // 결제 화면
-            com.heyyoung.solsol.feature.payment.presentation.PaymentScreen(
+            PaymentScreen(
                 qrData = scannedQRData ?: "",
-                onNavigateBack = {
-                    // 뒤로가기 시 QR 스캔 화면으로 돌아가기
-                    currentScreen = "qr"
-                },
+                onNavigateBack = { currentScreen = "cafe_menu" },
                 onPaymentComplete = {
-                    Log.d(TAG, "결제 완료! 홈으로 이동")
-                    // 결제 완료 시 홈으로 이동
                     currentScreen = "home"
-                    scannedQRData = null // QR 데이터 초기화
+                    scannedQRData = null
                 }
             )
         }
@@ -564,6 +564,18 @@ fun SolsolApp(initialScreen: String = "login",
                 onNavigateBack = {
                     Log.d(TAG, "쿠폰 화면에서 홈으로 돌아가기")
                     currentScreen = "home"
+                }
+            )
+        }
+
+        "cafe_menu" -> {
+            CafeMenuScreen(
+                onNavigateBack = { currentScreen = "qr" },
+                onMenuSelected = { selectedMenu ->
+                    Log.d(TAG, "메뉴 선택됨: ${selectedMenu.name}, ${selectedMenu.price}원")
+                    // 메뉴를 QR 형식으로 변환
+                    scannedQRData = "CAFE_MENU:${selectedMenu.id}:${selectedMenu.name}:${selectedMenu.price}"
+                    currentScreen = "payment"
                 }
             )
         }

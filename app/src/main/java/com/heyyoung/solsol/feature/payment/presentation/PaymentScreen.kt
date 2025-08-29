@@ -72,11 +72,13 @@ import com.heyyoung.solsol.R
 import com.heyyoung.solsol.feature.payment.domain.PaymentViewModel
 import com.heyyoung.solsol.feature.payment.domain.DiscountCoupon
 import com.heyyoung.solsol.feature.payment.domain.CouponType
+import com.heyyoung.solsol.feature.payment.presentation.components.MenuItem
 import com.heyyoung.solsol.ui.theme.OneShinhan
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaymentScreen(
+    selectedMenu: MenuItem? = null,
     qrData: String = "",
     onNavigateBack: () -> Unit = {},
     onPaymentComplete: () -> Unit = {},
@@ -300,7 +302,7 @@ fun PaymentScreen(
                                 ) {
                                     Text(
                                         text = orderItem.name,
-                                        fontSize = 14.sp,
+                                        fontSize = 16.sp,
                                         color = Color(0xFF666666)
                                     )
                                     Spacer(Modifier.height(2.dp))
