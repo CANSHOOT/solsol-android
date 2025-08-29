@@ -47,6 +47,7 @@ class MainActivity : ComponentActivity() {
     private var startDestination by mutableStateOf("login")
     private var initialPayAmount by mutableStateOf<String?>(null)
     private var initialPayeeName by mutableStateOf<String?>(null)
+    private var initialGroupId by mutableStateOf<Long?>(0L)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -84,7 +85,8 @@ class MainActivity : ComponentActivity() {
                     SolsolApp(
                         initialScreen = startDestination,
                         payeeName = initialPayeeName,
-                        payAmount = initialPayAmount
+                        payAmount = initialPayAmount,
+                        pushGroupId = initialGroupId
                     )
                 }
             }
@@ -120,8 +122,11 @@ class MainActivity : ComponentActivity() {
     private fun handleNotificationIntent(intent: Intent) {
         when (intent.getStringExtra("notification_action")) {
             "PAY_NOW" -> {
+                val test = intent.extras.toString()
+                Log.d(TAG, "이벤트 수신: $test")
                 initialPayAmount = intent.getStringExtra("pay_amount")
                 initialPayeeName  = intent.getStringExtra("payee_name")
+                initialGroupId = intent.getLongExtra("group_id", 0L)
                 startDestination  = "remittance"
                 Log.d(TAG, "PAY_NOW 인텐트 수신: name=$initialPayeeName, amount=$initialPayAmount")
             }
@@ -137,7 +142,9 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun SolsolApp(initialScreen: String = "login",
               payeeName: String? = null,
-              payAmount: String? = null) {
+              payAmount: String? = null,
+              pushGroupId: Long? = 0
+              ) {
     val TAG = "SolsolApp"
 
     // 현재 어떤 화면을 보여줄지 결정하는 상태
@@ -479,7 +486,7 @@ fun SolsolApp(initialScreen: String = "login",
 
         "remittance" -> {
             RemittanceScreen(
-                groupId = remittanceGroupId,
+                groupId = pushGroupId ?: 0L,
                 receiverName = payeeName ?: "상대방",
                 amount = payAmount ?: "0",
                 onNavigateBack = { currentScreen = "home" },
