@@ -1,6 +1,13 @@
 package com.heyyoung.solsol.feature.remittance.presentation
 
+import android.util.Log
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -10,6 +17,11 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -58,11 +70,77 @@ fun RemittanceMainScreen(
     onNavigateBack: () -> Unit = {},
     onRemittanceComplete: () -> Unit = {}
 ) {
+    val TAG = "RemittanceMainScreen"
+    val context = LocalContext.current
     var showSuccessScreen by remember { mutableStateOf(false) }
     val viewModel: RemittanceViewModel = hiltViewModel()
     val paymentResponse by viewModel.paymentResponse.collectAsState()
     val loading by viewModel.loading.collectAsState()
     val error by viewModel.error.collectAsState()
+
+    // 지문 인식 함수
+    fun authenticateWithBiometric(onSuccess: () -> Unit, onError: (String) -> Unit) {
+        Log.d(TAG, "지문 인식 시도 시작")
+        val biometricManager = BiometricManager.from(context)
+        
+        when (biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK)) {
+            BiometricManager.BIOMETRIC_SUCCESS -> {
+                Log.d(TAG, "지문 센서 사용 가능")
+                try {
+                    val activity = context as FragmentActivity
+                    val executor = ContextCompat.getMainExecutor(context)
+                    val biometricPrompt = BiometricPrompt(activity, executor,
+                        object : BiometricPrompt.AuthenticationCallback() {
+                            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                                super.onAuthenticationError(errorCode, errString)
+                                Log.e(TAG, "지문 인증 에러: $errorCode, $errString")
+                                onError(errString.toString())
+                            }
+
+                            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                                super.onAuthenticationSucceeded(result)
+                                Log.d(TAG, "지문 인증 성공!")
+                                onSuccess()
+                            }
+
+                            override fun onAuthenticationFailed() {
+                                super.onAuthenticationFailed()
+                                Log.d(TAG, "지문 인증 실패")
+                                onError("지문 인식에 실패했습니다")
+                            }
+                        })
+
+                    val promptInfo = BiometricPrompt.PromptInfo.Builder()
+                        .setTitle("지문으로 송금을 인증해주세요")
+                        .setSubtitle("안전한 송금을 위해 지문 인증이 필요합니다")
+                        .setNegativeButtonText("취소")
+                        .build()
+
+                    Log.d(TAG, "지문 인증 다이얼로그 실행")
+                    biometricPrompt.authenticate(promptInfo)
+                } catch (e: Exception) {
+                    Log.e(TAG, "지문 인증 실행 중 오류", e)
+                    onError("지문 인식을 초기화할 수 없습니다: ${e.message}")
+                }
+            }
+            BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> {
+                Log.e(TAG, "지문 센서 하드웨어 없음")
+                onError("지문 센서가 없습니다")
+            }
+            BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> {
+                Log.e(TAG, "지문 센서 사용 불가")
+                onError("지문 센서를 사용할 수 없습니다")
+            }
+            BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
+                Log.e(TAG, "등록된 지문 없음")
+                onError("등록된 지문이 없습니다.\n설정에서 지문을 등록해주세요.")
+            }
+            else -> {
+                Log.e(TAG, "기타 지문 인식 오류")
+                onError("지문 인식을 사용할 수 없습니다")
+            }
+        }
+    }
 
     if (showSuccessScreen) {
         RemittanceSuccessScreen(
@@ -118,8 +196,8 @@ fun RemittanceMainScreen(
 
             Spacer(Modifier.height(20.dp))
 
-            // 카드 정보 박스
-            CardInfoBox(cardNumber = cardNumber)
+            // 카드 정보 박스 (회전 가능)
+            CardPreviewBox(cardNumber = cardNumber)
 
             Spacer(Modifier.height(32.dp))
 
@@ -136,9 +214,17 @@ fun RemittanceMainScreen(
             // 송금하기 버튼
             Button(
                 onClick = {
-                    groupId?.let {
-                        viewModel.sendPayment(it, "정산 송금")
-                    }
+                    authenticateWithBiometric(
+                        onSuccess = {
+                            groupId?.let {
+                                viewModel.sendPayment(it, "정산 송금")
+                            }
+                        },
+                        onError = { errorMessage ->
+                            Log.e(TAG, "지문 인증 실패: $errorMessage")
+                            // TODO: 에러 메시지를 UI에 표시할 수 있습니다
+                        }
+                    )
                 },
                 modifier = Modifier
                     .shadow(
@@ -286,7 +372,15 @@ private fun AmountBox(amount: String) {
 }
 
 @Composable
-private fun CardInfoBox(cardNumber: String) {
+private fun CardPreviewBox(cardNumber: String) {
+    var isFlipped by remember { mutableStateOf(false) }
+    
+    val rotation by animateFloatAsState(
+        targetValue = if (isFlipped) 180f else 0f,
+        animationSpec = tween(durationMillis = 800),
+        label = "card_flip"
+    )
+    
     Box(
         modifier = Modifier
             .shadow(
@@ -300,36 +394,81 @@ private fun CardInfoBox(cardNumber: String) {
                 shape = RoundedCornerShape(12.dp)
             )
             .width(342.dp)
-            .height(200.dp)
+            .height(245.dp)
             .background(
                 color = Color(0xFFFFFFFF),
                 shape = RoundedCornerShape(12.dp)
-            ),
+            )
+            .clickable { isFlipped = !isFlipped },
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    rotationY = rotation
+                    cameraDistance = 12f * density
+                },
+            contentAlignment = Alignment.Center
         ) {
-            // 카드 이미지
-            Image(
-                painter = painterResource(id = com.heyyoung.solsol.R.drawable.shinhan_card),
-                contentDescription = "신한 체크카드",
-                modifier = Modifier
-                    .width(280.dp)
-                    .height(140.dp)
-                    .clip(RoundedCornerShape(12.dp)),
-                contentScale = ContentScale.Crop
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            // 카드 정보
-            Text(
-                text = "신한 체크카드 ($cardNumber)",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color(0xFF1C1C1E)
-            )
+            // rotation이 90도를 넘으면 뒤집힌 상태로 판단
+            val showBack = rotation > 90f
+            
+            if (showBack) {
+                // 뒤면 이미지 (180도 더 회전시켜서 올바른 방향으로 표시)
+                Image(
+                    painter = painterResource(id = com.heyyoung.solsol.R.drawable.cd_credit_poddr1b),
+                    contentDescription = "카드 뒤면",
+                    modifier = Modifier
+                        .fillMaxWidth(0.95f)
+                        .fillMaxHeight(0.85f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .graphicsLayer { rotationY = 180f },
+                    contentScale = ContentScale.Crop
+                )
+                
+                // 뒤면 텍스트
+                Text(
+                    text = "카드 뒤면",
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 12.dp)
+                        .background(
+                            Color.Black.copy(alpha = 0.6f),
+                            RoundedCornerShape(4.dp)
+                        )
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .graphicsLayer { rotationY = 180f },
+                    fontSize = 12.sp,
+                    color = Color.White
+                )
+            } else {
+                // 앞면 이미지
+                Image(
+                    painter = painterResource(id = com.heyyoung.solsol.R.drawable.cd_credit_poddr1),
+                    contentDescription = "신한 체크카드",
+                    modifier = Modifier
+                        .fillMaxWidth(0.95f)
+                        .fillMaxHeight(0.85f)
+                        .clip(RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Crop
+                )
+                
+                // 앞면 텍스트
+                Text(
+                    text = "신한 체크카드 ($cardNumber)",
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 12.dp)
+                        .background(
+                            Color.Black.copy(alpha = 0.6f),
+                            RoundedCornerShape(4.dp)
+                        )
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    fontSize = 12.sp,
+                    color = Color.White
+                )
+            }
         }
     }
 }
