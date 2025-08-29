@@ -31,7 +31,8 @@ fun StudentCouncilScreen(
     onNavigateBack: () -> Unit = {},
     onNavigateToExpenseHistory: () -> Unit = {},
     onNavigateToExpenseRegister: () -> Unit = {},
-    onNavigateToFeeStatus: () -> Unit = {}
+    onNavigateToFeeStatus: () -> Unit = {},
+    onNavigateToPayment: () -> Unit = {}
 
 ) {
     val purple = Color(0xFF8B5FBF)
@@ -114,7 +115,8 @@ fun StudentCouncilScreen(
 
                 FeePaymentStatusCard(
                     semester = ui.feeBadge?.semester ?: "이번 학기",
-                    isPaid = ui.feeBadge?.paid ?: false
+                    isPaid = ui.feeBadge?.paid ?: false,
+                    onNavigateToPayment = onNavigateToPayment
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -216,7 +218,8 @@ private fun BalanceInfoCard(
 @Composable
 private fun FeePaymentStatusCard(
     semester: String,
-    isPaid: Boolean
+    isPaid: Boolean,
+    onNavigateToPayment: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
@@ -227,60 +230,85 @@ private fun FeePaymentStatusCard(
                 shape = RoundedCornerShape(16.dp)
             )
             .fillMaxWidth()
-            .height(72.dp),
+            .heightIn(min = if (isPaid) 72.dp else 96.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isPaid) Color(0xFFF0FDF4) else Color(0xFFFEF2F2)
         ),
         shape = RoundedCornerShape(16.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // 아이콘 배경
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(
-                        color = if (isPaid) Color(0xFF10B981).copy(alpha = 0.1f) else Color(0xFFEF4444).copy(alpha = 0.1f),
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
+            Row(
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                if (isPaid) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = "납부완료",
-                        tint = Color(0xFF10B981),
-                        modifier = Modifier.size(24.dp)
-                    )
-                } else {
+                // 아이콘 배경
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            color = if (isPaid) Color(0xFF10B981).copy(alpha = 0.1f) else Color(0xFFEF4444).copy(alpha = 0.1f),
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isPaid) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = "납부완료",
+                            tint = Color(0xFF10B981),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    } else {
+                        Text(
+                            text = "!",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFEF4444)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column {
                     Text(
-                        text = "!",
-                        fontSize = 20.sp,
+                        text = "$semester 회비",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF718096)
+                    )
+                    Text(
+                        text = if (isPaid) "납부 완료" else "납부 미완료",
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFEF4444)
+                        color = if (isPaid) Color(0xFF10B981) else Color(0xFFEF4444)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column {
-                Text(
-                    text = "$semester 회비",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF718096)
-                )
-                Text(
-                    text = if (isPaid) "납부 완료" else "납부 미완료",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isPaid) Color(0xFF10B981) else Color(0xFFEF4444)
-                )
+            // 납부 미완료일 때만 버튼 표시
+            if (!isPaid) {
+                Button(
+                    onClick = onNavigateToPayment,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(40.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF8B5FBF)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "납부하러 가기",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
             }
         }
     }
