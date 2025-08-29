@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.heyyoung.solsol.R
+import com.heyyoung.solsol.ui.theme.OneShinhan
 
 @Composable
 fun LoginCard(
@@ -289,8 +290,9 @@ private fun ModernLoginButton(
             Text(
                 text = text,
                 color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = OneShinhan
             )
         }
     }

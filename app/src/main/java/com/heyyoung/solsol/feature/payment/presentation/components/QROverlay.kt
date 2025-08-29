@@ -1,210 +1,114 @@
-package com.heyyoung.solsol.feature.payment.presentation.components
+package com.heyyoung.solsol.feature.qr // ← 패키지는 프로젝트에 맞게 변경
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.heyyoung.solsol.R
 
 /**
- * QR 스캔 오버레이
- *
- * 기능:
- * - 중앙에 스캔 가이드라인 (보라색 테두리)
- * - 배경 어둡게 처리 (가이드라인 영역 제외)
- * - 안내 텍스트
+ * 화면 전체에 어둡게 딤 처리 + 중앙 스캔 영역의 4개 모서리를
+ * "부드러운 L자"로 보여주는 오버레이
  */
 @Composable
 fun QROverlay(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    scanBoxSize: Dp = 260.dp,      // 중앙 정사각형 스캔 영역 크기
+    cornerLength: Dp = 64.dp,      // L자 길이
+    strokeWidth: Dp = 6.dp,        // 선 두께
+    dimAlpha: Float = 0.65f,       // 배경 딤 투명도
+    guideColor: Color = Color.White
 ) {
     val density = LocalDensity.current
+    val scanPx = with(density) { scanBoxSize.toPx() }
+    val cornerPx = with(density) { cornerLength.toPx() }
+    val strokePx = with(density) { strokeWidth.toPx() }
 
-    // 스캔 가이드라인 크기
-    val scanAreaSize = with(density) { 280.dp.toPx() }
-    val cornerLength = with(density) { 32.dp.toPx() }
-    val cornerStrokeWidth = with(density) { 8.dp.toPx() }
-
-    Box(
-        modifier = modifier.fillMaxSize()
-    ) {
-        // 배경 어둡게 처리 + 가이드라인 그리기
-        Canvas(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            drawCleanQROverlay(
-                scanAreaSize = scanAreaSize,
-                cornerLength = cornerLength,
-                cornerStrokeWidth = cornerStrokeWidth
-            )
-        }
-
-        // 깔끔한 안내 텍스트
-        Column(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .offset(y = (scanAreaSize / density.density / 2 + 80).dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // 메인 안내 카드
-            Card(
-                modifier = Modifier
-                    .shadow(
-                        elevation = 16.dp,
-                        shape = RoundedCornerShape(24.dp),
-                        spotColor = colorResource(id = R.color.solsol_purple_30),
-                        ambientColor = colorResource(id = R.color.solsol_purple_30)
-                    ),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = colorResource(id = R.color.solsol_white_50)
-                )
-            ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "QR코드를 스캔해주세요",
-                        color = colorResource(id = R.color.solsol_white),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = "가맹점 QR코드에 카메라를 맞춰주세요",
-                        color = colorResource(id = R.color.solsol_white),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
-        }
+    Canvas(modifier = modifier) {
+        drawCleanQROverlayRounded(
+            scanAreaSize = scanPx,
+            cornerSize = cornerPx,
+            stroke = strokePx,
+            dimAlpha = dimAlpha,
+            guideColor = guideColor
+        )
     }
 }
 
-/**
- * 깔끔한 QR 오버레이 그리기
- */
-private fun DrawScope.drawCleanQROverlay(
+/** 부드러운 L-코너 4개로 보이는 QR 오버레이 (DrawScope 확장) */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCleanQROverlayRounded(
     scanAreaSize: Float,
-    cornerLength: Float,
-    cornerStrokeWidth: Float
+    cornerSize: Float,
+    stroke: Float,
+    dimAlpha: Float,
+    guideColor: Color
 ) {
-    val centerX = size.width / 2
-    val centerY = size.height / 2
-    val scanAreaLeft = centerX - scanAreaSize / 2
-    val scanAreaTop = centerY - scanAreaSize / 2
-    val scanAreaRight = centerX + scanAreaSize / 2
-    val scanAreaBottom = centerY + scanAreaSize / 2
+    val centerX = size.width / 2f
+    val centerY = size.height / 2f
+    val left = centerX - scanAreaSize / 2f
+    val top = centerY - scanAreaSize / 2f
+    val right = centerX + scanAreaSize / 2f
+    val bottom = centerY + scanAreaSize / 2f
 
-    // 1. 배경 어둡게 처리 (스캔 영역 제외)
-    drawRect(
-        color = Color.Black.copy(alpha = 0.65f),
-        size = Size(size.width, scanAreaTop)
-    )
-    drawRect(
-        color = Color.Black.copy(alpha = 0.65f),
-        topLeft = Offset(0f, scanAreaTop),
-        size = Size(scanAreaLeft, scanAreaSize)
-    )
-    drawRect(
-        color = Color.Black.copy(alpha = 0.65f),
-        topLeft = Offset(scanAreaRight, scanAreaTop),
-        size = Size(size.width - scanAreaRight, scanAreaSize)
-    )
-    drawRect(
-        color = Color.Black.copy(alpha = 0.65f),
-        topLeft = Offset(0f, scanAreaBottom),
-        size = Size(size.width, size.height - scanAreaBottom)
-    )
+    // 1) 바깥 배경 어둡게
+    val dim = Color.Black.copy(alpha = dimAlpha)
+    // 상
+    drawRect(color = dim, size = Size(width = size.width, height = top))
+    // 좌
+    drawRect(color = dim, topLeft = Offset(0f, top), size = Size(left, scanAreaSize))
+    // 우
+    drawRect(color = dim, topLeft = Offset(right, top), size = Size(size.width - right, scanAreaSize))
+    // 하
+    drawRect(color = dim, topLeft = Offset(0f, bottom), size = Size(size.width, size.height - bottom))
 
-    // 2. 스캔 영역 테두리 (깔끔한 둥근 모서리)
-    drawRoundRect(
-        color = Color(0xFF8B5FBF).copy(alpha = 0.4f),
-        topLeft = Offset(scanAreaLeft, scanAreaTop),
-        size = Size(scanAreaSize, scanAreaSize),
-        cornerRadius = CornerRadius(24.dp.toPx()),
-        style = Stroke(width = 2.dp.toPx())
-    )
+    // 2) L자 코너(부드러운 곡선) — 90° 원호 + 라운드 캡
+    val strokeStyle = Stroke(width = stroke, cap = StrokeCap.Round)
+    val sweep = 90f
 
-    // 3. 모서리 가이드라인 (깔끔하고 현대적으로)
-    val guideColor = Color(0xFF8B5FBF)
-    val cornerRadius = 24.dp.toPx()
-
-    // 왼쪽 위
-    drawLine(
+    // Top-Left (start 180° → 90° sweep)
+    drawArc(
         color = guideColor,
-        start = Offset(scanAreaLeft, scanAreaTop + cornerLength),
-        end = Offset(scanAreaLeft, scanAreaTop + cornerRadius),
-        strokeWidth = cornerStrokeWidth
+        startAngle = 180f,
+        sweepAngle = sweep,
+        useCenter = false,
+        style = strokeStyle,
+        size = Size(cornerSize, cornerSize),
+        topLeft = Offset(left, top)
     )
-    drawLine(
+    // Top-Right (start 270°)
+    drawArc(
         color = guideColor,
-        start = Offset(scanAreaLeft + cornerRadius, scanAreaTop),
-        end = Offset(scanAreaLeft + cornerLength, scanAreaTop),
-        strokeWidth = cornerStrokeWidth
+        startAngle = 270f,
+        sweepAngle = sweep,
+        useCenter = false,
+        style = strokeStyle,
+        size = Size(cornerSize, cornerSize),
+        topLeft = Offset(right - cornerSize, top)
     )
-
-    // 오른쪽 위
-    drawLine(
+    // Bottom-Right (start 0°)
+    drawArc(
         color = guideColor,
-        start = Offset(scanAreaRight - cornerLength, scanAreaTop),
-        end = Offset(scanAreaRight - cornerRadius, scanAreaTop),
-        strokeWidth = cornerStrokeWidth
+        startAngle = 0f,
+        sweepAngle = sweep,
+        useCenter = false,
+        style = strokeStyle,
+        size = Size(cornerSize, cornerSize),
+        topLeft = Offset(right - cornerSize, bottom - cornerSize)
     )
-    drawLine(
+    // Bottom-Left (start 90°)
+    drawArc(
         color = guideColor,
-        start = Offset(scanAreaRight, scanAreaTop + cornerRadius),
-        end = Offset(scanAreaRight, scanAreaTop + cornerLength),
-        strokeWidth = cornerStrokeWidth
-    )
-
-    // 왼쪽 아래
-    drawLine(
-        color = guideColor,
-        start = Offset(scanAreaLeft, scanAreaBottom - cornerLength),
-        end = Offset(scanAreaLeft, scanAreaBottom - cornerRadius),
-        strokeWidth = cornerStrokeWidth
-    )
-    drawLine(
-        color = guideColor,
-        start = Offset(scanAreaLeft + cornerRadius, scanAreaBottom),
-        end = Offset(scanAreaLeft + cornerLength, scanAreaBottom),
-        strokeWidth = cornerStrokeWidth
-    )
-
-    // 오른쪽 아래
-    drawLine(
-        color = guideColor,
-        start = Offset(scanAreaRight - cornerLength, scanAreaBottom),
-        end = Offset(scanAreaRight - cornerRadius, scanAreaBottom),
-        strokeWidth = cornerStrokeWidth
-    )
-    drawLine(
-        color = guideColor,
-        start = Offset(scanAreaRight, scanAreaBottom - cornerLength),
-        end = Offset(scanAreaRight, scanAreaBottom - cornerRadius),
-        strokeWidth = cornerStrokeWidth
+        startAngle = 90f,
+        sweepAngle = sweep,
+        useCenter = false,
+        style = strokeStyle,
+        size = Size(cornerSize, cornerSize),
+        topLeft = Offset(left, bottom - cornerSize)
     )
 }

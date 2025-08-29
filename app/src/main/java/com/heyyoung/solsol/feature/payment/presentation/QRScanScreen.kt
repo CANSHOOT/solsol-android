@@ -21,9 +21,9 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.heyyoung.solsol.R
 import com.heyyoung.solsol.core.util.CameraPermissionUtil
 import com.heyyoung.solsol.feature.payment.presentation.components.CameraPreview
-import com.heyyoung.solsol.feature.payment.presentation.components.QROverlay
 import com.heyyoung.solsol.feature.payment.presentation.components.QRScanTopBar
 import com.heyyoung.solsol.feature.payment.presentation.components.UsageBottomSheet
+import com.heyyoung.solsol.feature.qr.QROverlay
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable

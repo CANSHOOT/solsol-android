@@ -80,7 +80,7 @@ private fun ModernMenuTitle() {
         Text(
             text = "바로가기메뉴",
             color = Color.White,
-            fontSize = 24.sp,
+            fontSize = 20.sp,
             fontWeight = FontWeight.Bold
         )
 
@@ -180,9 +180,7 @@ private fun InteractiveMenuItemCard(
     }
 }
 
-/**
- * 현대적인 아이콘 컨테이너
- */
+
 @Composable
 private fun ModernIconContainer(
     iconRes: Int,
@@ -225,9 +223,6 @@ private fun ModernIconContainer(
     }
 }
 
-/**
- * 현대적인 메뉴 라벨
- */
 @Composable
 private fun ModernMenuLabel(
     text: String,

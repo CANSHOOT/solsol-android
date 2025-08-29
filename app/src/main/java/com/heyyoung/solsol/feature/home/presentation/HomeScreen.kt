@@ -25,6 +25,7 @@ import com.heyyoung.solsol.feature.home.HomeViewModel
 import com.heyyoung.solsol.feature.home.presentation.components.MenuGrid
 import com.heyyoung.solsol.feature.home.presentation.components.PagerDots
 import com.heyyoung.solsol.feature.home.presentation.components.StudentCard
+import com.heyyoung.solsol.ui.theme.OneShinhan
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -162,7 +163,8 @@ private fun HomeTopAppBar(
                 text = "solsolheyoung",
                 color = colorResource(id = R.color.solsol_white),
                 fontWeight = FontWeight.Bold,
-                fontSize = 18.sp
+                fontSize = 18.sp,
+                fontFamily = OneShinhan
             )
         },
         colors = TopAppBarDefaults.topAppBarColors(
@@ -194,6 +196,7 @@ private fun HomeTopAppBar(
         }
     )
 }
+
 
 /**
  * 하단 네비게이션 (기존과 동일)
