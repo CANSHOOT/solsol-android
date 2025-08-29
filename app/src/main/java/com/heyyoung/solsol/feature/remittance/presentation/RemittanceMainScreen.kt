@@ -64,7 +64,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 fun RemittanceMainScreen(
     groupId: Long?,
     receiverName: String = "김신한",
-    receiverInfo: String = "관리자명의 | 2020.7.8",
+    receiverInfo: String = " ",
     amount: String = "29,002",
     cardNumber: String = "****1234",
     onNavigateBack: () -> Unit = {},

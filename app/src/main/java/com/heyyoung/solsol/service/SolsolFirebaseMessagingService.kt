@@ -123,7 +123,8 @@ class SolsolFirebaseMessagingService : FirebaseMessagingService() {
             Log.d("바로 송금하기 데이터","data: $data")
             putExtra("notification_action", "PAY_NOW")
             putExtra("group_id",   data["groupId"])
-            putExtra("payee_name", data["groupName"])
+            putExtra("group_name", data["groupName"])
+            putExtra("payee_name", data["payeeName"])
             putExtra("pay_amount", data["amount"])
         }
         val payNowPending = PendingIntent.getActivity(
