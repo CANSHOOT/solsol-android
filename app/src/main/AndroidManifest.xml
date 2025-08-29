@@ -11,6 +11,10 @@
     <!-- 카메라 / NFC (결제 및 OCR) -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.NFC" />
+    
+    <!-- 지문 인식 권한 -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
 
     <!-- 갤러리/스토리지 접근 -->
     <uses-permission

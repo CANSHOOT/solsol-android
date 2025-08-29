@@ -130,6 +130,9 @@ dependencies {
     // Permissions
     implementation(libs.accompanist.permissions)
     
+    // Biometric Authentication (지문 인식용)
+    implementation("androidx.biometric:biometric:1.1.0")
+    
     // Google Nearby Connections API (주변 기기 탐색용)
     implementation("com.google.android.gms:play-services-nearby:19.0.0")
 
