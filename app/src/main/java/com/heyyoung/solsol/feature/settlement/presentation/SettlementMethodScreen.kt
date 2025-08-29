@@ -363,10 +363,10 @@ private fun SettlementOptionCard(
             if (isSelected) {
                 Box(
                     modifier = Modifier
-                        .size(32.dp)
+                        .size(40.dp)
                         .background(
                             color = Color(0xFF8B5FBF), // solsol_purple
-                            shape = RoundedCornerShape(16.dp)
+                            shape = RoundedCornerShape(20.dp)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
@@ -374,7 +374,7 @@ private fun SettlementOptionCard(
                         imageVector = Icons.Default.CheckCircle,
                         contentDescription = "선택됨",
                         tint = Color(0xFFFFFFFF), // solsol_white
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }

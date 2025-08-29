@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
@@ -178,7 +179,7 @@ fun SettlementParticipantsScreen(
                     // 검색창 leadingIcon을 Person 아이콘으로 변경 (돋보기 중복 해결)
                     leadingIcon = {
                         Icon(
-                            Icons.Default.Person,
+                            Icons.Default.Search,
                             contentDescription = "사용자",
                             tint = Color(0xFF8B5FBF) // solsol_purple
                         )
@@ -327,6 +328,7 @@ fun SettlementParticipantsScreen(
                                 Log.w(TAG, "최대 인원(10명) 초과로 추가 불가")
                             }
                         },
+
                         isMaxReached = participants.size >= 10
                     )
                 } else if (currentUser != null) {
@@ -700,7 +702,7 @@ private fun SearchResultCard(
                 ),
                 shape = RoundedCornerShape(12.dp), // 16dp에서 12dp로 조정
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), // 패딩 조정
-                modifier = Modifier.height(36.dp) // 32dp에서 36dp로 증가
+                modifier = Modifier.height(56.dp) // 32dp에서 36dp로 증가
             ) {
                 Text(
                     text = if (isMaxReached) "최대" else "추가",
@@ -897,17 +899,17 @@ private fun AddPersonButton(
 @Composable
 private fun RoleChip(text: String) {
     Surface(
-        color = Color(0xFF8B5FBF).copy(alpha = 0.1f), // 연보라 배경으로 변경
+        color = Color(0xFFE0F7FA), // 연한 민트 배경 (Aqua tint)
         shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, Color(0xFF8B5FBF)), // solsol_purple
+        border = BorderStroke(1.dp, Color(0xFF26C6DA)), // 청록색 테두리
         shadowElevation = 0.dp
     ) {
         Text(
             text = text,
-            color = Color(0xFF8B5FBF), // solsol_purple
+            color = Color(0xFF00838F), // 진한 청록색 텍스트
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp) // 패딩 증가
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
         )
     }
 }
