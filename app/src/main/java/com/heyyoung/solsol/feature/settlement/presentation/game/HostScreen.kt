@@ -12,7 +12,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -46,7 +46,7 @@ fun HostScreen(
 
     val context = LocalContext.current
 
-    /** 요청할 권한 목록: OS 버전에 맞춰 구성 */
+    // OS 버전에 맞춰 필요한 권한 구성
     val requiredPerms = remember {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             buildList {
@@ -54,7 +54,7 @@ fun HostScreen(
                 add(Manifest.permission.BLUETOOTH_SCAN)
                 add(Manifest.permission.BLUETOOTH_CONNECT)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    // (선택) Wi-Fi 근거리 탐색을 사용할 경우
+                    // (선택) Wi-Fi 근거리 탐색 사용 시
                     add(Manifest.permission.NEARBY_WIFI_DEVICES)
                 } else {
                     // Android 10~11 스캔 호환
@@ -77,13 +77,13 @@ fun HostScreen(
         val granted = result.values.all { it }
         val amount = roomAmountText.toLongOrNull()
         if (granted && !roomTitle.isBlank() && amount != null && amount > 0L) {
-            viewModel.createRoom(roomTitle.trim(), amount)        // ✅ 변경
+            viewModel.createRoom(roomTitle.trim(), amount)
         } else if (!granted) {
             Toast.makeText(context, "근거리 연결 권한을 모두 허용해주세요.", Toast.LENGTH_SHORT).show()
         }
     }
 
-    // 광고 시작되거나 방 단계가 GATHERING이면 룸 화면으로 이동
+    // 광고가 시작되었거나 방 단계가 GATHERING이면 룸 화면으로 이동
     LaunchedEffect(isAdvertising, role, roomState?.phase) {
         if (role == Role.HOST && (isAdvertising || roomState?.phase == Phase.GATHERING)) {
             onNavigateToRoom()
@@ -154,14 +154,24 @@ fun HostScreen(
             )
 
             Spacer(modifier = Modifier.height(12.dp))
-            // ✅ 정산 금액 입력 (숫자만)
+
+            // 정산 금액 입력 (숫자만)
             OutlinedTextField(
                 value = roomAmountText,
                 onValueChange = { input -> roomAmountText = input.filter { it.isDigit() } },
                 label = { Text("정산 금액 (원)") },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                modifier = Modifier.fillMaxWidth()
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Done
+                ),
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF8B5FBF),
+                    focusedLabelColor = Color(0xFF8B5FBF),
+                    cursorColor = Color(0xFF8B5FBF)
+                ),
+                shape = RoundedCornerShape(12.dp)
             )
 
             Spacer(Modifier.height(24.dp))
@@ -206,7 +216,7 @@ fun HostScreen(
                         return@Button
                     }
                     if (hasAllPermissions()) {
-                        viewModel.createRoom(roomTitle.trim(), amount)    // ✅ 변경
+                        viewModel.createRoom(roomTitle.trim(), amount)
                     } else {
                         permissionLauncher.launch(requiredPerms)
                     }

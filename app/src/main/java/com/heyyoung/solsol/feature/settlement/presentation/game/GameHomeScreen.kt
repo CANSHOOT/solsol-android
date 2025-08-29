@@ -9,7 +9,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -19,16 +19,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.heyyoung.solsol.feature.settlement.domain.game.GameViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GameHomeScreen(
     onNavigateBack: () -> Unit = {},
     onNavigateToHost: () -> Unit = {},
-    onNavigateToJoin: () -> Unit = {},
-    viewModel: GameViewModel = viewModel()
+    onNavigateToJoin: () -> Unit = {}
 ) {
     val purple = Color(0xFF8B5FBF)
     val textMain = Color(0xFF2D3748)

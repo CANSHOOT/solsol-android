@@ -7,21 +7,24 @@ import com.google.android.gms.nearby.connection.*
 import com.heyyoung.solsol.core.auth.TokenManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class NearbyManager private constructor(
     private val app: Application,
-    private val tokenManager: TokenManager // ✅ 추가
+    private val tokenManager: TokenManager
 ) {
 
     companion object {
         private const val TAG = "NearbyManager"
 
-        @Volatile
-        private var INSTANCE: NearbyManager? = null
+        @Volatile private var INSTANCE: NearbyManager? = null
 
         fun get(app: Application, tokenManager: TokenManager): NearbyManager {
             return INSTANCE ?: synchronized(this) {
@@ -29,6 +32,8 @@ class NearbyManager private constructor(
             }
         }
     }
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val connectionsClient by lazy { Nearby.getConnectionsClient(app) }
     private val strategy = Strategy.P2P_CLUSTER
@@ -45,8 +50,9 @@ class NearbyManager private constructor(
     private val _connected = MutableStateFlow<Map<String, String>>(emptyMap())
     val connected: StateFlow<Map<String, String>> = _connected.asStateFlow()
 
-    private val _messages = MutableStateFlow<Pair<String, String>?>(null)
-    val messages: StateFlow<Pair<String, String>?> = _messages.asStateFlow()
+    // 마지막 1건 상태가 아닌 "이벤트" 스트림으로 변경 (유실 방지)
+    private val _messages = MutableSharedFlow<Pair<String, String>>(extraBufferCapacity = 64)
+    val messages: SharedFlow<Pair<String, String>> = _messages.asSharedFlow()
 
     /** 사용자 표시 이름(플레이어 이름) */
     var localEndpointName: String? = "User"
@@ -71,8 +77,8 @@ class NearbyManager private constructor(
             }
             .addOnFailureListener { e ->
                 _isAdvertising.value = false
-                val msg = (e as? com.google.android.gms.common.api.ApiException)?.statusCode?.let { "statusCode=$it" }
-                    ?: (e.message ?: "startAdvertising failure")
+                val code = (e as? com.google.android.gms.common.api.ApiException)?.statusCode
+                val msg = code?.let { "statusCode=$it" } ?: (e.message ?: "startAdvertising failure")
                 Log.e(TAG, "❌ Advertising failed: $msg", e)
                 onAdvertisingEvent?.invoke(false, msg)
             }
@@ -119,22 +125,22 @@ class NearbyManager private constructor(
             .addOnFailureListener { e -> Log.e(TAG, "requestConnection() failed: ${e.message}", e) }
     }
 
-    /** 단일 전송 */
+    /** 단일 전송 (UTF-8 고정) */
     fun sendTo(endpointId: String, message: String) {
-        val payload = Payload.fromBytes(message.toByteArray())
-        Log.d(TAG, "sendTo(): to=$endpointId, bytes=${message.toByteArray().size}")
+        val payload = Payload.fromBytes(message.toByteArray(Charsets.UTF_8))
+        Log.d(TAG, "sendTo(): to=$endpointId, bytes=${payload.asBytes()?.size ?: 0}")
         connectionsClient.sendPayload(endpointId, payload)
     }
 
-    /** 전체 전송 */
+    /** 전체 전송 (UTF-8 고정) */
     fun sendToAll(message: String) {
         val endpointIds = _connected.value.keys.toList()
         if (endpointIds.isEmpty()) {
             Log.w(TAG, "sendToAll(): no connected endpoints")
             return
         }
-        val payload = Payload.fromBytes(message.toByteArray())
-        Log.d(TAG, "sendToAll(): targets=${endpointIds.size}, bytes=${message.toByteArray().size}")
+        val payload = Payload.fromBytes(message.toByteArray(Charsets.UTF_8))
+        Log.d(TAG, "sendToAll(): targets=${endpointIds.size}, bytes=${payload.asBytes()?.size ?: 0}")
         connectionsClient.sendPayload(endpointIds, payload)
     }
 
@@ -158,9 +164,10 @@ class NearbyManager private constructor(
     // ---- Callbacks ----
 
     private val connectionLifecycleCallback = object : ConnectionLifecycleCallback() {
+
         override fun onConnectionInitiated(endpointId: String, info: ConnectionInfo) {
             Log.d(TAG, "onConnectionInitiated(): from=$endpointId, remoteName=${info.endpointName}")
-            // 정책에 맞게 승인/거절. 현재는 자동 승인
+            // TODO(보안): 실제 서비스에서는 authenticationToken 확인 등 승인 로직 권장
             connectionsClient.acceptConnection(endpointId, payloadCallback)
         }
 
@@ -170,17 +177,16 @@ class NearbyManager private constructor(
 
             when (result.status.statusCode) {
                 ConnectionsStatusCodes.STATUS_OK -> {
-                    current[endpointId] = "Connected"
+                    current[endpointId] = "Connected(${endpointId.take(4)})"
                     _connected.value = current
 
-                    // ✅ userId 불러오기
-                    CoroutineScope(Dispatchers.IO).launch {
+                    // 연결 OK 직후, 항상 Hello(name, userId) 송신
+                    scope.launch {
                         val userInfo = tokenManager.getCurrentUserInfo()
                         val hello = Msg.Hello(
                             name = localEndpointName ?: "User",
                             userId = userInfo?.userId ?: "unknown"
                         ).toJson()
-
                         sendTo(endpointId, hello)
                     }
                 }
@@ -192,6 +198,7 @@ class NearbyManager private constructor(
                 }
             }
         }
+
         override fun onDisconnected(endpointId: String) {
             Log.d(TAG, "onDisconnected(): $endpointId")
             val current = _connected.value.toMutableMap()
@@ -220,9 +227,9 @@ class NearbyManager private constructor(
         override fun onPayloadReceived(endpointId: String, payload: Payload) {
             if (payload.type == Payload.Type.BYTES) {
                 val bytes = payload.asBytes() ?: return
-                val message = String(bytes)
+                val message = String(bytes, Charsets.UTF_8)
                 Log.d(TAG, "onPayloadReceived(): from=$endpointId, bytes=${bytes.size}")
-                _messages.value = Pair(endpointId, message)
+                _messages.tryEmit(endpointId to message)
             } else {
                 Log.d(TAG, "onPayloadReceived(): non-bytes type=${payload.type}")
             }
