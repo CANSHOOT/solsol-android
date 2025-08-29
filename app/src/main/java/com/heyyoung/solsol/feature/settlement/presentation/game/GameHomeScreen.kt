@@ -6,7 +6,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -14,16 +14,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.heyyoung.solsol.feature.settlement.domain.game.GameViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GameHomeScreen(
     onNavigateBack: () -> Unit = {},
     onNavigateToHost: () -> Unit = {},
-    onNavigateToJoin: () -> Unit = {},
-    viewModel: GameViewModel = viewModel()
+    onNavigateToJoin: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -106,9 +103,7 @@ fun GameHomeScreen(
                 ),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(20.dp)
-                ) {
+                Column(modifier = Modifier.padding(20.dp)) {
                     Text(
                         text = "1. 호스트가 방을 만들고 참가자를 모집합니다",
                         fontSize = 14.sp,
@@ -160,9 +155,7 @@ private fun GameModeCard(
                 spotColor = Color(0x1A000000),
                 ambientColor = Color(0x1A000000)
             ),
-        colors = CardDefaults.cardColors(
-            containerColor = backgroundColor
-        ),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
         shape = RoundedCornerShape(16.dp),
         onClick = onClick
     ) {
@@ -179,9 +172,7 @@ private fun GameModeCard(
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF1C1C1E)
             )
-
             Spacer(modifier = Modifier.height(8.dp))
-
             Text(
                 text = description,
                 fontSize = 14.sp,
