@@ -68,6 +68,10 @@ class GameViewModel @Inject constructor(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    /** 방 참가 진행 중 상태 (endpointId -> 진행 상태) */
+    private val _joiningRooms = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    val joiningRooms: StateFlow<Map<String, Boolean>> = _joiningRooms.asStateFlow()
+
     /** 호스트: userId -> (로컬) endpointId 매핑 */
     private val userIdToEndpointId = mutableMapOf<String, String>()
 
@@ -175,6 +179,12 @@ class GameViewModel @Inject constructor(
             val userInfo = tokenManager.getCurrentUserInfo()
             val playerName = userInfo?.name ?: "사용자"
             Log.d(TAG, "joinRoom: endpointId=$endpointId, name=$playerName")
+            
+            // 참가 로딩 시작
+            val current = _joiningRooms.value.toMutableMap()
+            current[endpointId] = true
+            _joiningRooms.value = current
+            
             nearby.localEndpointName = playerName
             nearby.requestConnection(endpointId)
         }
@@ -269,6 +279,7 @@ class GameViewModel @Inject constructor(
         _role.value = Role.NONE
         _roomState.value = null
         _isInstructionVisible.value = false
+        _joiningRooms.value = emptyMap() // 참가 로딩 상태 초기화
         userIdToEndpointId.clear()
         _spinOrderIds.value = emptyList()
         _currentHighlightIndex.value = -1

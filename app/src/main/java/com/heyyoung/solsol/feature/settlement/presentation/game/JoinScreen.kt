@@ -58,6 +58,7 @@ fun JoinScreen(
     val isDiscovering by viewModel.nearby.isDiscovering.collectAsState()
     val discoveredRooms by viewModel.nearby.discoveredRooms.collectAsState()
     val roomState by viewModel.roomState.collectAsState()
+    val joiningRooms by viewModel.joiningRooms.collectAsState()
 
     // 애니메이션 상태
     var isVisible by remember { mutableStateOf(false) }
@@ -228,23 +229,19 @@ fun JoinScreen(
                         visible = isVisible,
                         enter = slideInHorizontally { 100 } + fadeIn()
                     ) {
-                        val refreshScale by animateFloatAsState(
-                            targetValue = if (isDiscovering) 1.1f else 1f,
-                            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-                            label = "refreshScale"
-                        )
-                        val refreshRotation by infiniteTransition.animateFloat(
-                            initialValue = 0f,
-                            targetValue = if (isDiscovering) 360f else 0f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(1000, easing = LinearEasing),
-                                repeatMode = RepeatMode.Restart
-                            ),
+                        var refreshTrigger by remember { mutableStateOf(false) }
+                        val refreshRotation by animateFloatAsState(
+                            targetValue = if (refreshTrigger) 360f else 0f,
+                            animationSpec = tween(600, easing = LinearEasing),
+                            finishedListener = { 
+                                if (refreshTrigger) refreshTrigger = false 
+                            },
                             label = "refreshRotation"
                         )
 
                         IconButton(
                             onClick = {
+                                refreshTrigger = true
                                 viewModel.nearby.stopDiscovery()
                                 if (hasAllPermissions()) {
                                     viewModel.startDiscovering()
@@ -254,38 +251,28 @@ fun JoinScreen(
                             },
                             modifier = Modifier
                                 .size(48.dp)
-                                .scale(refreshScale)
                                 .shadow(
                                     elevation = 8.dp,
                                     shape = RoundedCornerShape(24.dp),
                                     spotColor = Color(0xFF8B5FBF).copy(alpha = 0.2f)
                                 )
                                 .background(
-                                    if (isDiscovering) {
-                                        Brush.linearGradient(
-                                            colors = listOf(
-                                                Color(0xFF8B5FBF).copy(alpha = 0.15f),
-                                                Color(0xFF6366F1).copy(alpha = 0.1f)
-                                            )
+                                    Brush.linearGradient(
+                                        colors = listOf(
+                                            Color.White,
+                                            Color(0xFFF8FAFF)
                                         )
-                                    } else {
-                                        Brush.linearGradient(
-                                            colors = listOf(
-                                                Color.White,
-                                                Color(0xFFF8FAFF)
-                                            )
-                                        )
-                                    },
+                                    ),
                                     shape = RoundedCornerShape(24.dp)
                                 )
                         ) {
                             Icon(
                                 Icons.Default.Refresh,
                                 contentDescription = "새로고침",
-                                tint = if (isDiscovering) Color(0xFF8B5FBF) else Color(0xFF64748B),
+                                tint = Color(0xFF64748B),
                                 modifier = Modifier
                                     .size(24.dp)
-                                    .rotate(if (isDiscovering) refreshRotation else 0f)
+                                    .rotate(refreshRotation)
                             )
                         }
                     }
@@ -327,10 +314,6 @@ fun JoinScreen(
                                 fontWeight = FontWeight.Medium
                             )
                         }
-
-                        if (isDiscovering) {
-                            GlowingSearchIndicator()
-                        }
                     }
                 }
 
@@ -342,10 +325,7 @@ fun JoinScreen(
                     enter = slideInVertically { 100 } + fadeIn()
                 ) {
                     when {
-                        discoveredRooms.isEmpty() && isDiscovering -> {
-                            SearchingState()
-                        }
-                        discoveredRooms.isEmpty() && !isDiscovering -> {
+                        discoveredRooms.isEmpty() -> {
                             EmptyState()
                         }
                         else -> {
@@ -369,7 +349,8 @@ fun JoinScreen(
                                         ModernRoomCard(
                                             roomTitle = roomTitle,
                                             onJoinClick = { viewModel.joinRoom(endpointId) },
-                                            isEnabled = true
+                                            isEnabled = joiningRooms[endpointId] != true,
+                                            isJoining = joiningRooms[endpointId] == true
                                         )
                                     }
                                 }
@@ -426,110 +407,6 @@ private fun FloatingSearchElements(offset: Float) {
     }
 }
 
-@Composable
-private fun GlowingSearchIndicator() {
-    val pulseScale by animateFloatAsState(
-        targetValue = 1.2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseScale"
-    )
-
-    Box(
-        modifier = Modifier
-            .size(60.dp)
-            .scale(pulseScale)
-            .background(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xFF8B5FBF).copy(alpha = 0.3f),
-                        Color(0xFF8B5FBF).copy(alpha = 0.1f),
-                        Color.Transparent
-                    )
-                ),
-                shape = RoundedCornerShape(30.dp)
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .background(
-                    Color(0xFF8B5FBF).copy(alpha = 0.2f),
-                    RoundedCornerShape(20.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator(
-                color = Color(0xFF8B5FBF),
-                modifier = Modifier.size(20.dp),
-                strokeWidth = 3.dp
-            )
-        }
-    }
-}
-
-@Composable
-private fun SearchingState() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(300.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(100.dp)
-                    .shadow(
-                        elevation = 20.dp,
-                        shape = RoundedCornerShape(50.dp),
-                        spotColor = Color(0xFF8B5FBF).copy(alpha = 0.2f)
-                    )
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF8B5FBF).copy(alpha = 0.1f),
-                                Color(0xFF6366F1).copy(alpha = 0.05f)
-                            )
-                        ),
-                        shape = RoundedCornerShape(50.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Search,
-                    contentDescription = null,
-                    tint = Color(0xFF8B5FBF),
-                    modifier = Modifier.size(40.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "주변 게임방을 찾고 있습니다",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1E293B),
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "잠시만 기다려주세요",
-                fontSize = 14.sp,
-                color = Color(0xFF64748B),
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
 
 @Composable
 private fun EmptyState() {
@@ -590,7 +467,8 @@ private fun EmptyState() {
 private fun ModernRoomCard(
     roomTitle: String,
     onJoinClick: () -> Unit,
-    isEnabled: Boolean
+    isEnabled: Boolean,
+    isJoining: Boolean = false
 ) {
     val cardScale by animateFloatAsState(
         targetValue = if (isEnabled) 1f else 0.95f,
@@ -686,9 +564,9 @@ private fun ModernRoomCard(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "참가 가능",
+                            text = if (isJoining) "참가 중..." else "참가 가능",
                             fontSize = 14.sp,
-                            color = Color(0xFF10B981),
+                            color = if (isJoining) Color(0xFFFFA500) else Color(0xFF10B981),
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -715,11 +593,18 @@ private fun ModernRoomCard(
                     Box(
                         modifier = Modifier
                             .background(
-                                brush = if (isEnabled) {
+                                brush = if (isEnabled && !isJoining) {
                                     Brush.linearGradient(
                                         colors = listOf(
                                             Color(0xFF8B5FBF),
                                             Color(0xFF6366F1)
+                                        )
+                                    )
+                                } else if (isJoining) {
+                                    Brush.linearGradient(
+                                        colors = listOf(
+                                            Color(0xFFFFA500),
+                                            Color(0xFFFF8C00)
                                         )
                                     )
                                 } else {
@@ -734,12 +619,24 @@ private fun ModernRoomCard(
                             )
                             .padding(horizontal = 24.dp, vertical = 12.dp)
                     ) {
-                        Text(
-                            text = "참가",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (isJoining) {
+                                CircularProgressIndicator(
+                                    color = Color.White,
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
+                            Text(
+                                text = if (isJoining) "참가 중" else "참가",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
                     }
                 }
             }
