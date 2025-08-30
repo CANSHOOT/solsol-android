@@ -95,6 +95,8 @@ interface BackendApiService {
     suspend fun addExpenditure(
         @Body request: CouncilExpenditureRequest
     ): CouncilExpenditureResponse
+
+    
 }
 
 // ========== Request 데이터 클래스들 ==========

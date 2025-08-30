@@ -35,6 +35,7 @@ fun StudentCard(
     grade: String = "재학생1학년",
     onQrClick: () -> Unit = {},
     onBtClick: () -> Unit = {},
+    isAdvertising: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -72,7 +73,8 @@ fun StudentCard(
                 // QR/BT 버튼 바
                 ModernCardButtons(
                     onQrClick = onQrClick,
-                    onBtClick = onBtClick
+                    onBtClick = onBtClick,
+                    isAdvertising = isAdvertising
                 )
             }
         }
@@ -190,7 +192,8 @@ private fun ModernProfileImage() {
 @Composable
 private fun ModernCardButtons(
     onQrClick: () -> Unit,
-    onBtClick: () -> Unit
+    onBtClick: () -> Unit,
+    isAdvertising: Boolean = false
 ) {
     Box(
         modifier = Modifier.fillMaxWidth(),
@@ -238,9 +241,10 @@ private fun ModernCardButtons(
             // BT 버튼
             ModernActionButton(
                 iconRes = R.drawable.bt1,
-                label = "BT",
+                label = if (isAdvertising) "광고중" else "BT",
                 onClick = onBtClick,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                isActive = isAdvertising
             )
         }
     }
@@ -251,7 +255,8 @@ private fun ModernActionButton(
     iconRes: Int,
     label: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isActive: Boolean = false
 ) {
     Box(
         modifier = modifier
@@ -259,12 +264,23 @@ private fun ModernActionButton(
             .clip(RoundedCornerShape(24.dp))
             .clickable { onClick() }
             .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color.White.copy(alpha = 0.15f),
-                        Color.White.copy(alpha = 0.05f)
+                brush = if (isActive) {
+                    // 활성화 상태일 때 - 더 밝고 강조된 색상
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Yellow.copy(alpha = 0.3f),
+                            Color.Yellow.copy(alpha = 0.15f)
+                        )
                     )
-                ),
+                } else {
+                    // 비활성화 상태일 때 - 기본 색상
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.15f),
+                            Color.White.copy(alpha = 0.05f)
+                        )
+                    )
+                },
                 shape = RoundedCornerShape(24.dp)
             ),
         contentAlignment = Alignment.Center
@@ -282,7 +298,7 @@ private fun ModernActionButton(
             Spacer(Modifier.width(8.dp))
             Text(
                 text = label,
-                color = Color.White,
+                color = if (isActive) Color.Yellow else Color.White,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
             )

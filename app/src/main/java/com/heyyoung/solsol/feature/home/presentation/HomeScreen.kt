@@ -50,6 +50,8 @@ fun HomeScreen(
     val studentNumber by viewModel.studentNumber.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val isAdvertising by viewModel.isAdvertising.collectAsState()
+    val advertisingError by viewModel.advertisingError.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.loadProfile()
@@ -58,6 +60,14 @@ fun HomeScreen(
     // 홈 화면 진입 로그
     LaunchedEffect(Unit) {
         Log.d(TAG, "홈 화면 진입")
+    }
+
+    // 광고 에러 처리
+    LaunchedEffect(advertisingError) {
+        advertisingError?.let { error ->
+            Log.w(TAG, "BT 광고 에러: $error")
+            // 에러 메시지를 사용자에게 보여줄 수 있습니다 (예: Toast, Snackbar 등)
+        }
     }
 
     // 깔끔한 그라데이션 배경
@@ -83,8 +93,10 @@ fun HomeScreen(
                         onNavigateToQrScan()
                     },
                     onBtClick = {
-                        Log.d(TAG, "BT 버튼 클릭")
-                    }
+                        Log.d(TAG, "BT 버튼 클릭 - 광고 토글")
+                        viewModel.toggleBtAdvertising()
+                    },
+                    isAdvertising = isAdvertising
                 )
                 1 -> AccountCard(
                     accountNumber = "110-123-456789",

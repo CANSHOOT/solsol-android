@@ -116,6 +116,43 @@ class NearbyConnectionsManager @Inject constructor(
     }
     
     /**
+     * 광고만 시작 (피정산자용)
+     */
+    fun startAdvertisingOnly() {
+        Log.d(TAG, "📡 광고만 시작 (피정산자 모드)")
+        
+        if (currentUserProfile == null) {
+            Log.e(TAG, "사용자 프로필이 로드되지 않음")
+            updateErrorState("사용자 정보를 불러올 수 없습니다")
+            return
+        }
+        
+        _discoveryState.value = _discoveryState.value.copy(
+            status = NearbyConnectionStatus.ADVERTISING,
+            isSearching = false,
+            error = null
+        )
+        
+        startAdvertising()
+    }
+    
+    /**
+     * 광고만 중지
+     */
+    fun stopAdvertisingOnly() {
+        Log.d(TAG, "🛑 광고만 중지")
+        
+        connectionsClient.stopAdvertising()
+        
+        _discoveryState.value = _discoveryState.value.copy(
+            status = NearbyConnectionStatus.IDLE,
+            isSearching = false
+        )
+        
+        Log.d(TAG, "✅ 광고 중지됨")
+    }
+
+    /**
      * 자신을 광고하여 다른 기기가 발견할 수 있게 함
      */
     private fun startAdvertising() {
