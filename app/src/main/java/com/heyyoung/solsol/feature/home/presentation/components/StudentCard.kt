@@ -83,7 +83,7 @@ fun StudentCard(
  * 글래스모피즘 카드 컨테이너
  */
 @Composable
-private fun GlassmorphismCard(
+fun GlassmorphismCard(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {

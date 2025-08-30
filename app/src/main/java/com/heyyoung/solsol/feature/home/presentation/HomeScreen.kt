@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -22,6 +24,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.heyyoung.solsol.R
 import com.heyyoung.solsol.feature.home.HomeViewModel
+import com.heyyoung.solsol.feature.home.presentation.components.AccountCard
+import com.heyyoung.solsol.feature.home.presentation.components.BenefitCard
 import com.heyyoung.solsol.feature.home.presentation.components.MenuGrid
 import com.heyyoung.solsol.feature.home.presentation.components.PagerDots
 import com.heyyoung.solsol.feature.home.presentation.components.StudentCard
@@ -61,23 +65,38 @@ fun HomeScreen(
         modifier = modifier,
         onLogout = { viewModel.logout(onLogout) }
     ) {
-        // 학생 정보 카드
-        StudentCard(
-            studentName = studentName ?: if (isLoading) "불러오는 중..." else "이름 없음",
-            studentNumber = studentNumber ?: if (isLoading) "불러오는 중..." else "학번 없음",
-            department = "컴퓨터공학과",
-            grade = "재학생1학년",
-            onQrClick = {
-                Log.d(TAG, "QR 스캔 버튼 클릭")
-                onNavigateToQrScan()
-            },
-            onBtClick = {
-                Log.d(TAG, "BT 버튼 클릭")
+        // 카드 페이저
+        val pagerState = rememberPagerState(pageCount = { 3 })
+        
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxWidth()
+        ) { page ->
+            when (page) {
+                0 -> StudentCard(
+                    studentName = studentName ?: if (isLoading) "불러오는 중..." else "이름 없음",
+                    studentNumber = studentNumber ?: if (isLoading) "불러오는 중..." else "학번 없음",
+                    department = "컴퓨터공학과",
+                    grade = "재학생1학년",
+                    onQrClick = {
+                        Log.d(TAG, "QR 스캔 버튼 클릭")
+                        onNavigateToQrScan()
+                    },
+                    onBtClick = {
+                        Log.d(TAG, "BT 버튼 클릭")
+                    }
+                )
+                1 -> AccountCard(
+                    accountNumber = "110-123-456789",
+                    accountBalance = 1250000,
+                    accountType = "신한 주거래통장"
+                )
+                2 -> BenefitCard()
             }
-        )
+        }
 
         Spacer(modifier = Modifier.height(30.dp))
-        PagerDots(total = 3, selectedIndex = 0)
+        PagerDots(total = 3, selectedIndex = pagerState.currentPage)
         Spacer(Modifier.height(20.dp))
 
         // 바로가기 메뉴 그리드
