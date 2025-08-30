@@ -81,6 +81,8 @@ fun JoinScreen(
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
                     add(Manifest.permission.ACCESS_FINE_LOCATION)
                 }
+                // Android 13+ 에서 Wi-Fi 근거리 탐색을 쓴다면:
+                 add(Manifest.permission.NEARBY_WIFI_DEVICES)
             }.toTypedArray()
         } else {
             arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -97,9 +99,22 @@ fun JoinScreen(
     ) { result ->
         val granted = result.values.all { it }
         if (granted) {
+            // ✅ 여기서는 컴포저블 호출 금지 (viewModel 호출만)
             viewModel.startDiscovering()
         } else {
             Toast.makeText(context, "근거리 연결 권한을 모두 허용해주세요.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun deniedPerms(): Array<String> =
+        requiredPerms.filter {
+            ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
+        }.toTypedArray()
+
+
+    if (!hasAllPermissions()) {
+        Button(onClick = { permissionLauncher.launch(deniedPerms()) }) {
+            Text("권한 허용")
         }
     }
 
