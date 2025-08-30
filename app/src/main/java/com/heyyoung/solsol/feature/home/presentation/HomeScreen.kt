@@ -52,6 +52,8 @@ fun HomeScreen(
     val error by viewModel.error.collectAsState()
     val isAdvertising by viewModel.isAdvertising.collectAsState()
     val advertisingError by viewModel.advertisingError.collectAsState()
+    val accountInfo by viewModel.accountInfo.collectAsState()
+    val accountError by viewModel.accountError.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.loadProfile()
@@ -66,6 +68,14 @@ fun HomeScreen(
     LaunchedEffect(advertisingError) {
         advertisingError?.let { error ->
             Log.w(TAG, "BT 광고 에러: $error")
+            // 에러 메시지를 사용자에게 보여줄 수 있습니다 (예: Toast, Snackbar 등)
+        }
+    }
+
+    // 계좌 에러 처리
+    LaunchedEffect(accountError) {
+        accountError?.let { error ->
+            Log.w(TAG, "계좌 정보 에러: $error")
             // 에러 메시지를 사용자에게 보여줄 수 있습니다 (예: Toast, Snackbar 등)
         }
     }
@@ -99,8 +109,8 @@ fun HomeScreen(
                     isAdvertising = isAdvertising
                 )
                 1 -> AccountCard(
-                    accountNumber = "110-123-456789",
-                    accountBalance = 1250000,
+                    accountNumber = accountInfo?.accountNo ?: "계좌 정보를 불러오는 중...",
+                    accountBalance = accountInfo?.accountBalance ?: 0,
                     accountType = "신한 주거래통장"
                 )
                 2 -> BenefitCard()

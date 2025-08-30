@@ -50,6 +50,13 @@ interface BackendApiService {
     @GET("users/{userId}")
     suspend fun getUser(@Path("userId") userId: String): Response<UserDto>
 
+    /**
+     * 계좌 정보 조회
+     * GET /users/account
+     */
+    @GET("users/account")
+    suspend fun getUserAccount(): Response<AccountDto>
+
 
     // 정산 초대 푸시 전송
     @POST("dutchpay/{groupId}/invite")
@@ -260,6 +267,14 @@ data class UserDto(
     val accountNo: String,
     val accountBalance: Long,
     val councilOfficer: Boolean
+)
+
+/**
+ * 계좌 정보 응답
+ */
+data class AccountDto(
+    val accountNo: String,
+    val accountBalance: Long
 )
 
 

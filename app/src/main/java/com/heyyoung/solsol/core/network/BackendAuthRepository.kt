@@ -251,6 +251,31 @@ class BackendAuthRepository @Inject constructor(
     }
 
     /**
+     * 내 계좌 정보 조회
+     */
+    suspend fun getMyAccount(): BackendApiResult<AccountDto> {
+        return try {
+            val userInfo = tokenManager.getUserInfo().first()
+            if (userInfo?.userId.isNullOrBlank()) {
+                return BackendApiResult.Error("로그인이 필요합니다")
+            }
+
+            val response = backendApiService.getUserAccount()
+            if (response.isSuccessful && response.body() != null) {
+                Log.d(TAG, "계좌 정보 조회 성공")
+                BackendApiResult.Success(response.body()!!)
+            } else {
+                val errorMessage = parseErrorMessage(response.code(), response.message())
+                Log.e(TAG, "계좌 정보 조회 실패: $errorMessage")
+                BackendApiResult.Error(errorMessage)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "계좌 정보 조회 중 예외: ${e.message}", e)
+            BackendApiResult.Error("네트워크 연결을 확인해주세요")
+        }
+    }
+
+    /**
      * HTTP 에러 코드에 따른 사용자 친화적 메시지 생성
      */
     private fun parseErrorMessage(code: Int, message: String?): String {

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.heyyoung.solsol.core.network.BackendAuthRepository
 import com.heyyoung.solsol.core.network.BackendApiResult
+import com.heyyoung.solsol.core.network.AccountDto
 import com.heyyoung.solsol.feature.settlement.domain.nearby.NearbyConnectionsManager
 import com.heyyoung.solsol.feature.settlement.domain.nearby.NearbyPermissionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -40,12 +41,20 @@ class HomeViewModel @Inject constructor(
     private val _advertisingError = MutableStateFlow<String?>(null)
     val advertisingError: StateFlow<String?> = _advertisingError
 
+    // 계좌 정보 상태 관리
+    private val _accountInfo = MutableStateFlow<AccountDto?>(null)
+    val accountInfo: StateFlow<AccountDto?> = _accountInfo
+
+    private val _accountError = MutableStateFlow<String?>(null)
+    val accountError: StateFlow<String?> = _accountError
+
     private var isNearbyInitialized = false
 
 
     fun loadProfile() {
         viewModelScope.launch {
             isLoading.value = true
+            // 프로필 정보 로드
             when (val result = repo.getMyProfile()) {
                 is BackendApiResult.Success -> {
                     _studentName.value = result.data.name
@@ -56,7 +65,37 @@ class HomeViewModel @Inject constructor(
                     error.value = result.message
                 }
             }
+            
+            // 계좌 정보 로드
+            loadAccountInfo()
+            
             isLoading.value = false
+        }
+    }
+
+    /**
+     * 계좌 정보 로드
+     */
+    private suspend fun loadAccountInfo() {
+        when (val result = repo.getMyAccount()) {
+            is BackendApiResult.Success -> {
+                _accountInfo.value = result.data
+                _accountError.value = null
+                Log.d(TAG, "계좌 정보 로드 성공: ${result.data.accountNo}")
+            }
+            is BackendApiResult.Error<*> -> {
+                _accountError.value = result.message
+                Log.e(TAG, "계좌 정보 로드 실패: ${result.message}")
+            }
+        }
+    }
+
+    /**
+     * 계좌 정보 새로고침
+     */
+    fun refreshAccountInfo() {
+        viewModelScope.launch {
+            loadAccountInfo()
         }
     }
 
@@ -155,6 +194,8 @@ class HomeViewModel @Inject constructor(
             error.value = null
             _isAdvertising.value = false
             _advertisingError.value = null
+            _accountInfo.value = null
+            _accountError.value = null
             
             Log.i(TAG, "로그아웃 완료")
             onLogoutComplete() // 로그인 화면으로 이동
