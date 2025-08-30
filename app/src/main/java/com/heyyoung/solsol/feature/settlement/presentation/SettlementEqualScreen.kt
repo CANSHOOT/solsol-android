@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.heyyoung.solsol.feature.settlement.domain.model.Person
+import com.heyyoung.solsol.ui.theme.OneShinhan
 import java.math.BigDecimal
 
 private const val TAG = "SettlementEqualScreen"
@@ -115,6 +116,7 @@ fun SettlementEqualScreen(
                 text = "총 금액을 입력해주세요",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
+                fontFamily = OneShinhan,
                 color = Color(0xFF1C1C1E)
             )
 
@@ -266,12 +268,13 @@ fun SettlementEqualScreen(
                         text = "정산 요청하기",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
+                        fontFamily = OneShinhan,
                         color = Color.White
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(60.dp))
         }
     }
 }
@@ -291,53 +294,54 @@ private fun TotalAmountInputCard(
             .border(
                 width = 2.dp,
                 color = Color(0xCCE2E8F0),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(16.dp)
             )
             .width(342.dp)
-            .height(140.dp),
+            .wrapContentHeight(), // 높이를 내용에 맞게 조정
         colors = CardDefaults.cardColors(
             containerColor = Color.White
         ),
         shape = RoundedCornerShape(12.dp)
     ) {
-        Column(
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.Center
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 16.dp), // 상하 패딩 줄임
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+            // ₩ 아이콘
+            Text(
+                text = "₩",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF999999)
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // 금액 입력 - BasicTextField 사용으로 더 간결하게
+            Box(
+                modifier = Modifier.weight(1f),
+                contentAlignment = Alignment.Center
             ) {
-                // ₩ 아이콘
-                Text(
-                    text = "₩",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF999999)
-                )
+                if (amount.isEmpty()) {
+                    Text(
+                        text = "0",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFCCCCCC),
+                        textAlign = TextAlign.Center
+                    )
+                }
 
-                Spacer(modifier = Modifier.width(8.dp))
-
-                // 금액 입력
-                OutlinedTextField(
-                    value = if (amount.isEmpty()) "" else String.format(
-                        "%,d",
-                        amount.toIntOrNull() ?: 0
-                    ),
+                androidx.compose.foundation.text.BasicTextField(
+                    value = if (amount.isEmpty()) "" else String.format("%,d", amount.toIntOrNull() ?: 0),
                     onValueChange = { newValue ->
                         // 콤마 제거하고 숫자만 추출
                         val numberOnly = newValue.replace(",", "").filter { it.isDigit() }
                         onAmountChange(numberOnly)
                     },
-//                    placeholder = { Text("88,000", color = Color(0xFF999999)) },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent
-                    ),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     textStyle = androidx.compose.ui.text.TextStyle(
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
@@ -345,23 +349,23 @@ private fun TotalAmountInputCard(
                         color = Color(0xFF1C1C1E)
                     ),
                     singleLine = true,
-                    modifier = Modifier.weight(1f)
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                // "원" 텍스트
-                Text(
-                    text = "원",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF999999)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // "원" 텍스트
+            Text(
+                text = "원",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF999999)
+            )
         }
     }
 }
-
 @Composable
 private fun EqualSplitResultCard(
     perPersonAmount: Int,

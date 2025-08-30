@@ -1,5 +1,6 @@
 package com.heyyoung.solsol.feature.settlement.presentation.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -8,6 +9,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -30,49 +33,76 @@ fun NearbyPermissionDialog(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(16.dp),
+                    .padding(24.dp)
+                    .shadow(
+                        elevation = 24.dp,
+                        shape = RoundedCornerShape(24.dp),
+                        spotColor = Color(0xFF8B5FBF).copy(alpha = 0.15f)
+                    ),
+                shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = Color.White
                 )
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(20.dp),
+                        .padding(32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // 아이콘들
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.padding(bottom = 16.dp)
+                    // 아이콘
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .shadow(
+                                elevation = 12.dp,
+                                shape = RoundedCornerShape(40.dp),
+                                spotColor = Color(0xFF8B5FBF).copy(alpha = 0.2f)
+                            )
+                            .background(
+                                brush = Brush.linearGradient(
+                                    colors = listOf(
+                                        Color(0xFF8B5FBF).copy(alpha = 0.15f),
+                                        Color(0xFF6366F1).copy(alpha = 0.1f)
+                                    )
+                                ),
+                                shape = RoundedCornerShape(40.dp)
+                            ),
+                        contentAlignment = Alignment.Center
                     ) {
-                        PermissionIcon(
-                            icon = Icons.Default.LocationOn,
-                            description = "위치",
-                            color = MaterialTheme.colorScheme.primary
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = "위치 권한",
+                            tint = Color(0xFF8B5FBF),
+                            modifier = Modifier.size(36.dp)
                         )
                     }
-                    
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
                     // 제목
                     Text(
                         text = "권한이 필요해요",
-                        fontSize = 20.sp,
+                        fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(bottom = 12.dp)
+                        color = Color(0xFF1E293B),
+                        textAlign = TextAlign.Center
                     )
-                    
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
                     // 설명 메시지
                     Text(
                         text = permissionMessage,
-                        fontSize = 14.sp,
-                        lineHeight = 20.sp,
+                        fontSize = 16.sp,
+                        lineHeight = 24.sp,
                         textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                        modifier = Modifier.padding(bottom = 20.dp)
+                        color = Color(0xFF64748B),
+                        fontWeight = FontWeight.Medium
                     )
-                    
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
                     // 버튼들
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -81,63 +111,77 @@ fun NearbyPermissionDialog(
                         // 취소 버튼
                         OutlinedButton(
                             onClick = onDismiss,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(52.dp)
+                                .shadow(
+                                    elevation = 4.dp,
+                                    shape = RoundedCornerShape(16.dp),
+                                    spotColor = Color(0xFF64748B).copy(alpha = 0.1f)
+                                ),
                             colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                contentColor = Color(0xFF64748B),
+                                containerColor = Color.White
                             ),
-                            shape = RoundedCornerShape(12.dp)
+                            border = ButtonDefaults.outlinedButtonBorder.copy(
+                                brush = Brush.linearGradient(
+                                    colors = listOf(
+                                        Color(0xFFE2E8F0),
+                                        Color(0xFFCBD5E1)
+                                    )
+                                )
+                            ),
+                            shape = RoundedCornerShape(16.dp)
                         ) {
-                            Text("취소")
+                            Text(
+                                "취소",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
-                        
+
                         // 권한 요청/설정 버튼
                         Button(
                             onClick = if (isPermanentlyDenied) onOpenSettings else onRequestPermissions,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(52.dp)
+                                .shadow(
+                                    elevation = 12.dp,
+                                    shape = RoundedCornerShape(16.dp),
+                                    spotColor = Color(0xFF8B5FBF).copy(alpha = 0.3f)
+                                ),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
+                                containerColor = Color.Transparent
                             ),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(16.dp),
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text(
-                                text = if (isPermanentlyDenied) "설정 열기" else "권한 허용",
-                                color = Color.White
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        brush = Brush.linearGradient(
+                                            colors = listOf(
+                                                Color(0xFF8B5FBF),
+                                                Color(0xFF6366F1)
+                                            )
+                                        ),
+                                        shape = RoundedCornerShape(16.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (isPermanentlyDenied) "설정 열기" else "권한 허용",
+                                    color = Color.White,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun PermissionIcon(
-    icon: ImageVector,
-    description: String,
-    color: Color
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .padding(8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = description,
-                tint = color,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-        Text(
-            text = description,
-            fontSize = 10.sp,
-            color = color.copy(alpha = 0.7f),
-            textAlign = TextAlign.Center
-        )
     }
 }

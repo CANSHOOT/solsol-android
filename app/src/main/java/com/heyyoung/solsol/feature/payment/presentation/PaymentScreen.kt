@@ -595,7 +595,7 @@ private fun CardPreviewBox() {
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 12.dp)
                         .background(
-                            Color.Black.copy(alpha = 0.3f),
+                            Color.Black.copy(alpha = 0.1f),
                             RoundedCornerShape(10.dp)
                         )
                         .padding(horizontal = 8.dp, vertical = 8.dp)
@@ -622,7 +622,7 @@ private fun CardPreviewBox() {
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 12.dp)
                         .background(
-                            Color.Black.copy(alpha = 0.3f),
+                            Color.Black.copy(alpha = 0.1f),
                             RoundedCornerShape(10.dp)
                         )
                         .padding(horizontal = 8.dp, vertical = 4.dp),

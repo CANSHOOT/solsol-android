@@ -39,7 +39,7 @@ fun PaymentSuccessScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
-            .padding(horizontal = 20.dp), // 좌우 여백 고정
+            .padding(horizontal = 20.dp, vertical = 32.dp), // 좌우 여백 고정
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(Modifier.height(72.dp))

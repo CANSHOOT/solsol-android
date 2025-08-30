@@ -33,6 +33,7 @@ import androidx.activity.compose.BackHandler
 import com.heyyoung.solsol.feature.settlement.domain.model.toPerson
 import com.heyyoung.solsol.feature.settlement.presentation.components.NearbyBottomSheet
 import com.heyyoung.solsol.feature.settlement.presentation.viewmodel.NearbyViewModel
+import com.heyyoung.solsol.ui.theme.OneShinhan
 
 private const val TAG = "SettlementParticipantsScreen"
 
@@ -90,7 +91,7 @@ fun SettlementParticipantsScreen(
         onNavigateBack()
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
@@ -127,7 +128,8 @@ fun SettlementParticipantsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = 24.dp)   // 좌우 패딩만
+                .padding(top = 72.dp)
         ) {
             Spacer(modifier = Modifier.height(16.dp)) // 20dp에서 16dp로 조정
 
@@ -135,9 +137,10 @@ fun SettlementParticipantsScreen(
             Column {
                 Text(
                     text = "정산할 사람을 추가해주세요",
-                    fontSize = 22.sp, // 20sp에서 22sp로 증가
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF2D3748), // solsol_dark_text
+                    color = Color(0xFF2D3748),
+                    fontFamily = OneShinhan,
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -149,9 +152,8 @@ fun SettlementParticipantsScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(28.dp)) // 24dp에서 28dp로 증가
+            Spacer(modifier = Modifier.height(28.dp))
 
-            // 검색창과 버튼들 - 돋보기 중복 문제 해결
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -454,7 +456,7 @@ fun SettlementParticipantsScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(32.dp)) // 40dp에서 32dp로 조정
+                Spacer(modifier = Modifier.height(50.dp)) // 40dp에서 32dp로 조정
             }
         }
     }
@@ -693,7 +695,7 @@ private fun SearchResultCard(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "${person.department} · ${person.studentId}",
-                    fontSize = 14.sp,
+                    fontSize = 12.sp,
                     color = Color(0xFF718096) // solsol_gray_text
                 )
             }
@@ -706,9 +708,9 @@ private fun SearchResultCard(
                     containerColor = Color(0xFF8B5FBF), // solsol_purple
                     disabledContainerColor = Color(0xFF718096).copy(alpha = 0.3f) // solsol_gray_text with transparency
                 ),
-                shape = RoundedCornerShape(12.dp), // 16dp에서 12dp로 조정
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), // 패딩 조정
-                modifier = Modifier.height(56.dp) // 32dp에서 36dp로 증가
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.height(40.dp)
             ) {
                 Text(
                     text = if (isMaxReached) "최대" else "추가",
@@ -895,7 +897,8 @@ private fun AddPersonButton(
             Text(
                 text = if (isMaxReached) "최대 10명 도달" else "주변에서 찾기",
                 fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold, // Medium에서 SemiBold로 변경
+                fontWeight = FontWeight.SemiBold,
+                fontFamily = OneShinhan,
                 color = if (isMaxReached) Color(0xFF718096) else Color(0xFF8B5FBF) // solsol_gray_text or solsol_purple
             )
         }

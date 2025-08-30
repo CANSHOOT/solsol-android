@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.activity.compose.BackHandler
 import com.heyyoung.solsol.core.network.DeptHomeSummaryResponse
+import com.heyyoung.solsol.ui.theme.OneShinhan
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -106,8 +107,8 @@ fun StudentCouncilScreen(
                 // 학생회 이름
                 Text(
                     ui.header.councilName,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
                     color = textSub
                 )
 
@@ -192,8 +193,8 @@ private fun BalanceInfoCard(
         ) {
             Text(
                 text = "우리 과 회계 현황",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.ExtraBold,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
                 color = purple
             )
 
@@ -206,7 +207,7 @@ private fun BalanceInfoCard(
                 )
                 Text(
                     text = "${String.format("%,d", currentBalance)}원",
-                    fontSize = 34.sp,  // 살짝 키워도 공간 충분
+                    fontSize = 28.sp,  // 살짝 키워도 공간 충분
                     fontWeight = FontWeight.ExtraBold,
                     color = textMain
                 )
@@ -237,17 +238,18 @@ private fun FeePaymentStatusCard(
                 shape = RoundedCornerShape(16.dp)
             )
             .fillMaxWidth()
-            .heightIn(min = if (isPaid) 72.dp else 96.dp),
+            .heightIn(min = 72.dp), // 버튼이 옆으로 가니까 높이 고정
         colors = CardDefaults.cardColors(
             containerColor = if (isPaid) Color(0xFFF0FDF4) else Color(0xFFFEF2F2)
         ),
         shape = RoundedCornerShape(16.dp)
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically
@@ -297,22 +299,24 @@ private fun FeePaymentStatusCard(
                 }
             }
 
-            // 납부 미완료일 때만 버튼 표시
+            // 납부 미완료일 때만 작은 버튼 표시
             if (!isPaid) {
                 Button(
                     onClick = onNavigateToPayment,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(40.dp),
+                        .width(110.dp)
+                        .height(32.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF8B5FBF)
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = "납부하러 가기",
-                        fontSize = 14.sp,
+                        text = "납부하기",
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
+                        fontFamily = OneShinhan,
                         color = Color.White
                     )
                 }
@@ -374,8 +378,9 @@ private fun ActionButton(
                 }
                 Text(
                     text,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    fontFamily = OneShinhan,
                     color = textColor
                 )
             }
