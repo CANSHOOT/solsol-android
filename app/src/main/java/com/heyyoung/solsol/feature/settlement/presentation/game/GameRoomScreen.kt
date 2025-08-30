@@ -24,6 +24,15 @@ import com.heyyoung.solsol.feature.settlement.domain.game.*
 import com.heyyoung.solsol.feature.settlement.domain.model.Person
 import com.heyyoung.solsol.feature.settlement.presentation.SettlementEqualViewModel
 import java.math.BigDecimal
+import androidx.compose.foundation.Image
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import com.heyyoung.solsol.R
+import androidx.compose.animation.core.*
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.draw.scale
+import com.heyyoung.solsol.ui.theme.OneShinhan
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -155,9 +164,9 @@ fun GameRoomScreen(
                         )
                         Text(
                             "${amountText}원",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFF8B5FBF) // solsol_purple
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF2D3748)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(
@@ -167,14 +176,14 @@ fun GameRoomScreen(
                                 modifier = Modifier
                                     .size(32.dp)
                                     .background(
-                                        color = Color(0xFF2196F3).copy(alpha = 0.1f), // 하늘색 배경
+                                        color = Color(0xFFF8F7FF).copy(alpha = 0.7f),
                                         shape = RoundedCornerShape(8.dp)
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = (me?.displayName ?: "나").first().toString(),
-                                    color = Color(0xFF2196F3), // 하늘색
+                                    color = Color(0xFF8B5FBF),
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -293,63 +302,117 @@ fun GameRoomScreen(
                     Log.d("GameDebug", "winnerUserId: ${state.winnerUserId}")
                     Log.d("GameDebug", "========================")
 
-                    val iAmHost = me?.isHost == true
+                    val hostMember = state.members.find { it.isHost }
+                    val iAmHost = me?.userId != null && hostMember?.userId == me?.userId
 
                     if (amWinner && !iAmHost) {
-                        // 당첨자(호스트 아님) - 더 화려하게
+                        // 당첨자 (호스트 아님) - 글래스모피즘 스타일
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .shadow(
-                                    elevation = 20.dp,
-                                    spotColor = Color(0x30FFC107),
-                                    ambientColor = Color(0x30FFC107)
+                                    elevation = 32.dp,
+                                    shape = RoundedCornerShape(28.dp),
+                                    spotColor = Color(0xFFFF6B35).copy(alpha = 0.3f)
                                 ),
                             colors = CardDefaults.cardColors(
-                                containerColor = Color(0xFFFFE0B2)
+                                containerColor = Color.White.copy(alpha = 0.95f)
                             ),
-                            shape = RoundedCornerShape(24.dp)
+                            shape = RoundedCornerShape(28.dp)
                         ) {
-                            Column(
-                                modifier = Modifier.padding(32.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
+                            Box {
+                                // 글래스모피즘 배경
                                 Box(
                                     modifier = Modifier
-                                        .size(80.dp)
+                                        .matchParentSize()
                                         .background(
-                                            Color(0xFFFFC107).copy(alpha = 0.2f),
-                                            shape = CircleShape
-                                        ),
-                                    contentAlignment = Alignment.Center
+                                            brush = Brush.radialGradient(
+                                                colors = listOf(
+                                                    Color(0xFFFF6B35).copy(alpha = 0.1f),
+                                                    Color(0xFFFF8E53).copy(alpha = 0.05f),
+                                                    Color.White.copy(alpha = 0.8f)
+                                                ),
+                                                radius = 800f
+                                            ),
+                                            shape = RoundedCornerShape(28.dp)
+                                        )
+                                )
+
+                                Column(
+                                    modifier = Modifier.padding(36.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
+                                    // 펄싱 효과가 있는 트로피
+                                    val pulseScale by animateFloatAsState(
+                                        targetValue = 1.15f,
+                                        animationSpec = infiniteRepeatable(
+                                            animation = tween(1200, easing = EaseInOutSine),
+                                            repeatMode = RepeatMode.Reverse
+                                        ),
+                                        label = "trophy"
+                                    )
+
+                                    Box(
+                                        modifier = Modifier
+                                            .size(120.dp)
+                                            .scale(pulseScale)
+                                            .shadow(
+                                                elevation = 20.dp,
+                                                shape = RoundedCornerShape(60.dp),
+                                                spotColor = Color(0xFFFF6B35).copy(alpha = 0.4f)
+                                            )
+                                            .background(
+                                                brush = Brush.radialGradient(
+                                                    colors = listOf(
+                                                        Color(0xFFFF6B35).copy(alpha = 0.2f),
+                                                        Color(0xFFFF8E53).copy(alpha = 0.1f),
+                                                        Color.Transparent
+                                                    )
+                                                ),
+                                                shape = RoundedCornerShape(60.dp)
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(text = "🏆", fontSize = 40.sp)
+                                    }
+
+                                    Spacer(modifier = Modifier.height(24.dp))
+
                                     Text(
-                                        text = "👑",
-                                        fontSize = 36.sp
+                                        text = "당첨!",
+                                        fontSize = 32.sp,
+                                        fontWeight = FontWeight.Black,
+                                        fontFamily = OneShinhan,
+                                        color = Color(0xFFFF6B35)
+                                    )
+
+                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                    Text(
+                                        text = "축하합니다! 당신이 선택되었습니다",
+                                        fontSize = 16.sp,
+                                        color = Color(0xFFFF8E53),
+                                        fontWeight = FontWeight.SemiBold,
+                                        textAlign = TextAlign.Center,
+                                        fontFamily = OneShinhan,
+                                        lineHeight = 24.sp
+                                    )
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    Text(
+                                        text = "오늘 모두에게 쏘세요",
+                                        fontSize = 14.sp,
+                                        color = Color(0xFF475569),
+                                        fontWeight = FontWeight.Medium
                                     )
                                 }
-
-                                Spacer(modifier = Modifier.height(20.dp))
-                                Text(
-                                    text = "축하합니다!",
-                                    fontSize = 28.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color(0xFFF57C00)
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "당신이 당첨되었습니다!\n전체 정산을 담당해주세요.",
-                                    fontSize = 16.sp,
-                                    color = Color(0xFFF57C00),
-                                    fontWeight = FontWeight.Medium,
-                                    textAlign = TextAlign.Center,
-                                    lineHeight = 24.sp
-                                )
                             }
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))
 
+                        // 글래스모피즘 정산 버튼
                         Button(
                             onClick = {
                                 val hostMember = state.members.find { it.isHost }
@@ -383,153 +446,95 @@ fun GameRoomScreen(
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(56.dp)
+                                .height(64.dp)
                                 .shadow(
-                                    elevation = 16.dp,
-                                    spotColor = Color(0x40FFC107),
-                                    ambientColor = Color(0x40FFC107)
+                                    elevation = 20.dp,
+                                    shape = RoundedCornerShape(32.dp),
+                                    spotColor = Color(0xFFFF6B35).copy(alpha = 0.4f)
                                 ),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFFFC107)
+                                containerColor = Color.Transparent
                             ),
-                            shape = RoundedCornerShape(16.dp)
+                            shape = RoundedCornerShape(32.dp),
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text(
-                                text = "정산하러 가기",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        brush = Brush.linearGradient(
+                                            colors = listOf(
+                                                Color(0xFFFF6B35),
+                                                Color(0xFFFF8E53),
+                                                Color(0xFFFFA726)
+                                            )
+                                        ),
+                                        shape = RoundedCornerShape(32.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(
+                                        text = "정산하러 가기",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = OneShinhan,
+                                        color = Color.White
+                                    )
+                                }
+                            }
                         }
                     } else if (amWinner && iAmHost) {
-                        // 당첨자(호스트 본인)
+                        // 당첨자 (호스트) - 간소화된 버전
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .shadow(
                                     elevation = 20.dp,
-                                    spotColor = Color(0x30FFC107),
-                                    ambientColor = Color(0x30FFC107)
+                                    shape = RoundedCornerShape(24.dp),
+                                    spotColor = Color(0xFFFF6B35).copy(alpha = 0.2f)
                                 ),
                             colors = CardDefaults.cardColors(
-                                containerColor = Color(0xFFFFE0B2)
+                                containerColor = Color.White.copy(alpha = 0.9f)
                             ),
                             shape = RoundedCornerShape(24.dp)
                         ) {
-                            Column(
-                                modifier = Modifier.padding(32.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
+                            Box {
                                 Box(
                                     modifier = Modifier
-                                        .size(80.dp)
+                                        .matchParentSize()
                                         .background(
-                                            Color(0xFFFFC107).copy(alpha = 0.2f),
-                                            shape = CircleShape
-                                        ),
-                                    contentAlignment = Alignment.Center
+                                            brush = Brush.linearGradient(
+                                                colors = listOf(
+                                                    Color(0xFFFF6B35).copy(alpha = 0.08f),
+                                                    Color(0xFFFFA726).copy(alpha = 0.04f)
+                                                )
+                                            ),
+                                            shape = RoundedCornerShape(24.dp)
+                                        )
+                                )
+
+                                Column(
+                                    modifier = Modifier.padding(28.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
+                                    Text(text = "🎉", fontSize = 48.sp)
+                                    Spacer(modifier = Modifier.height(16.dp))
                                     Text(
-                                        text = "👑",
-                                        fontSize = 36.sp
+                                        text = "당첨되었습니다!",
+                                        fontSize = 24.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFFF6B35)
+                                    )
+                                    Text(
+                                        text = "전체 정산을 진행해주세요",
+                                        fontSize = 16.sp,
+                                        color = Color(0xFF64748B)
                                     )
                                 }
-
-                                Spacer(modifier = Modifier.height(20.dp))
-                                Text(
-                                    text = "축하합니다!",
-                                    fontSize = 28.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color(0xFFF57C00)
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "당첨되었습니다. 전체 정산을 진행해주세요.",
-                                    fontSize = 16.sp,
-                                    color = Color(0xFFF57C00),
-                                    fontWeight = FontWeight.Medium,
-                                    textAlign = TextAlign.Center,
-                                    lineHeight = 24.sp
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        Button(
-                            onClick = {
-                                viewModel.leaveRoom()
-                                onGameFinished()
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp)
-                                .shadow(
-                                    elevation = 16.dp,
-                                    spotColor = Color(0x40FFC107),
-                                    ambientColor = Color(0x40FFC107)
-                                ),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFFFC107)
-                            ),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Text(
-                                text = "닫기",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-                    } else {
-                        // 일반 참가자 - 더 깔끔하게
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .shadow(
-                                    elevation = 12.dp,
-                                    spotColor = Color(0x1A2196F3),
-                                    ambientColor = Color(0x1A2196F3)
-                                ),
-                            colors = CardDefaults.cardColors(
-                                containerColor = Color(0xFFE3F2FD)
-                            ),
-                            shape = RoundedCornerShape(20.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(24.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(64.dp)
-                                        .background(
-                                            Color(0xFF2196F3).copy(alpha = 0.1f),
-                                            shape = CircleShape
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "🎯",
-                                        fontSize = 28.sp
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Text(
-                                    text = "${winnerMember?.displayName ?: "알 수 없음"}님이 당첨되었습니다!",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF2196F3),
-                                    textAlign = TextAlign.Center
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "정산을 진행할 예정입니다",
-                                    fontSize = 14.sp,
-                                    color = Color(0xFF2196F3),
-                                    fontWeight = FontWeight.Medium
-                                )
                             }
                         }
 
@@ -542,16 +547,130 @@ fun GameRoomScreen(
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(48.dp),
+                                .height(56.dp)
+                                .shadow(
+                                    elevation = 12.dp,
+                                    shape = RoundedCornerShape(28.dp)
+                                ),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF718096) // solsol_gray_text
+                                containerColor = Color(0xFFFF6B35)
                             ),
-                            shape = RoundedCornerShape(16.dp)
+                            shape = RoundedCornerShape(28.dp)
+                        ) {
+                            Text(
+                                text = "닫기",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White
+                            )
+                        }
+                    } else {
+                        // 일반 참가자 - 모던한 스타일
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .shadow(
+                                    elevation = 16.dp,
+                                    shape = RoundedCornerShape(24.dp),
+                                    spotColor = Color(0xFF6366F1).copy(alpha = 0.15f)
+                                ),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color.White.copy(alpha = 0.95f)
+                            ),
+                            shape = RoundedCornerShape(24.dp)
+                        ) {
+                            Box {
+                                Box(
+                                    modifier = Modifier
+                                        .matchParentSize()
+                                        .background(
+                                            brush = Brush.linearGradient(
+                                                colors = listOf(
+                                                    Color(0xFF6366F1).copy(alpha = 0.08f),
+                                                    Color(0xFF8B5CF6).copy(alpha = 0.04f),
+                                                    Color.White.copy(alpha = 0.9f)
+                                                )
+                                            ),
+                                            shape = RoundedCornerShape(24.dp)
+                                        )
+                                )
+
+                                Column(
+                                    modifier = Modifier.fillMaxWidth().padding(28.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(80.dp)
+                                            .shadow(
+                                                elevation = 12.dp,
+                                                shape = RoundedCornerShape(40.dp),
+                                                spotColor = Color(0xFF6366F1).copy(alpha = 0.2f)
+                                            )
+                                            .background(
+                                                brush = Brush.radialGradient(
+                                                    colors = listOf(
+                                                        Color(0xFF6366F1).copy(alpha = 0.1f),
+                                                        Color(0xFF8B5CF6).copy(alpha = 0.05f)
+                                                    )
+                                                ),
+                                                shape = RoundedCornerShape(40.dp)
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "\uD83E\uDD73",
+                                            fontSize = 36.sp
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(20.dp))
+
+                                    Text(
+                                        text = "${winnerMember?.displayName ?: "알 수 없음"}님이 당첨!",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = OneShinhan,
+                                        color = Color(0xFF6366F1),
+                                        textAlign = TextAlign.Center
+                                    )
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    Text(
+                                        text = "운이 아주 좋으십니다 !",
+                                        fontSize = 14.sp,
+                                        color = Color(0xFF8B5CF6),
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        Button(
+                            onClick = {
+                                viewModel.leaveRoom()
+                                onGameFinished()
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp)
+                                .shadow(
+                                    elevation = 8.dp,
+                                    shape = RoundedCornerShape(26.dp)
+                                ),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF64748B)
+                            ),
+                            shape = RoundedCornerShape(26.dp)
                         ) {
                             Text(
                                 text = "메인으로 돌아가기",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.SemiBold,
+                                fontFamily = OneShinhan,
                                 color = Color.White
                             )
                         }
@@ -641,57 +760,175 @@ private fun HostControls(
     hasUnassignedNumbers: Boolean
 ) {
     if (memberCount < 2) {
-        StatusCard(
-            backgroundColor = Color(0xFFFFA500).copy(alpha = 0.1f),
-            textColor = Color(0xFFFFA500),
-            text = "게임을 시작하려면 최소 2명이 필요합니다"
-        )
+        // 글래스모피즘 경고 카드
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(
+                    elevation = 12.dp,
+                    shape = RoundedCornerShape(20.dp),
+                    spotColor = Color(0xFFFFA500).copy(alpha = 0.2f)
+                ),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White.copy(alpha = 0.95f)
+            ),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Box {
+                // 글래스모피즘 배경
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFFFFA500).copy(alpha = 0.08f),
+                                    Color(0xFFFFB347).copy(alpha = 0.04f),
+                                    Color.White.copy(alpha = 0.9f)
+                                )
+                            ),
+                            shape = RoundedCornerShape(20.dp)
+                        )
+                )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // 아이콘 영역
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .shadow(
+                                elevation = 8.dp,
+                                shape = RoundedCornerShape(24.dp),
+                                spotColor = Color(0xFFFFA500).copy(alpha = 0.3f)
+                            )
+                            .background(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(
+                                        Color(0xFFFFA500).copy(alpha = 0.15f),
+                                        Color(0xFFFFA500).copy(alpha = 0.08f)
+                                    )
+                                ),
+                                shape = RoundedCornerShape(24.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "⚠️",
+                            fontSize = 20.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Text(
+                        text = "게임을 시작하려면 최소 2명이 필요합니다",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFFFFA500),
+                        lineHeight = 22.sp
+                    )
+                }
+            }
+        }
     } else {
         if (hasUnassignedNumbers) {
+            // 번호 배정 버튼 - 글래스모피즘 스타일
             Button(
                 onClick = onAssignNumbers,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp)
+                    .height(64.dp)
                     .shadow(
-                        elevation = 12.dp,
-                        spotColor = Color(0x402196F3),
-                        ambientColor = Color(0x402196F3)
+                        elevation = 16.dp,
+                        shape = RoundedCornerShape(32.dp),
+                        spotColor = Color(0xFF2196F3).copy(alpha = 0.1f)
                     ),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF2196F3)
+                    containerColor = Color.Transparent
                 ),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(32.dp),
+                contentPadding = PaddingValues(0.dp)
             ) {
-                Text(
-                    "번호 배정",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFF2196F3),
+                                    Color(0xFF1976D2),
+                                    Color(0xFF1565C0)
+                                )
+                            ),
+                            shape = RoundedCornerShape(32.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "번호 배정",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = OneShinhan,
+                            color = Color.White
+                        )
+                    }
+                }
             }
         } else {
+            // 게임 시작 버튼 - 글래스모피즘 스타일
             Button(
                 onClick = onStartGame,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp)
+                    .height(64.dp)
                     .shadow(
-                        elevation = 12.dp,
-                        spotColor = Color(0x408B5FBF),
-                        ambientColor = Color(0x408B5FBF)
+                        elevation = 20.dp,
+                        shape = RoundedCornerShape(32.dp),
+                        spotColor = Color(0xFF8B5FBF).copy(alpha = 0.1f)
                     ),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF8B5FBF)
+                    containerColor = Color.Transparent
                 ),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(32.dp),
+                contentPadding = PaddingValues(0.dp)
             ) {
-                Text(
-                    "게임 시작",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFF8B5FBF),
+                                    Color(0xFFB794F6),
+                                    Color(0xFFF093FB)
+                                )
+                            ),
+                            shape = RoundedCornerShape(32.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "게임 시작",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = OneShinhan,
+                            color = Color.White
+                        )
+                    }
+                }
             }
         }
     }
@@ -703,121 +940,48 @@ private fun CenterLightDisplay(
     isFinished: Boolean,
     isWinner: Boolean
 ) {
+    // 깜빡임 애니메이션
+    val infiniteTransition = rememberInfiniteTransition(label = "blink")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 1.15f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "trophy"
+    )
+    val blinkScale by infiniteTransition.animateFloat(
+        initialValue = 0.95f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = 300,
+                easing = EaseInOutCubic
+            ),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
     Box(
         modifier = Modifier.size(280.dp),
         contentAlignment = Alignment.Center
     ) {
-        // 외곽 링
-        Box(
+        Image(
+            painter = painterResource(
+                id = if (isFinished && isWinner) R.drawable.a2 else R.drawable.a1
+            ),
+            contentDescription = null,
             modifier = Modifier
-                .size(260.dp)
-                .background(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            Color(0xFF718096).copy(alpha = 0.05f),
-                            Color(0xFF718096).copy(alpha = 0.15f)
-                        )
-                    ),
-                    shape = CircleShape
+                .size(300.dp)
+                .alpha(
+                    if (isLightOn && !isFinished) pulseScale else 1f
                 )
-                .shadow(8.dp, CircleShape)
+                .scale(
+                    if (isLightOn && !isFinished) blinkScale else 1f
+                ),
+            contentScale = ContentScale.Fit
         )
-
-        // 메인 불빛 효과
-        when {
-            isFinished && isWinner -> {
-                // 당첨 효과
-                Box(
-                    modifier = Modifier
-                        .size(220.dp)
-                        .background(
-                            brush = Brush.radialGradient(
-                                colors = listOf(
-                                    Color(0xFFFFC107).copy(alpha = 0.8f),
-                                    Color(0xFFFFC107).copy(alpha = 0.3f),
-                                    Color(0xFFFFC107).copy(alpha = 0.1f)
-                                )
-                            ),
-                            shape = CircleShape
-                        )
-                        .shadow(32.dp, CircleShape)
-                )
-            }
-            isLightOn -> {
-                // 하이라이트 효과
-                Box(
-                    modifier = Modifier
-                        .size(200.dp)
-                        .background(
-                            brush = Brush.radialGradient(
-                                colors = listOf(
-                                    Color(0xFF8B5FBF).copy(alpha = 0.7f),
-                                    Color(0xFF8B5FBF).copy(alpha = 0.3f),
-                                    Color(0xFF8B5FBF).copy(alpha = 0.1f)
-                                )
-                            ),
-                            shape = CircleShape
-                        )
-                        .shadow(24.dp, CircleShape)
-                )
-            }
-        }
-
-        // 중앙 컨텐츠
-        Box(
-            modifier = Modifier
-                .size(120.dp)
-                .background(
-                    Color.White,
-                    shape = CircleShape
-                )
-                .shadow(16.dp, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            when {
-                isFinished && isWinner -> {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "🏆",
-                            fontSize = 32.sp
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            "당첨!",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFF57C00)
-                        )
-                    }
-                }
-                isFinished && !isWinner -> {
-                    Text(
-                        text = "완료",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF718096)
-                    )
-                }
-                isLightOn -> {
-                    Text(
-                        text = "💫",
-                        fontSize = 32.sp
-                    )
-                }
-                else -> {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(
-                                Color(0xFF718096).copy(alpha = 0.1f),
-                                shape = CircleShape
-                            )
-                    )
-                }
-            }
-        }
     }
 }
 
@@ -853,17 +1017,14 @@ private fun InstructionDialog(
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "🎯",
-                        fontSize = 36.sp
-                    )
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
                 Text(
                     "룰렛 게임 방법",
                     fontSize = 22.sp,
-                    fontWeight = FontWeight.ExtraBold,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = OneShinhan,
                     color = Color(0xFF2D3748)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
@@ -910,7 +1071,8 @@ private fun InstructionDialog(
                     Text(
                         "확인",
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = OneShinhan,
                         color = Color.White
                     )
                 }

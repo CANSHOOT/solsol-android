@@ -27,7 +27,7 @@ class GameViewModel @Inject constructor(
 
     companion object {
         const val SERVICE_ID = "SOLSOL_ROULETTE"
-        const val TARGET_SPIN_MS = 10_000L  // 총 목표 회전 시간 10초
+        const val TARGET_SPIN_MS = 7_000L  // 총 목표 회전 시간 7초
         const val MIN_TICK_MS = 200L        // 최소 단계 간격(호스트 기준)
     }
 
@@ -394,8 +394,8 @@ class GameViewModel @Inject constructor(
 
             // 느려지는 지연(큐빅 이징)
             val progress = step.toFloat() / totalSteps
-            val baseDelay = 200L
-            val maxDelay = 800L
+            val baseDelay = 800L
+            val maxDelay = 1200L
             val delayMs = (baseDelay + (maxDelay - baseDelay) * progress * progress * progress).toLong()
 
             step++

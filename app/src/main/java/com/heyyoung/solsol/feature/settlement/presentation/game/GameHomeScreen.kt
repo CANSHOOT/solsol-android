@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.heyyoung.solsol.ui.theme.OneShinhan
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,12 +88,13 @@ fun GameHomeScreen(
                 .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(26.dp))
 
             Text(
                 text = "룰렛 게임으로 정산하기",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.SemiBold,
+                fontFamily = OneShinhan,
                 color = textMain,
                 textAlign = TextAlign.Center
             )
@@ -101,28 +103,28 @@ fun GameHomeScreen(
 
             Text(
                 text = "P2P 연결을 통해 친구들과\n실시간 룰렛 게임을 즐겨보세요!",
-                fontSize = 17.sp,
+                fontSize = 12.sp,
                 color = textSub,
                 lineHeight = 26.sp,
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(36.dp))
 
             GameModeCard(
                 title = "방 만들기",
-                description = "새로운 게임을 생성하고\n친구들을 초대해보세요",
+                description = "새로운 게임을 생성하고 친구들을 초대해보세요",
                 backgroundColor = Color(0xFFF8F6FF),
-                borderColor = purple.copy(alpha = 0.2f),
+                borderColor = purple.copy(alpha = 0.1f),
                 icon = Icons.Default.Add,
                 onClick = onNavigateToHost
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             GameModeCard(
                 title = "방 참가하기",
-                description = "주변 게임을 검색하고\n참가해보세요",
+                description = "주변 게임을 검색하고 참가해보세요",
                 backgroundColor = Color.White,
                 borderColor = Color(0xFFE2E8F0),
                 icon = Icons.Default.Search,
@@ -165,13 +167,14 @@ fun GameHomeScreen(
                     Spacer(Modifier.width(12.dp))
                     Text(
                         text = "게임 방법",
-                        fontSize = 18.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
+                        fontFamily = OneShinhan,
                         color = purple
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Card(
                     modifier = Modifier
@@ -188,7 +191,7 @@ fun GameHomeScreen(
                     shape = RoundedCornerShape(20.dp)
                 ) {
                     Column(
-                        modifier = Modifier.padding(24.dp)
+                        modifier = Modifier.padding(12.dp)
                     ) {
                         GameRuleItem(
                             step = "1",
@@ -241,7 +244,7 @@ private fun GameModeCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .defaultMinSize(minHeight = 120.dp) // 최소 높이 설정으로 변경
+            .defaultMinSize(minHeight = 110.dp) // 최소 높이 설정으로 변경
             .shadow(
                 elevation = 8.dp,
                 spotColor = Color(0x1A8B5FBF),
@@ -296,8 +299,9 @@ private fun GameModeCard(
             ) {
                 Text(
                     text = title,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    fontFamily = OneShinhan,
                     color = textMain,
                     maxLines = 2, // 최대 2줄까지 허용
                     lineHeight = 26.sp // 줄 간격 추가
@@ -307,7 +311,7 @@ private fun GameModeCard(
 
                 Text(
                     text = description,
-                    fontSize = 15.sp,
+                    fontSize = 12.sp,
                     color = textSub,
                     lineHeight = 22.sp,
                     maxLines = 3 // 최대 3줄까지 허용
@@ -345,17 +349,17 @@ private fun GameRuleItem(
         ) {
             Text(
                 text = step,
-                fontSize = 16.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = purple
             )
         }
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(8.dp))
 
         Text(
             text = description,
-            fontSize = 16.sp,
+            fontSize = 12.sp,
             color = textMain,
             lineHeight = 24.sp,
             fontWeight = FontWeight.Medium,

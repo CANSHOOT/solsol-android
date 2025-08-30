@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.heyyoung.solsol.feature.settlement.domain.model.Person
 import com.heyyoung.solsol.feature.settlement.domain.model.SettlementGroup
+import com.heyyoung.solsol.ui.theme.OneShinhan
 import kotlinx.coroutines.delay
 
 @Composable
@@ -58,7 +59,7 @@ fun SettlementCompleteScreen(
         if (showCheckmark) {
             Box(
                 modifier = Modifier
-                    .size(96.dp)
+                    .size(70.dp)
                     .shadow(
                         elevation = 14.dp,
                         spotColor = purple.copy(alpha = 0.18f),
@@ -72,7 +73,7 @@ fun SettlementCompleteScreen(
                     imageVector = Icons.Default.Check,
                     contentDescription = "완료",
                     tint = Color.White,
-                    modifier = Modifier.size(56.dp)
+                    modifier = Modifier.size(40.dp)
                 )
             }
         }
@@ -84,7 +85,8 @@ fun SettlementCompleteScreen(
             Text(
                 text = "정산 요청 완료!",
                 fontSize = 32.sp,
-                fontWeight = FontWeight.ExtraBold,
+                fontWeight = FontWeight.Bold,
+                fontFamily = OneShinhan,
                 color = textMain,
                 textAlign = TextAlign.Center
             )
@@ -94,13 +96,13 @@ fun SettlementCompleteScreen(
             // 부제목
             Text(
                 text = "참여자들에게 정산 알림이 발송되었어요",
-                fontSize = 17.sp,
+                fontSize = 12.sp,
                 color = textSub,
                 textAlign = TextAlign.Center,
                 lineHeight = 24.sp
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // 정산 정보 카드 - PaymentSuccessScreen 스타일
             SectionCard {
@@ -108,8 +110,8 @@ fun SettlementCompleteScreen(
                 settlementGroup?.let { group ->
                     Text(
                         text = group.groupName,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
                         color = purple,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
@@ -162,13 +164,13 @@ fun SettlementCompleteScreen(
                 // 참여자 목록 제목
                 Text(
                     text = "참여자 목록",
-                    fontSize = 18.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = textMain,
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // 참여자 목록
                 participants.forEach { participant ->
@@ -185,7 +187,7 @@ fun SettlementCompleteScreen(
                             // 프로필 아이콘
                             Box(
                                 modifier = Modifier
-                                    .size(36.dp)
+                                    .size(24.dp)
                                     .background(
                                         brush = Brush.radialGradient(
                                             colors = listOf(
@@ -200,16 +202,16 @@ fun SettlementCompleteScreen(
                                 Text(
                                     text = participant.name.first().toString(),
                                     color = purple,
-                                    fontSize = 16.sp,
+                                    fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
 
-                            Spacer(modifier = Modifier.width(16.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
 
                             Text(
                                 text = if (participant.isMe) "${participant.name} (나)" else participant.name,
-                                fontSize = 16.sp,
+                                fontSize = 12.sp,
                                 color = if (participant.isMe) purple else textMain,
                                 fontWeight = if (participant.isMe) FontWeight.Bold else FontWeight.Medium
                             )
@@ -228,9 +230,9 @@ fun SettlementCompleteScreen(
                         ) {
                             Text(
                                 text = if (participant.isMe) "총무" else "대기중",
-                                fontSize = 12.sp,
+                                fontSize = 10.sp,
                                 color = if (participant.isMe) Color(0xFF10B981) else Color(0xFFFFB366),
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight.SemiBold,
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -259,6 +261,7 @@ fun SettlementCompleteScreen(
                     text = "홈으로 가기",
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
+                    fontFamily = OneShinhan,
                     color = Color.White
                 )
             }
@@ -295,8 +298,8 @@ private fun LabeledAmountRow(
     valueColor: Color,
     labelWeight: FontWeight = FontWeight.Medium,
     valueWeight: FontWeight = FontWeight.Medium,
-    labelSize: androidx.compose.ui.unit.TextUnit = 14.sp,
-    valueSize: androidx.compose.ui.unit.TextUnit = 14.sp
+    labelSize: androidx.compose.ui.unit.TextUnit = 10.sp,
+    valueSize: androidx.compose.ui.unit.TextUnit = 10.sp
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
